@@ -12,15 +12,35 @@ const MasterManagement = () => {
     const [activeTab, setActiveTab] = useState('expense-categories');
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [newItem, setNewItem] = useState({ name: '', description: '', type: 'Vehicle', vehicleNumber: '', mobile: '' });
+    const [newItem, setNewItem] = useState({
+        name: '',
+        description: '',
+        type: 'Vehicle',
+        vehicleNumber: '',
+        mobile: '',
+        modelNumber: '',
+        registrationNumber: '',
+        purchaseDate: '',
+        purchaseCost: '',
+        currentCondition: '',
+        operatorName: '',
+        ownerName: '',
+        driverName: '',
+        rcInsuranceDetails: '',
+        permitExpiryDate: '',
+        mileageDetails: '',
+        unit: 'Unit',
+        defaultPrice: ''
+    });
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
 
     const tabs = [
         { id: 'expense-categories', label: 'Expense Categories (செலவு வகைகள்)' },
         { id: 'income-sources', label: 'Income Sources (வருமான வகைகள்)' },
-        { id: 'vehicles', label: 'Vehicles & Machines (வாகனப்பிரிவு)' },
         { id: 'customers', label: 'Customers (வாடிக்கையாளர்)' },
+        { id: 'labours', label: 'Labour Registry (தொழிலாளர்)' },
+        { id: 'stone-types', label: 'Stone Types (கல் வகைகள்)' },
     ];
 
     const fetchData = async () => {
@@ -51,7 +71,13 @@ const MasterManagement = () => {
             const { data: json } = await axios[method](endpoint, newItem);
             if (json.success) {
                 alert(editItem ? 'Updated successfully!' : 'Added successfully!');
-                setNewItem({ name: '', description: '', type: 'Vehicle', vehicleNumber: '', mobile: '' });
+                setNewItem({
+                    name: '', description: '', type: 'Vehicle', vehicleNumber: '', mobile: '',
+                    modelNumber: '', registrationNumber: '', purchaseDate: '', purchaseCost: '',
+                    currentCondition: '', operatorName: '', ownerName: '', driverName: '',
+                    rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
+                    unit: 'Unit', defaultPrice: ''
+                });
                 setEditItem(null);
                 setFormView(false);
                 fetchData();
@@ -70,6 +96,19 @@ const MasterManagement = () => {
             type: item.type || 'Vehicle',
             vehicleNumber: item.vehicleNumber || '',
             mobile: item.mobile || '',
+            modelNumber: item.modelNumber || '',
+            registrationNumber: item.registrationNumber || '',
+            purchaseDate: item.purchaseDate ? new Date(item.purchaseDate).toISOString().split('T')[0] : '',
+            purchaseCost: item.purchaseCost || '',
+            currentCondition: item.currentCondition || '',
+            operatorName: item.operatorName || '',
+            ownerName: item.ownerName || '',
+            driverName: item.driverName || '',
+            rcInsuranceDetails: item.rcInsuranceDetails || '',
+            permitExpiryDate: item.permitExpiryDate ? new Date(item.permitExpiryDate).toISOString().split('T')[0] : '',
+            mileageDetails: item.mileageDetails || '',
+            unit: item.unit || 'Unit',
+            defaultPrice: item.defaultPrice || ''
         });
         setFormView(true);
     };
@@ -87,18 +126,18 @@ const MasterManagement = () => {
     };
 
     return (
-        <div>
+        <div className="space-y-6">
             <ul className="flex space-x-2 rtl:space-x-reverse mb-6">
-                <li><a href="/" className="text-primary hover:underline">Dashboard</a></li>
-                <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2"><span>Masters</span></li>
+                <li><a href="/" className="text-primary hover:underline font-bold">Dashboard</a></li>
+                <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2 font-bold text-white-dark uppercase tracking-widest text-[10px]"><span>Masters</span></li>
             </ul>
 
-            <div className="panel overflow-hidden border-0 p-0 mb-5">
-                <div className="flex flex-wrap border-b border-white-light dark:border-[#191e3a]">
+            <div className="panel overflow-hidden border-0 p-0 mb-5 shadow-lg rounded-2xl">
+                <div className="flex flex-wrap border-b border-white-light dark:border-[#191e3a] bg-white-light/10">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
-                            className={`${activeTab === tab.id ? '!border-primary text-primary font-bold' : ''} -mb-[1px] block border-b-2 border-transparent p-4 hover:text-primary transition-all`}
+                            className={`${activeTab === tab.id ? '!border-primary text-primary font-black bg-white dark:bg-black/20 translate-y-[1px]' : 'text-white-dark font-bold'} -mb-[1px] block border-b-2 border-transparent p-5 hover:text-primary transition-all uppercase tracking-wider text-xs`}
                             onClick={() => { setActiveTab(tab.id); setFormView(false); }}
                         >
                             {tab.label}
@@ -108,166 +147,284 @@ const MasterManagement = () => {
             </div>
 
             {formView ? (
-                <div className="panel">
+                <div className="panel shadow-2xl rounded-2xl border-none">
                     <div className="mb-8 flex items-center justify-between border-b border-[#ebedf2] dark:border-[#1b2e4b] pb-5">
                         <div className="flex items-center">
                             <button
                                 type="button"
-                                className="btn btn-outline-primary btn-sm ltr:mr-4 rtl:ml-4 flex items-center justify-center rounded-full w-10 h-10 p-0"
+                                className="btn btn-outline-primary btn-sm ltr:mr-4 rtl:ml-4 flex items-center justify-center rounded-xl w-10 h-10 p-0 transform hover:scale-105 transition-all"
                                 onClick={() => { setFormView(false); setEditItem(null); }}
                             >
                                 <IconArrowLeft className="h-5 w-5" />
                             </button>
                             <div>
-                                <h5 className="text-xl font-bold dark:text-white-light">{editItem ? 'Edit Master Record' : 'Add New Master Entry'}</h5>
-                                <p className="text-white-dark text-xs mt-1">Configure {tabs.find(t => t.id === activeTab)?.label.split('(')[0].toLowerCase()} details</p>
+                                <h5 className="text-xl font-black text-black dark:text-white-light uppercase tracking-tight">{editItem ? 'Edit master Record' : 'Create New master Entry'}</h5>
+                                <p className="text-primary text-xs font-bold uppercase tracking-widest mt-1 opacity-70">Configuration Portal: {tabs.find(t => t.id === activeTab)?.label.split('(')[0]}</p>
                             </div>
                         </div>
                     </div>
 
-                    <form className="max-w-4xl mx-auto space-y-8" onSubmit={handleAdd}>
-                        <div className="space-y-5">
-                            <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2">
-                                <IconPlus className="w-4 h-4" />
-                                Basic Details
+                    <form className="max-w-5xl mx-auto space-y-10" onSubmit={handleAdd}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="md:col-span-3">
+                                <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 block">பெயர் (Title / Identification Name)</label>
+                                <input
+                                    type="text"
+                                    className="form-input border-2 focus:border-primary transition-all text-lg font-bold rounded-xl h-12"
+                                    value={newItem.name}
+                                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                                    required
+                                    placeholder="Enter full name or machine ID..."
+                                />
                             </div>
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                <div className="md:col-span-2">
-                                    <label htmlFor="name" className="text-xs font-bold text-white-dark uppercase mb-2 block">பெயர் (Title / Name)</label>
+
+                            {activeTab === 'vehicles' && (
+                                <>
+                                    <div className="md:col-span-3 panel bg-primary/5 border-primary/10 rounded-2xl p-6">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="h-1 lg:flex-1 bg-primary/10 rounded-full"></div>
+                                            <span className="text-xs font-black text-primary uppercase tracking-widest">Asset Classification</span>
+                                            <div className="h-1 lg:flex-1 bg-primary/10 rounded-full"></div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Category (பிரிவு)</label>
+                                                <select
+                                                    className="form-select border-2 font-bold rounded-xl h-12"
+                                                    value={newItem.type}
+                                                    onChange={(e) => setNewItem({ ...newItem, type: e.target.value })}
+                                                >
+                                                    <option value="Vehicle">Vehicle (லாரி / வாகனம்)</option>
+                                                    <option value="Machine">Machine (இயந்திரம்)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Model / Registration No (பதிவு எண்)</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-input border-2 font-bold rounded-xl h-12 uppercase"
+                                                    value={newItem.registrationNumber}
+                                                    onChange={(e) => setNewItem({ ...newItem, registrationNumber: e.target.value })}
+                                                    placeholder="e.g., TN 99 XX 1234 / MODEL-X"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Machine Specific Fields */}
+                                    {newItem.type === 'Machine' && (
+                                        <>
+                                            <div className="md:col-span-3 border-l-4 border-warning pl-4 my-4">
+                                                <h6 className="font-black text-warning uppercase text-sm tracking-widest">Machine Specifications (இயந்திர விவரங்கள்)</h6>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Model Number</label>
+                                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.modelNumber} onChange={(e) => setNewItem({ ...newItem, modelNumber: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Operator Name</label>
+                                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.operatorName} onChange={(e) => setNewItem({ ...newItem, operatorName: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Condition Status</label>
+                                                <select className="form-select border-2 font-bold rounded-xl h-12" value={newItem.currentCondition} onChange={(e) => setNewItem({ ...newItem, currentCondition: e.target.value })}>
+                                                    <option value="">Select Condition</option>
+                                                    <option value="Excellent">Excellent (மிக நன்று)</option>
+                                                    <option value="Good">Good (நன்று)</option>
+                                                    <option value="Requires Service">Requires Service (பராமரிப்பு தேவை)</option>
+                                                </select>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Vehicle Specific Fields */}
+                                    {newItem.type === 'Vehicle' && (
+                                        <>
+                                            <div className="md:col-span-3 border-l-4 border-info pl-4 my-4">
+                                                <h6 className="font-black text-info uppercase text-sm tracking-widest">Lorry / Transport Details (வாகன விவரங்கள்)</h6>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Vehicle Number</label>
+                                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12 uppercase" value={newItem.vehicleNumber} onChange={(e) => setNewItem({ ...newItem, vehicleNumber: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Owner Name</label>
+                                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.ownerName} onChange={(e) => setNewItem({ ...newItem, ownerName: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Driver Name</label>
+                                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.driverName} onChange={(e) => setNewItem({ ...newItem, driverName: e.target.value })} />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">RC / Insurance Details</label>
+                                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.rcInsuranceDetails} onChange={(e) => setNewItem({ ...newItem, rcInsuranceDetails: e.target.value })} placeholder="Policy No, Expiry date etc." />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Permit Expiry</label>
+                                                <input type="date" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.permitExpiryDate} onChange={(e) => setNewItem({ ...newItem, permitExpiryDate: e.target.value })} />
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <div className="md:col-span-3 border-l-4 border-success pl-4 my-4">
+                                        <h6 className="font-black text-success uppercase text-sm tracking-widest">Purchase & Finance (கொள்முதல் விவரங்கள்)</h6>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Date</label>
+                                        <input type="date" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseDate} onChange={(e) => setNewItem({ ...newItem, purchaseDate: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Cost (₹)</label>
+                                        <input type="number" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseCost} onChange={(e) => setNewItem({ ...newItem, purchaseCost: e.target.value })} placeholder="0.00" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Mileage / Stats</label>
+                                        <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.mileageDetails} onChange={(e) => setNewItem({ ...newItem, mileageDetails: e.target.value })} placeholder="Average mileage info" />
+                                    </div>
+                                </>
+                            )}
+
+                            {activeTab === 'labours' && (
+                                <div className="md:col-span-3">
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">தொலைபேசி எண் (Mobile - Optional)</label>
                                     <input
-                                        id="name"
                                         type="text"
-                                        className="form-input border-primary"
-                                        value={newItem.name}
-                                        onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                                        required
-                                        placeholder="Enter full name or title..."
+                                        className="form-input border-2 font-bold rounded-xl h-12"
+                                        value={newItem.mobile}
+                                        onChange={(e) => setNewItem({ ...newItem, mobile: e.target.value })}
+                                        placeholder="Enter 10-digit mobile number..."
                                     />
                                 </div>
+                            )}
 
-                                {activeTab === 'vehicles' && (
-                                    <>
-                                        <div>
-                                            <label htmlFor="vehNum" className="text-xs font-bold text-white-dark uppercase mb-2 block">வாகன எண் (Vehicle No - Optional)</label>
-                                            <input
-                                                id="vehNum"
-                                                type="text"
-                                                className="form-input"
-                                                value={newItem.vehicleNumber}
-                                                onChange={(e) => setNewItem({ ...newItem, vehicleNumber: e.target.value })}
-                                                placeholder="e.g., TN 99 XX 1234"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="type" className="text-xs font-bold text-white-dark uppercase mb-2 block">பிரிவு (Category)</label>
-                                            <select
-                                                id="type"
-                                                className="form-select border-primary"
-                                                value={newItem.type}
-                                                onChange={(e) => setNewItem({ ...newItem, type: e.target.value })}
-                                            >
-                                                <option value="Vehicle">Vehicle (வாகனம்)</option>
-                                                <option value="Machine">Machine (இயந்திரம்)</option>
-                                            </select>
-                                        </div>
-                                    </>
-                                )}
-
-                                {activeTab === 'labours' && (
-                                    <div className="md:col-span-2">
-                                        <label htmlFor="mobile" className="text-xs font-bold text-white-dark uppercase mb-2 block">தொலைபேசி எண் (Mobile - Optional)</label>
+                            {activeTab === 'stone-types' && (
+                                <>
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Unit (அலகு)</label>
+                                        <select
+                                            className="form-select border-2 font-bold rounded-xl h-12"
+                                            value={newItem.unit}
+                                            onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                                        >
+                                            <option value="Unit">Unit</option>
+                                            <option value="Ton">Ton</option>
+                                            <option value="Kg">Kg</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Price per Unit (₹)</label>
                                         <input
-                                            id="mobile"
-                                            type="text"
-                                            className="form-input"
-                                            value={newItem.mobile}
-                                            onChange={(e) => setNewItem({ ...newItem, mobile: e.target.value })}
-                                            placeholder="Enter 10-digit mobile number..."
+                                            type="number"
+                                            className="form-input border-2 font-bold rounded-xl h-12"
+                                            value={newItem.defaultPrice}
+                                            onChange={(e) => setNewItem({ ...newItem, defaultPrice: e.target.value })}
+                                            placeholder="0.00"
                                         />
                                     </div>
-                                )}
-                            </div>
-                        </div>
+                                </>
+                            )}
 
-                        <div className="space-y-5">
-                            <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2">
-                                <IconEdit className="w-4 h-4" />
-                                Additional Information
-                            </div>
-                            <div>
-                                <label htmlFor="desc" className="text-xs font-bold text-white-dark uppercase mb-2 block">விவரம் (Description / Remarks)</label>
+                            <div className="md:col-span-3">
+                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">விவரம் (Additional Remarks)</label>
                                 <textarea
-                                    id="desc"
-                                    className="form-textarea min-h-[120px]"
+                                    className="form-textarea border-2 font-bold rounded-xl min-h-[100px]"
                                     value={newItem.description}
                                     onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                                    placeholder="Enter any additional notes or details here..."
+                                    placeholder="Enter any additional notes..."
                                 ></textarea>
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 pt-8 border-t border-[#ebedf2] dark:border-[#1b2e4b]">
-                            <button type="button" className="btn btn-outline-danger px-8" onClick={() => { setFormView(false); setEditItem(null); }}>
-                                Cancel
+                        <div className="flex items-center justify-end gap-4 pt-10 border-t-2 border-primary/5">
+                            <button type="button" className="btn btn-outline-danger px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]" onClick={() => { setFormView(false); setEditItem(null); }}>
+                                Discard
                             </button>
-                            <button type="submit" className="btn btn-primary px-10 shadow-lg shadow-primary/20">
-                                <IconSave className="ltr:mr-2 rtl:ml-2" />
-                                {editItem ? 'Update Master' : 'Save Entry'}
+                            <button type="submit" className="btn btn-primary px-14 h-12 rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-[0_10px_20px_rgba(67,97,238,0.3)]">
+                                <IconSave className="ltr:mr-2 rtl:ml-2 w-4 h-4" />
+                                {editItem ? 'Update Database' : 'Finalize Entry'}
                             </button>
                         </div>
                     </form>
                 </div>
             ) : (
-                <div className="panel">
+                <div className="panel shadow-lg rounded-2xl border-none">
                     <div className="mb-5 flex items-center justify-between">
-                        <h5 className="text-xl font-bold dark:text-white-light">
-                            {tabs.find(t => t.id === activeTab)?.label.split('(')[0]} List
+                        <h5 className="text-xl font-black text-black dark:text-white-light uppercase tracking-tight">
+                            {tabs.find(t => t.id === activeTab)?.label.split('(')[0]} Database
                         </h5>
-                        <button type="button" className="btn btn-primary shadow-lg" onClick={() => {
-                            setNewItem({ name: '', description: '', type: 'Vehicle', vehicleNumber: '', mobile: '' });
+                        <button type="button" className="btn btn-primary shadow-[0_10px_20px_rgba(67,97,238,0.3)] rounded-xl py-2.5 px-6 font-black uppercase tracking-widest text-[10px]" onClick={() => {
+                            setNewItem({
+                                name: '', description: '', type: 'Vehicle', vehicleNumber: '', mobile: '',
+                                modelNumber: '', registrationNumber: '', purchaseDate: '', purchaseCost: '',
+                                currentCondition: '', operatorName: '', ownerName: '', driverName: '',
+                                rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
+                                unit: 'Unit', defaultPrice: ''
+                            });
                             setEditItem(null);
                             setFormView(true);
                         }}>
-                            <IconPlus className="mr-2" /> Add New
+                            <IconPlus className="mr-2 w-4 h-4" /> Add Record
                         </button>
                     </div>
                     <div className="table-responsive">
                         <table className="table-hover">
                             <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    {activeTab === 'vehicles' && <th>Number / Type</th>}
-                                    {activeTab === 'labours' && <th>Mobile</th>}
-                                    {activeTab !== 'vehicles' && activeTab !== 'labours' && <th>Description</th>}
-                                    <th className="text-center">Action</th>
+                                <tr className="!bg-primary/5">
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Identification</th>
+                                    {activeTab === 'vehicles' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Reg No / Model</th>}
+                                    {activeTab === 'vehicles' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Category</th>}
+                                    {activeTab === 'labours' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Contact</th>}
+                                    {activeTab === 'stone-types' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Unit</th>}
+                                    {activeTab === 'stone-types' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Price</th>}
+                                    {activeTab !== 'vehicles' && activeTab !== 'labours' && activeTab !== 'stone-types' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Notes</th>}
+                                    <th className="text-center font-black uppercase tracking-widest text-[10px] py-4">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="font-bold">
                                 {loading ? (
-                                    <tr><td colSpan={5} className="text-center py-10">Loading...</td></tr>
+                                    <tr><td colSpan={6} className="text-center py-20">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                            <span className="text-xs uppercase tracking-[0.2em] text-primary">Synchronizing...</span>
+                                        </div>
+                                    </td></tr>
                                 ) : data.length === 0 ? (
-                                    <tr><td colSpan={5} className="text-center py-10 text-white-dark uppercase font-bold">No records found</td></tr>
+                                    <tr><td colSpan={6} className="text-center py-20 text-white-dark uppercase font-black tracking-widest text-sm opacity-20">No data entries in this registry</td></tr>
                                 ) : (
                                     data.map((item: any) => (
-                                        <tr key={item._id}>
-                                            <td className="font-semibold">{item.name}</td>
+                                        <tr key={item._id} className="group hover:bg-primary/5 transition-all">
+                                            <td className="py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-black dark:text-white-light text-base">{item.name}</span>
+                                                    {item.type === 'Machine' && item.operatorName && <span className="text-[10px] text-primary uppercase mt-1">Op: {item.operatorName}</span>}
+                                                </div>
+                                            </td>
                                             {activeTab === 'vehicles' && (
-                                                <td>
-                                                    <span className="font-bold">{item.vehicleNumber || '-'}</span>
-                                                    <span className={`badge ${item.type === 'Machine' ? 'badge-outline-warning' : 'badge-outline-primary'} ml-3`}>{item.type}</span>
+                                                <td className="py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-black dark:text-white-light">{item.registrationNumber || item.vehicleNumber || '-'}</span>
+                                                        <span className="text-[10px] text-white-dark uppercase">{item.modelNumber || 'Standard'}</span>
+                                                    </div>
                                                 </td>
                                             )}
-                                            {activeTab === 'labours' && <td>{item.mobile || '-'}</td>}
-                                            {activeTab !== 'vehicles' && activeTab !== 'labours' && (
-                                                <td className="text-white-dark">{item.description || '-'}</td>
+                                            {activeTab === 'vehicles' && (
+                                                <td className="py-4">
+                                                    <span className={`badge ${item.type === 'Machine' ? 'badge-outline-warning' : 'badge-outline-info'} uppercase tracking-widest text-[9px] font-black px-3 py-1 rounded-lg`}>{item.type}</span>
+                                                </td>
                                             )}
-                                            <td className="text-center">
-                                                <div className="flex justify-center items-center gap-3">
-                                                    <button type="button" className="hover:text-primary transition-all" onClick={() => handleEdit(item)}>
-                                                        <IconEdit className="h-5 w-5" />
+                                            {activeTab === 'labours' && <td className="py-4 text-primary">{item.mobile || '-'}</td>}
+                                            {activeTab === 'stone-types' && <td className="py-4">{item.unit || '-'}</td>}
+                                            {activeTab === 'stone-types' && <td className="py-4 font-black">₹{item.defaultPrice || '0'}</td>}
+                                            {activeTab !== 'vehicles' && activeTab !== 'labours' && activeTab !== 'stone-types' && (
+                                                <td className="py-4 text-white-dark font-medium italic">{item.description || '-'}</td>
+                                            )}
+                                            <td className="text-center py-4">
+                                                <div className="flex justify-center items-center gap-2">
+                                                    <button type="button" className="p-2 rounded-lg text-primary hover:bg-primary hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>
+                                                        <IconEdit className="h-4.5 w-4.5" />
                                                     </button>
-                                                    <button type="button" className="hover:text-danger transition-all" onClick={() => handleDelete(item._id)}>
-                                                        <IconTrashLines className="h-5 w-5" />
+                                                    <button type="button" className="p-2 rounded-lg text-danger hover:bg-danger hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20" onClick={() => handleDelete(item._id)}>
+                                                        <IconTrashLines className="h-4.5 w-4.5" />
                                                     </button>
                                                 </div>
                                             </td>

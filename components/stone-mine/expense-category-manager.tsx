@@ -72,6 +72,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         officeExpenseType: '',
         paidTo: '',
         billNumber: '',
+        nextServiceDate: '',
     });
 
     const fetchExpenses = async () => {
@@ -148,8 +149,17 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         fetchLabours();
     }, [category]);
 
-    const uniqueVehicleTypes = Array.from(new Set(vehicles.map((v) => v.name)));
-    const filteredVehicles = vehicles.filter((v) => v.name === formData.vehicleType);
+    const uniqueVehicleTypes = Array.from(new Set(vehicles
+        .filter(v => {
+            if (category === 'Transport Charges') return v.type === 'Vehicle';
+            // Allow both Machines and Vehicles for Maintenance
+            if (category === 'Machine Maintenance') return true;
+            return true;
+        })
+        .map((v) => v.category || v.name)
+    ));
+
+    const filteredVehicles = vehicles.filter((v) => (v.category || v.name) === formData.vehicleType);
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
@@ -160,6 +170,15 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             if (name === 'vehicleType') {
                 updated.vehicleNumber = '';
                 updated.vehicleOrMachine = value; // Default to type name if no number selected yet
+
+                // Auto-select if ONLY ONE matching vehicle in master
+                const matches = vehicles.filter((v) => (v.category || v.name) === value);
+                if (matches.length === 1) {
+                    const onlyMatch = matches[0];
+                    const num = onlyMatch.vehicleNumber || onlyMatch.registrationNumber || '';
+                    updated.vehicleNumber = num;
+                    updated.vehicleOrMachine = value + (num ? ` (${num})` : '');
+                }
             }
 
             // If vehicleNumber changes, update full vehicleOrMachine string
@@ -308,6 +327,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             labourName: '',
             workType: '',
             wageType: '',
+            perDaySalary: '',
             advanceDeduction: '',
             netPay: '',
             siteAssigned: '',
@@ -325,6 +345,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             officeExpenseType: '',
             paidTo: '',
             billNumber: '',
+            nextServiceDate: '',
         });
         setSelectedFile(null);
         setFormView(false);
@@ -364,6 +385,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             labourName: expense.labourName || '',
             workType: expense.workType || '',
             wageType: expense.wageType || '',
+            perDaySalary: expense.perDaySalary || '',
             advanceDeduction: expense.advanceDeduction?.toString() || '',
             netPay: expense.netPay?.toString() || '',
             siteAssigned: expense.siteAssigned || '',
@@ -381,6 +403,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             officeExpenseType: expense.officeExpenseType || '',
             paidTo: expense.paidTo || '',
             billNumber: expense.billNumber || '',
+            nextServiceDate: expense.nextServiceDate ? expense.nextServiceDate.split('T')[0] : '',
         });
         setSelectedFile(null);
         setEditMode(true);
@@ -587,41 +610,41 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Date (தேதி)</label>
                                     <input type="date" name="date" className="form-input" value={formData.date} onChange={handleChange} required />
                                 </div>
-                                {category !== 'Labour Wages' && (
-                                    <>
-                                        <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block font-primary">
-                                                {category === 'Transport Charges' ? 'Transport Vehicle Type' : 'Category Type'}
-                                            </label>
-                                            <select name="vehicleType" className="form-select border-primary/20" value={formData.vehicleType} onChange={handleChange}>
-                                                <option value="">Select Type</option>
-                                                {category === 'Transport Charges' ? (
-                                                    <>
-                                                        <option value="Lorry">Lorry</option>
-                                                        <option value="Tipper">Tipper</option>
-                                                        <option value="Tractor">Tractor</option>
-                                                        <option value="Trailer">Trailer</option>
-                                                        <option value="External Transport">External Transport</option>
-                                                    </>
-                                                ) : (
-                                                    uniqueVehicleTypes.map((type: string) => <option key={type} value={type}>{type}</option>)
-                                                )}
-                                            </select>
-                                        </div>
-                                        {formData.vehicleType && filteredVehicles.length > 0 && (
-                                            <div>
-                                                <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Vehicle Number</label>
-                                                <select name="vehicleNumber" className="form-select border-primary" value={formData.vehicleNumber} onChange={handleChange}>
-                                                    <option value="">Select ID / No</option>
-                                                    {filteredVehicles.map((v: any) => (
-                                                        <option key={v._id} value={v.vehicleNumber}>
-                                                            {v.vehicleNumber || 'No Number'}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block font-primary">
+                                        {category === 'Transport Charges' ? 'Transport Vehicle Type' : (category === 'Labour Wages' ? 'Link to Machine' : 'Category Type')}
+                                    </label>
+                                    <select name="vehicleType" className="form-select border-primary/20" value={formData.vehicleType} onChange={handleChange}>
+                                        <option value="">{category === 'Labour Wages' ? 'None / General' : 'Select Category'}</option>
+                                        {category === 'Transport Charges' ? (
+                                            <>
+                                                <option value="Lorry">Lorry</option>
+                                                <option value="Tipper">Tipper</option>
+                                                <option value="Tractor">Tractor</option>
+                                                <option value="Trailer">Trailer</option>
+                                                <option value="External Transport">External Transport</option>
+                                                {/* Dynamic types from master */}
+                                                {uniqueVehicleTypes.filter(t => !['Lorry', 'Tipper', 'Tractor', 'Trailer', 'External Transport'].includes(t)).map(t => (
+                                                    <option key={t} value={t}>{t}</option>
+                                                ))}
+                                            </>
+                                        ) : (
+                                            uniqueVehicleTypes.map((type: string) => <option key={type} value={type}>{type}</option>)
                                         )}
-                                    </>
+                                    </select>
+                                </div>
+                                {formData.vehicleType && filteredVehicles.length > 0 && (
+                                    <div>
+                                        <label className="text-xs font-bold text-primary uppercase mb-2 block">Specific Number / ID (வண்டி எண்)</label>
+                                        <select name="vehicleNumber" className="form-select border-primary animate-pulse-once" value={formData.vehicleNumber} onChange={handleChange}>
+                                            <option value="">Select No / ID</option>
+                                            {filteredVehicles.map((v: any) => (
+                                                <option key={v._id} value={v.vehicleNumber || v.registrationNumber}>
+                                                    {v.vehicleNumber || v.registrationNumber || v.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -821,6 +844,10 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         <div>
                                             <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Meter Reading (Hrs)</label>
                                             <input type="text" name="meterReading" className="form-input" value={formData.meterReading} onChange={handleChange} />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-primary">Next Service Due (அடுத்த சர்வீஸ்)</label>
+                                            <input type="date" name="nextServiceDate" className="form-input border-primary/20" value={formData.nextServiceDate} onChange={handleChange} />
                                         </div>
                                     </>
                                 )}
