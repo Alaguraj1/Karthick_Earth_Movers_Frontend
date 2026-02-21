@@ -119,13 +119,40 @@ const Sidebar = () => {
                                             </div>
                                         </Link>
                                     </li>
-                                    <li className="nav-item">
-                                        <Link href="/expenses" className="group">
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'expense-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('expense-mgmt')}>
                                             <div className="flex items-center">
                                                 <IconMenuInvoice className="shrink-0 group-hover:!text-primary" />
                                                 <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">செலவுகள் (Expenses)</span>
                                             </div>
-                                        </Link>
+
+                                            <div className={currentMenu !== 'expense-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'expense-mgmt' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/expenses/diesel">Diesel / Fuel</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/expenses/machine-maintenance">Maintenance</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/expenses/labour-wages">Labour Wages</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/expenses/explosive-cost">Explosive Cost</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/expenses/transport-charges">Transport</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/expenses/office-misc">Office & Misc</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
                                     </li>
                                     <li className="nav-item">
                                         <Link href="/sales-entry" className="group">
