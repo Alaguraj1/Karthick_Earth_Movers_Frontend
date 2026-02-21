@@ -28,6 +28,7 @@ import IconMenuTables from '@/components/icon/menu/icon-menu-tables';
 import IconMenuDatatables from '@/components/icon/menu/icon-menu-datatables';
 import IconMenuForms from '@/components/icon/menu/icon-menu-forms';
 import IconMenuUsers from '@/components/icon/menu/icon-menu-users';
+import IconPlus from '@/components/icon/icon-plus';
 import IconMenuPages from '@/components/icon/menu/icon-menu-pages';
 import IconMenuAuthentication from '@/components/icon/menu/icon-menu-authentication';
 import IconMenuDocumentation from '@/components/icon/menu/icon-menu-documentation';
@@ -123,7 +124,7 @@ const Sidebar = () => {
                                         <button type="button" className={`${currentMenu === 'expense-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('expense-mgmt')}>
                                             <div className="flex items-center">
                                                 <IconMenuInvoice className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">செலவுகள் (Expenses)</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Expenses</span>
                                             </div>
 
                                             <div className={currentMenu !== 'expense-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
@@ -158,7 +159,7 @@ const Sidebar = () => {
                                         <Link href="/sales-entry" className="group">
                                             <div className="flex items-center">
                                                 <IconMenuContacts className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">விற்பனை (Sales)</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Sales</span>
                                             </div>
                                         </Link>
                                     </li>
@@ -170,19 +171,44 @@ const Sidebar = () => {
                                             </div>
                                         </Link>
                                     </li>
-                                    <li className="nav-item">
-                                        <Link href="/labour" className="group">
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'labour-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('labour-mgmt')}>
                                             <div className="flex items-center">
                                                 <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">தொழிலாளர்கள் (Labour)</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Labour Management</span>
                                             </div>
-                                        </Link>
+
+                                            <div className={currentMenu !== 'labour-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'labour-mgmt' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/labour/list">Labour List</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/labour/attendance">Daily Attendance</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/labour/wages">Wages Calculation</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/labour/advance">Advance Payment</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/labour/report">Labour Report</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
                                     </li>
+
                                     <li className="nav-item">
                                         <Link href="/masters" className="group">
                                             <div className="flex items-center">
                                                 <IconMenuForms className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">மாஸ்டர் தரவு (Masters)</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Masters</span>
                                             </div>
                                         </Link>
                                     </li>
