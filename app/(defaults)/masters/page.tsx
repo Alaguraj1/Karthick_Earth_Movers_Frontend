@@ -29,6 +29,7 @@ const MasterManagement = () => {
         rcInsuranceDetails: '',
         permitExpiryDate: '',
         mileageDetails: '',
+        category: '',
         unit: 'Unit',
         defaultPrice: ''
     });
@@ -76,6 +77,7 @@ const MasterManagement = () => {
                     modelNumber: '', registrationNumber: '', purchaseDate: '', purchaseCost: '',
                     currentCondition: '', operatorName: '', ownerName: '', driverName: '',
                     rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
+                    category: '',
                     unit: 'Unit', defaultPrice: ''
                 });
                 setEditItem(null);
@@ -107,6 +109,7 @@ const MasterManagement = () => {
             rcInsuranceDetails: item.rcInsuranceDetails || '',
             permitExpiryDate: item.permitExpiryDate ? new Date(item.permitExpiryDate).toISOString().split('T')[0] : '',
             mileageDetails: item.mileageDetails || '',
+            category: item.category || '',
             unit: item.unit || 'Unit',
             defaultPrice: item.defaultPrice || ''
         });
@@ -207,6 +210,25 @@ const MasterManagement = () => {
                                                     onChange={(e) => setNewItem({ ...newItem, registrationNumber: e.target.value })}
                                                     placeholder="e.g., TN 99 XX 1234 / MODEL-X"
                                                 />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Machine / Vehicle Category (வகை)</label>
+                                                <select
+                                                    className="form-select border-2 font-bold rounded-xl h-12"
+                                                    value={(newItem as any).category}
+                                                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                                                >
+                                                    <option value="">Select Category</option>
+                                                    <option value="JCB">JCB</option>
+                                                    <option value="Hitachi">Hitachi</option>
+                                                    <option value="Tipper Lorry">Tipper Lorry</option>
+                                                    <option value="Loader">Loader</option>
+                                                    <option value="Generator">Generator</option>
+                                                    <option value="Compressor">Compressor</option>
+                                                    <option value="Driller">Driller</option>
+                                                    <option value="Tractor">Tractor</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -358,6 +380,7 @@ const MasterManagement = () => {
                                 modelNumber: '', registrationNumber: '', purchaseDate: '', purchaseCost: '',
                                 currentCondition: '', operatorName: '', ownerName: '', driverName: '',
                                 rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
+                                category: '',
                                 unit: 'Unit', defaultPrice: ''
                             });
                             setEditItem(null);
@@ -403,7 +426,10 @@ const MasterManagement = () => {
                                                 <td className="py-4">
                                                     <div className="flex flex-col">
                                                         <span className="text-black dark:text-white-light">{item.registrationNumber || item.vehicleNumber || '-'}</span>
-                                                        <span className="text-[10px] text-white-dark uppercase">{item.modelNumber || 'Standard'}</span>
+                                                        <div className="flex gap-2 items-center">
+                                                            <span className="text-[10px] text-white-dark uppercase">{item.modelNumber || 'Standard'}</span>
+                                                            {item.category && <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-black uppercase">{item.category}</span>}
+                                                        </div>
                                                     </div>
                                                 </td>
                                             )}

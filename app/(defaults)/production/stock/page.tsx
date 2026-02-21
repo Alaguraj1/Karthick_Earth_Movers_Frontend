@@ -57,7 +57,7 @@ const StockTracking = () => {
                                 <div className="mt-12 relative z-10">
                                     <h6 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-70 mb-1">Total Stock Available</h6>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-5xl font-black tabular-nums">{item.produced.toLocaleString()}</span>
+                                        <span className="text-5xl font-black tabular-nums">{item.balance.toLocaleString()}</span>
                                         <span className="text-sm font-black opacity-70 uppercase tracking-widest">{item.unit}</span>
                                     </div>
                                 </div>
@@ -68,15 +68,15 @@ const StockTracking = () => {
                                     <div className="panel bg-success/5 border-success/10 p-4 rounded-2xl flex items-center gap-4">
                                         <div className="bg-success/20 p-2 rounded-lg text-success"><IconCaretDown className="w-4 h-4" /></div>
                                         <div>
-                                            <p className="text-[9px] font-black uppercase text-white-dark tracking-widest">Incoming</p>
+                                            <p className="text-[9px] font-black uppercase text-white-dark tracking-widest">Incoming (Total)</p>
                                             <p className="text-base font-black text-success">+{item.produced.toLocaleString()}</p>
                                         </div>
                                     </div>
-                                    <div className="panel bg-danger/5 border-danger/10 p-4 rounded-2xl flex items-center gap-4 opacity-50">
+                                    <div className="panel bg-danger/5 border-danger/10 p-4 rounded-2xl flex items-center gap-4">
                                         <div className="bg-danger/20 p-2 rounded-lg text-danger"><IconCaretDown className="w-4 h-4 rotate-180" /></div>
                                         <div>
-                                            <p className="text-[9px] font-black uppercase text-white-dark tracking-widest">Outgoing</p>
-                                            <p className="text-base font-black text-danger">- 0</p>
+                                            <p className="text-[9px] font-black uppercase text-white-dark tracking-widest">Outgoing (Total)</p>
+                                            <p className="text-base font-black text-danger">-{item.dispatched.toLocaleString()}</p>
                                         </div>
                                     </div>
                                 </div>

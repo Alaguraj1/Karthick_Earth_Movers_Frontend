@@ -148,15 +148,24 @@ const MachineDetails = () => {
                     <form className="max-w-5xl mx-auto space-y-10" onSubmit={handleAdd}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <div className="md:col-span-1">
-                                <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 block">Machine Category (JCB/Driller)</label>
-                                <input
-                                    type="text"
-                                    className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12"
+                                <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 block">Machine Category (வகை)</label>
+                                <select
+                                    className="form-select border-2 focus:border-primary transition-all font-bold rounded-xl h-12"
                                     value={newItem.category}
                                     onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
                                     required
-                                    placeholder="e.g. JCB"
-                                />
+                                >
+                                    <option value="">Select Category</option>
+                                    <option value="JCB">JCB</option>
+                                    <option value="Hitachi">Hitachi</option>
+                                    <option value="Loader">Loader</option>
+                                    <option value="Generator">Generator</option>
+                                    <option value="Compressor">Compressor</option>
+                                    <option value="Driller">Driller</option>
+                                    <option value="Tractor">Tractor</option>
+                                    <option value="Stone Crusher">Stone Crusher</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
                             <div className="md:col-span-2">
                                 <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 block">Machine Name / ID</label>
