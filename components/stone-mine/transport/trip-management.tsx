@@ -33,6 +33,11 @@ const TripManagement = () => {
         loadQuantity: '',
         loadUnit: 'Tons',
         tripRate: '',
+        dieselQuantity: '',
+        dieselRate: '',
+        driverAmount: '',
+        driverBata: '',
+        otherExpenses: '',
         startingPoint: '',
         endingPoint: '',
         notes: ''
@@ -125,6 +130,11 @@ const TripManagement = () => {
             loadQuantity: trip.loadQuantity,
             loadUnit: trip.loadUnit,
             tripRate: trip.tripRate,
+            dieselQuantity: trip.dieselQuantity || '',
+            dieselRate: trip.dieselRate || '',
+            driverAmount: trip.driverAmount || '',
+            driverBata: trip.driverBata || '',
+            otherExpenses: trip.otherExpenses || '',
             startingPoint: trip.startingPoint || '',
             endingPoint: trip.endingPoint || '',
             notes: trip.notes || ''
@@ -253,14 +263,40 @@ const TripManagement = () => {
                             </div>
                         </div>
 
+                        <div className="bg-primary/5 p-4 rounded-lg flex flex-col gap-5">
+                            <h6 className="font-black text-primary uppercase text-xs tracking-widest border-b border-primary/10 pb-2">Trip Expenses (செலவுகள்)</h6>
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Diesel (Ltrs)</label>
+                                    <input type="number" name="dieselQuantity" className="form-input border-danger/20" value={formData.dieselQuantity} onChange={handleChange} step="0.01" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Diesel Rate (₹)</label>
+                                    <input type="number" name="dieselRate" className="form-input border-danger/20" value={formData.dieselRate} onChange={handleChange} step="0.01" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Driver Pay (₹)</label>
+                                    <input type="number" name="driverAmount" className="form-input border-warning/20" value={formData.driverAmount} onChange={handleChange} />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Driver Bata (₹)</label>
+                                    <input type="number" name="driverBata" className="form-input border-warning/20" value={formData.driverBata} onChange={handleChange} />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Other Exp (₹)</label>
+                                    <input type="number" name="otherExpenses" className="form-input" value={formData.otherExpenses} onChange={handleChange} />
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-3 bg-gray-50 dark:bg-dark-light/5 p-4 rounded-lg">
                             <div>
-                                <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Starting Point</label>
-                                <input type="text" name="startingPoint" className="form-input" value={formData.startingPoint} onChange={handleChange} placeholder="Odometer or location" />
+                                <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Starting Odometer</label>
+                                <input type="text" name="startingPoint" className="form-input" value={formData.startingPoint} onChange={handleChange} placeholder="Reading or location" />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Ending Point</label>
-                                <input type="text" name="endingPoint" className="form-input" value={formData.endingPoint} onChange={handleChange} placeholder="Odometer or location" />
+                                <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Ending Odometer</label>
+                                <input type="text" name="endingPoint" className="form-input" value={formData.endingPoint} onChange={handleChange} placeholder="Reading or location" />
                             </div>
                         </div>
 
@@ -293,8 +329,9 @@ const TripManagement = () => {
                                     <th>Vehicle / Driver</th>
                                     <th>Route</th>
                                     <th>Material</th>
-                                    <th className="!text-center">Quantity</th>
-                                    <th className="!text-right">Income</th>
+                                    <th className="!text-right">Income (A)</th>
+                                    <th className="!text-right text-danger">Exp. (B)</th>
+                                    <th className="!text-right text-success bg-success/5 font-black">Profit (A-B)</th>
                                     <th className="!text-center">Actions</th>
                                 </tr>
                             </thead>
@@ -322,11 +359,11 @@ const TripManagement = () => {
                                             <td>
                                                 <span className="badge badge-outline-dark">{trip.materialType}</span>
                                             </td>
-                                            <td className="text-center">
-                                                <div className="font-bold">{trip.loadQuantity}</div>
-                                                <div className="text-[10px] text-white-dark">{trip.loadUnit}</div>
+                                            <td className="!text-right font-bold text-primary font-mono whitespace-nowrap">₹{trip.tripRate?.toLocaleString()}</td>
+                                            <td className="!text-right font-bold text-danger font-mono whitespace-nowrap">₹{trip.totalExpense?.toLocaleString()}</td>
+                                            <td className={`!text-right font-black font-mono whitespace-nowrap bg-success/5 ${trip.netProfit >= 0 ? 'text-success' : 'text-danger'}`}>
+                                                ₹{trip.netProfit?.toLocaleString()}
                                             </td>
-                                            <td className="!text-right font-bold text-success font-mono">₹{trip.tripRate?.toLocaleString()}</td>
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button onClick={() => handleEdit(trip)} className="btn btn-sm btn-outline-primary p-1">

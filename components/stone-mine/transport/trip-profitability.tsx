@@ -36,21 +36,17 @@ const TripProfitability = () => {
         <div className="space-y-6">
             <div>
                 <h2 className="text-2xl font-bold dark:text-white-light">வாகன பயண லாபம் (Vehicle Trip Profit)</h2>
-                <p className="text-white-dark text-sm mt-1">Net profit analysis: Income - (Diesel + Driver + Other Costs)</p>
+                <p className="text-white-dark text-sm mt-1">Net profit analysis: Income - (Driver Salary + Other Costs)</p>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="panel bg-primary/10 border-primary/20">
                     <div className="text-white-dark text-xs font-bold uppercase">Total Trip Income</div>
                     <div className="text-2xl font-black text-primary mt-1">₹{stats?.totalIncome?.toLocaleString()}</div>
                 </div>
-                <div className="panel bg-danger/10 border-danger/20">
-                    <div className="text-white-dark text-xs font-bold uppercase">Total Diesel Cost</div>
-                    <div className="text-2xl font-black text-danger mt-1">₹{stats?.totalDieselCost?.toLocaleString()}</div>
-                </div>
                 <div className="panel bg-warning/10 border-warning/20">
-                    <div className="text-white-dark text-xs font-bold uppercase">Driver Payments</div>
+                    <div className="text-white-dark text-xs font-bold uppercase">Total Driver Salary</div>
                     <div className="text-2xl font-black text-warning mt-1">₹{(stats?.totalDriverPayment + stats?.totalBata)?.toLocaleString()}</div>
                 </div>
                 <div className="panel bg-success/10 border-success/20">
@@ -74,17 +70,16 @@ const TripProfitability = () => {
                             <tr>
                                 <th>Vehicle Info</th>
                                 <th className="!text-right text-primary">Income (A)</th>
-                                <th className="!text-right text-danger">Diesel (B)</th>
-                                <th className="!text-right text-warning">Driver (C)</th>
-                                <th className="!text-right text-info">Other (D)</th>
+                                <th className="!text-right text-warning">Driver Salary (B)</th>
+                                <th className="!text-right text-info">Other (C)</th>
                                 <th className="!text-right text-success bg-success/5 font-black">Net Profit</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={6} className="text-center py-8">Calculating...</td></tr>
+                                <tr><td colSpan={5} className="text-center py-8">Calculating...</td></tr>
                             ) : trips.length === 0 ? (
-                                <tr><td colSpan={6} className="text-center py-8">No data available.</td></tr>
+                                <tr><td colSpan={5} className="text-center py-8">No data available.</td></tr>
                             ) : (
                                 trips.map(trip => (
                                     <tr key={trip._id}>
@@ -96,7 +91,6 @@ const TripProfitability = () => {
                                             <div className="text-[10px] text-white-dark uppercase">{new Date(trip.date).toLocaleDateString()} — {trip.materialType}</div>
                                         </td>
                                         <td className="!text-right font-bold text-primary">₹{trip.tripRate?.toLocaleString()}</td>
-                                        <td className="!text-right font-bold text-danger">₹{trip.dieselTotal?.toLocaleString()}</td>
                                         <td className="!text-right font-bold text-warning">₹{(trip.driverAmount + trip.driverBata)?.toLocaleString()}</td>
                                         <td className="!text-right font-bold text-info">₹{trip.otherExpenses?.toLocaleString()}</td>
                                         <td className={`!text-right font-black text-lg bg-success/5 ${trip.netProfit >= 0 ? 'text-success' : 'text-danger'}`}>

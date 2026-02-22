@@ -301,9 +301,6 @@ const Sidebar = () => {
                                                     <Link href="/transport/driver-payments">Driver Payment</Link>
                                                 </li>
                                                 <li>
-                                                    <Link href="/transport/diesel">Diesel per Trip</Link>
-                                                </li>
-                                                <li>
                                                     <Link href="/transport/profitability">Profit per Trip</Link>
                                                 </li>
                                             </ul>
