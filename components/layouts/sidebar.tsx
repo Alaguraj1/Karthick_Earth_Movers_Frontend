@@ -340,6 +340,36 @@ const Sidebar = () => {
                                         </AnimateHeight>
                                     </li>
 
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'accounts-reports' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('accounts-reports')}>
+                                            <div className="flex items-center">
+                                                <IconMenuCharts className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark uppercase tracking-widest text-[10px] font-black">Accounts & Reports</span>
+                                            </div>
+
+                                            <div className={currentMenu !== 'accounts-reports' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'accounts-reports' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/accounts-reports/day-book">Day Book</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/accounts-reports/cash-flow">Cash Flow Statement</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/accounts-reports/profit-loss">Profit & Loss A/c</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/accounts-reports/summary">Monthly/Yearly Reports</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
+                                    </li>
+
                                     <li className="nav-item">
                                         <Link href="/masters" className="group">
                                             <div className="flex items-center">
