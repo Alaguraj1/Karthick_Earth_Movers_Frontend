@@ -307,6 +307,39 @@ const Sidebar = () => {
                                         </AnimateHeight>
                                     </li>
 
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'vendor-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('vendor-mgmt')}>
+                                            <div className="flex items-center">
+                                                <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark uppercase tracking-widest text-[10px] font-black">Vendor Management</span>
+                                            </div>
+
+                                            <div className={currentMenu !== 'vendor-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'vendor-mgmt' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/vendors/explosive">Explosive Suppliers</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/labour">Labour Contractors</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/transport">Transport Vendors</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/payments">Payment History</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/outstanding">Outstanding Balance</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
+                                    </li>
+
                                     <li className="nav-item">
                                         <Link href="/masters" className="group">
                                             <div className="flex items-center">

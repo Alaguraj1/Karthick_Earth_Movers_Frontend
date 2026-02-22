@@ -42,6 +42,7 @@ const MasterManagement = () => {
         { id: 'customers', label: 'Customers (வாடிக்கையாளர்)' },
         { id: 'labours', label: 'Labour Registry (தொழிலாளர்)' },
         { id: 'stone-types', label: 'Stone Types (கல் வகைகள்)' },
+        { id: 'explosive-materials', label: 'Explosive Materials (வெடிபொருட்கள்)' },
     ];
 
     const fetchData = async () => {
@@ -319,7 +320,7 @@ const MasterManagement = () => {
                                 </div>
                             )}
 
-                            {activeTab === 'stone-types' && (
+                            {(activeTab === 'stone-types' || activeTab === 'explosive-materials') && (
                                 <>
                                     <div>
                                         <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Unit (அலகு)</label>
@@ -328,13 +329,25 @@ const MasterManagement = () => {
                                             value={newItem.unit}
                                             onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
                                         >
-                                            <option value="Unit">Unit</option>
-                                            <option value="Ton">Ton</option>
-                                            <option value="Kg">Kg</option>
+                                            {activeTab === 'stone-types' ? (
+                                                <>
+                                                    <option value="Unit">Unit</option>
+                                                    <option value="Ton">Ton</option>
+                                                    <option value="Kg">Kg</option>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <option value="Nos">Nos</option>
+                                                    <option value="Box">Box</option>
+                                                    <option value="Kg">Kg</option>
+                                                    <option value="Meters">Meters</option>
+                                                    <option value="Units">Units</option>
+                                                </>
+                                            )}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Price per Unit (₹)</label>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Default Price per Unit (₹)</label>
                                         <input
                                             type="number"
                                             className="form-input border-2 font-bold rounded-xl h-12"
@@ -397,9 +410,9 @@ const MasterManagement = () => {
                                     {activeTab === 'vehicles' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Reg No / Model</th>}
                                     {activeTab === 'vehicles' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Category</th>}
                                     {activeTab === 'labours' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Contact</th>}
-                                    {activeTab === 'stone-types' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Unit</th>}
-                                    {activeTab === 'stone-types' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Price</th>}
-                                    {activeTab !== 'vehicles' && activeTab !== 'labours' && activeTab !== 'stone-types' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Notes</th>}
+                                    {(activeTab === 'stone-types' || activeTab === 'explosive-materials') && <th className="font-black uppercase tracking-widest text-[10px] py-4">Unit</th>}
+                                    {(activeTab === 'stone-types' || activeTab === 'explosive-materials') && <th className="font-black uppercase tracking-widest text-[10px] py-4">Price</th>}
+                                    {activeTab !== 'vehicles' && activeTab !== 'labours' && activeTab !== 'stone-types' && activeTab !== 'explosive-materials' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Notes</th>}
                                     <th className="text-center font-black uppercase tracking-widest text-[10px] py-4">Actions</th>
                                 </tr>
                             </thead>
@@ -439,9 +452,9 @@ const MasterManagement = () => {
                                                 </td>
                                             )}
                                             {activeTab === 'labours' && <td className="py-4 text-primary">{item.mobile || '-'}</td>}
-                                            {activeTab === 'stone-types' && <td className="py-4">{item.unit || '-'}</td>}
-                                            {activeTab === 'stone-types' && <td className="py-4 font-black">₹{item.defaultPrice || '0'}</td>}
-                                            {activeTab !== 'vehicles' && activeTab !== 'labours' && activeTab !== 'stone-types' && (
+                                            {(activeTab === 'stone-types' || activeTab === 'explosive-materials') && <td className="py-4">{item.unit || '-'}</td>}
+                                            {(activeTab === 'stone-types' || activeTab === 'explosive-materials') && <td className="py-4 font-black">₹{item.defaultPrice || '0'}</td>}
+                                            {activeTab !== 'vehicles' && activeTab !== 'labours' && activeTab !== 'stone-types' && activeTab !== 'explosive-materials' && (
                                                 <td className="py-4 text-white-dark font-medium italic">{item.description || '-'}</td>
                                             )}
                                             <td className="text-center py-4">
