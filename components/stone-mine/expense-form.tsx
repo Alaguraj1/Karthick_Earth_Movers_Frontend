@@ -5,9 +5,11 @@ import IconX from '@/components/icon/icon-x';
 import IconPlus from '@/components/icon/icon-plus';
 import IconEdit from '@/components/icon/icon-edit';
 
+import { useToast } from '@/components/stone-mine/toast-notification';
 import axios from 'axios';
 
 const ExpenseForm = () => {
+    const { showToast } = useToast();
     // ... logic remains same ...
     const [formData, setFormData] = useState({
         category: '',
@@ -73,7 +75,7 @@ const ExpenseForm = () => {
         try {
             const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, formData);
             if (data.success) {
-                alert('Expense added successfully!');
+                showToast('Expense added successfully!', 'success');
                 setFormData({
                     category: categories.length > 0 ? categories[0].name : '',
                     amount: '',

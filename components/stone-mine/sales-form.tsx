@@ -5,9 +5,11 @@ import IconX from '@/components/icon/icon-x';
 import IconEdit from '@/components/icon/icon-edit';
 import IconPlus from '@/components/icon/icon-plus';
 
+import { useToast } from '@/components/stone-mine/toast-notification';
 import axios from 'axios';
 
 const SalesForm = () => {
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         source: '',
         amount: '',
@@ -67,7 +69,7 @@ const SalesForm = () => {
             // Let's stick to the current schema but offer better selection.
             const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/income`, formData);
             if (data.success) {
-                alert('Income recorded successfully!');
+                showToast('Income recorded successfully!', 'success');
                 setFormData({
                     source: sources.length > 0 ? sources[0].name : '',
                     amount: '',

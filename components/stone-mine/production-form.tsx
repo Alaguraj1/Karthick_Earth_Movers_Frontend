@@ -1,8 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import IconSave from '@/components/icon/icon-save';
+import { useToast } from '@/components/stone-mine/toast-notification';
 
 const ProductionForm = () => {
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         stoneType: '20mm',
         quantity: '',
@@ -21,7 +23,7 @@ const ProductionForm = () => {
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         // Implement API call for production
-        alert('Production data saved locally (API pending)');
+        showToast('Production data saved locally (API pending)', 'info');
     };
 
     return (

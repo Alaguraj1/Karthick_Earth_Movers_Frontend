@@ -1,8 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import IconSave from '@/components/icon/icon-save';
+import { useToast } from '@/components/stone-mine/toast-notification';
 
 const LabourForm = () => {
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         name: '',
         date: new Date().toISOString().split('T')[0],
@@ -18,7 +20,7 @@ const LabourForm = () => {
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
-        alert('Labour data saved locally');
+        showToast('Labour data saved locally', 'info');
     };
 
     return (

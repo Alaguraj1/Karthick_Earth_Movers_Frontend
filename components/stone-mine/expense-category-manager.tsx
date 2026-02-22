@@ -9,6 +9,7 @@ import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import { Transition, Dialog, DialogPanel, TransitionChild } from '@headlessui/react';
 
 import axios from 'axios';
+import { useToast } from '@/components/stone-mine/toast-notification';
 
 interface ExpenseCategoryManagerProps {
     category: string;
@@ -16,6 +17,7 @@ interface ExpenseCategoryManagerProps {
 }
 
 const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps) => {
+    const { showToast } = useToast();
     const [expenses, setExpenses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [vehicles, setVehicles] = useState<any[]>([]);
@@ -266,7 +268,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         try {
             const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, { ...formData, billUrl });
             if (data.success) {
-                alert('Record saved successfully!');
+                showToast('Record saved successfully!', 'success');
                 resetForm();
                 fetchExpenses();
             }
@@ -285,7 +287,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         try {
             const { data } = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${selectedExpense._id}`, { ...formData, billUrl });
             if (data.success) {
-                alert('Record updated successfully!');
+                showToast('Record updated successfully!', 'success');
                 resetForm();
                 fetchExpenses();
             }
@@ -298,6 +300,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         try {
             const { data } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${selectedExpense._id}`);
             if (data.success) {
+                showToast('Record deleted successfully!', 'success');
                 setDeleteModal(false);
                 fetchExpenses();
             }

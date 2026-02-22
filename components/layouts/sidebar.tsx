@@ -155,13 +155,37 @@ const Sidebar = () => {
                                             </ul>
                                         </AnimateHeight>
                                     </li>
-                                    <li className="nav-item">
-                                        <Link href="/sales-entry" className="group">
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'sales-billing' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('sales-billing')}>
                                             <div className="flex items-center">
                                                 <IconMenuContacts className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Sales</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Sales & Billing</span>
                                             </div>
-                                        </Link>
+
+                                            <div className={currentMenu !== 'sales-billing' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'sales-billing' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/sales-billing/customers">Customer Management</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/sales-billing/sales-entry">Sales Entry</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/sales-billing/invoices">Invoice Generation</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/sales-billing/cash-credit">Cash / Credit Sales</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/sales-billing/pending-payments">Pending Payments</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
                                     </li>
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'production-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('production-mgmt')}>
@@ -251,6 +275,36 @@ const Sidebar = () => {
                                                 </li>
                                                 <li>
                                                     <Link href="/labour/report">Labour Report</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
+                                    </li>
+
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'transport-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('transport-mgmt')}>
+                                            <div className="flex items-center">
+                                                <IconMenuScrumboard className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark uppercase tracking-widest text-[10px] font-black">Transport Management</span>
+                                            </div>
+
+                                            <div className={currentMenu !== 'transport-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'transport-mgmt' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/transport/trips">Vehicle Trip Management</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/transport/driver-payments">Driver Payment</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/transport/diesel">Diesel per Trip</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/transport/profitability">Profit per Trip</Link>
                                                 </li>
                                             </ul>
                                         </AnimateHeight>
