@@ -331,8 +331,8 @@ const MasterManagement = () => {
                                         >
                                             {activeTab === 'stone-types' ? (
                                                 <>
-                                                    <option value="Unit">Unit</option>
-                                                    <option value="Ton">Ton</option>
+                                                    <option value="Units">Units</option>
+                                                    <option value="Tons">Tons</option>
                                                     <option value="Kg">Kg</option>
                                                 </>
                                             ) : (

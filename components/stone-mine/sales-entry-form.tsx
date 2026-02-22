@@ -74,7 +74,10 @@ const SalesEntryForm = () => {
             if (selectedStone) {
                 updatedItems[index].item = selectedStone.name;
                 updatedItems[index].rate = selectedStone.defaultPrice || '';
-                updatedItems[index].unit = selectedStone.unit || 'Tons';
+                let unit = selectedStone.unit || 'Tons';
+                if (unit === 'Ton') unit = 'Tons';
+                if (unit === 'Unit') unit = 'Units';
+                updatedItems[index].unit = unit;
             }
         }
 
