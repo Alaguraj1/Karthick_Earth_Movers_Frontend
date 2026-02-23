@@ -11,9 +11,12 @@ import IconMenuWidgets from '@/components/icon/menu/icon-menu-widgets';
 
 const VehicleDetails = () => {
     const [assets, setAssets] = useState<any[]>([]);
+    const [vendors, setVendors] = useState<any[]>([]);
+    const [selectedVendor, setSelectedVendor] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState('own');
     const [newItem, setNewItem] = useState({
         name: '',
         category: '',
@@ -33,15 +36,24 @@ const VehicleDetails = () => {
         permitExpiryDate: '',
         mileageDetails: '',
         ownershipType: 'Own',
-        contractName: ''
+        contractor: ''
     });
 
-    const fetchAssets = async () => {
+    const categories = ['Lorry', 'Tipper', 'Tractor', 'Trailer', 'JCB', 'Hitachi', 'Other'];
+
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`);
-            if (data.success) {
-                setAssets(data.data.filter((asset: any) => asset.type === 'Vehicle'));
+            const [vehicleRes, vendorRes] = await Promise.all([
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/transport`)
+            ]);
+
+            if (vehicleRes.data.success) {
+                setAssets(vehicleRes.data.data.filter((asset: any) => asset.type === 'Vehicle'));
+            }
+            if (vendorRes.data.success) {
+                setVendors(vendorRes.data.data);
             }
         } catch (error) {
             console.error(error);
@@ -51,38 +63,84 @@ const VehicleDetails = () => {
     };
 
     useEffect(() => {
-        fetchAssets();
+        fetchData();
     }, []);
+
+    const handleChange = (e: any) => {
+        const { name, value } = e.target;
+        setNewItem(prev => {
+            const updated = { ...prev, [name]: value };
+
+            if (name === 'ownershipType') {
+                if (value === 'Own') {
+                    updated.contractor = '';
+                }
+            }
+
+            if (name === 'contractor') {
+                const vendor = vendors.find(v => v._id === value);
+                setSelectedVendor(vendor);
+            }
+
+            return updated;
+        });
+    };
+
+    const handleVendorVehicleSelect = (vehicle: any) => {
+        setNewItem(prev => ({
+            ...prev,
+            vehicleNumber: vehicle.vehicleNumber,
+            category: vehicle.vehicleType || 'Lorry',
+            name: vehicle.vehicleName || '',
+            driverName: vehicle.driverName || '',
+            ownerName: selectedVendor?.name || ''
+        }));
+    };
 
     const handleAdd = async (e: any) => {
         e.preventDefault();
         try {
+            const payload = { ...newItem, type: 'Vehicle' };
+            if (payload.ownershipType === 'Own') {
+                payload.contractor = '';
+            }
+
             const endpoint = editItem
                 ? `${process.env.NEXT_PUBLIC_API_URL}/master/vehicles/${editItem._id}`
                 : `${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`;
 
             const method = editItem ? 'put' : 'post';
 
-            const { data: json } = await axios[method](endpoint, { ...newItem, type: 'Vehicle' });
+            const { data: json } = await axios[method](endpoint, payload);
             if (json.success) {
-                setNewItem({
-                    name: '', category: '', description: '', type: 'Vehicle', vehicleNumber: '', mobile: '',
-                    modelNumber: '', registrationNumber: '', purchaseDate: '', purchaseCost: '',
-                    currentCondition: '', operatorName: '', ownerName: '', driverName: '',
-                    rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
-                    ownershipType: 'Own', contractName: ''
-                });
-                setEditItem(null);
-                setFormView(false);
-                fetchAssets();
+                alert(editItem ? 'Updated successfully!' : 'Added successfully!');
+                resetForm();
+                fetchData();
             }
         } catch (error) {
             console.error(error);
         }
     };
 
+    const resetForm = () => {
+        setNewItem({
+            name: '', category: '', description: '', type: 'Vehicle', vehicleNumber: '', mobile: '',
+            modelNumber: '', registrationNumber: '', purchaseDate: '', purchaseCost: '',
+            currentCondition: '', operatorName: '', ownerName: '', driverName: '',
+            rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
+            ownershipType: activeTab === 'own' ? 'Own' : 'Contract',
+            contractor: ''
+        });
+        setEditItem(null);
+        setSelectedVendor(null);
+        setFormView(false);
+    };
+
     const handleEdit = (item: any) => {
         setEditItem(item);
+        const vendor = item.contractor?._id ? vendors.find(v => v._id === item.contractor._id) : null;
+        setSelectedVendor(vendor);
+
         setNewItem({
             name: item.name,
             category: item.category || '',
@@ -102,7 +160,7 @@ const VehicleDetails = () => {
             permitExpiryDate: item.permitExpiryDate ? new Date(item.permitExpiryDate).toISOString().split('T')[0] : '',
             mileageDetails: item.mileageDetails || '',
             ownershipType: item.ownershipType || 'Own',
-            contractName: item.contractName || ''
+            contractor: item.contractor?._id || item.contractor || ''
         });
         setFormView(true);
     };
@@ -112,12 +170,17 @@ const VehicleDetails = () => {
         try {
             const { data } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles/${id}`);
             if (data.success) {
-                fetchAssets();
+                fetchData();
             }
         } catch (error) {
             console.error(error);
         }
     };
+
+    const filteredAssets = assets.filter(asset => {
+        if (activeTab === 'own') return asset.ownershipType === 'Own' || !asset.ownershipType;
+        return asset.ownershipType === 'Contract';
+    });
 
     return (
         <div className="space-y-6">
@@ -134,7 +197,7 @@ const VehicleDetails = () => {
                             <button
                                 type="button"
                                 className="btn btn-outline-primary btn-sm ltr:mr-4 rtl:ml-4 flex items-center justify-center rounded-xl w-10 h-10 p-0 shadow-lg shadow-primary/20"
-                                onClick={() => { setFormView(false); setEditItem(null); }}
+                                onClick={resetForm}
                             >
                                 <IconArrowLeft className="h-5 w-5" />
                             </button>
@@ -146,125 +209,164 @@ const VehicleDetails = () => {
                     </div>
 
                     <form className="max-w-5xl mx-auto space-y-10" onSubmit={handleAdd}>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            <div className="md:col-span-1">
-                                <label className="text-[10px] font-black text-info uppercase tracking-[0.2em] mb-3 block">Vehicle Category</label>
-                                <select
-                                    className="form-select border-2 font-bold rounded-xl h-12"
-                                    value={newItem.category}
-                                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                                    required
-                                >
-                                    <option value="">Select Category</option>
-                                    <option value="Lorry">Lorry</option>
-                                    <option value="Tipper">Tipper</option>
-                                    <option value="Tractor">Tractor</option>
-                                    <option value="Trailer">Trailer</option>
-                                    <option value="Other">Other</option>
-                                </select>
+                        <div className="space-y-6 bg-primary/5 p-6 rounded-2xl border border-primary/10">
+                            <div className="flex items-center gap-2 text-primary font-black uppercase text-xs tracking-[0.2em] border-b border-primary/10 pb-3 mb-4">
+                                <IconPlus className="w-4 h-4" />
+                                1. Registration Type (பதிவு வகை)
                             </div>
-                            <div className="md:col-span-1">
-                                <label className="text-[10px] font-black text-info uppercase tracking-[0.2em] mb-3 block">Vehicle Name / Model</label>
-                                <input
-                                    type="text"
-                                    className="form-input border-2 focus:border-info transition-all font-bold rounded-xl h-12"
-                                    value={newItem.name}
-                                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                                    required
-                                    placeholder="e.g. Ashok Leyland"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-3 block">Vehicle No (Plate No)</label>
-                                <input
-                                    type="text"
-                                    className="form-input border-2 font-bold rounded-xl h-12 uppercase"
-                                    value={newItem.vehicleNumber}
-                                    onChange={(e) => setNewItem({ ...newItem, vehicleNumber: e.target.value })}
-                                    placeholder="TN 99 XX 1234"
-                                    required
-                                />
-                            </div>
-
-                            <div className="md:col-span-3 panel bg-info/5 border-info/10 rounded-2xl p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Ownership Type</label>
+                                    <select
+                                        name="ownershipType"
+                                        className="form-select border-2 font-bold rounded-xl h-12 border-primary"
+                                        value={newItem.ownershipType}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="Own">Own Vehicle (சொந்த வாகனம்)</option>
+                                        <option value="Contract">Contract / Vendor Vehicle (ஒப்பந்த வாகனம்)</option>
+                                    </select>
+                                </div>
+                                {newItem.ownershipType === 'Contract' && (
                                     <div>
-                                        <label className="text-[10px] font-black text-info uppercase tracking-widest mb-2 block">Ownership Type</label>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Select Transport Vendor</label>
                                         <select
-                                            className="form-select border-2 font-bold rounded-xl h-12"
-                                            value={newItem.ownershipType}
-                                            onChange={(e) => setNewItem({ ...newItem, ownershipType: e.target.value })}
+                                            name="contractor"
+                                            className="form-select border-2 font-bold rounded-xl h-12 border-warning"
+                                            value={newItem.contractor}
+                                            onChange={handleChange}
+                                            required
                                         >
-                                            <option value="Own">Own (சொந்தம்)</option>
-                                            <option value="Contract">Contract (ஒப்பந்தம்)</option>
+                                            <option value="">Select Vendor...</option>
+                                            {vendors.map(v => (
+                                                <option key={v._id} value={v._id}>{v.name} {v.companyName ? `(${v.companyName})` : ''}</option>
+                                            ))}
                                         </select>
                                     </div>
-                                    {newItem.ownershipType === 'Contract' && (
-                                        <div>
-                                            <label className="text-[10px] font-black text-info uppercase tracking-widest mb-2 block">Contractor Name</label>
-                                            <input
-                                                type="text"
-                                                className="form-input border-2 font-bold rounded-xl h-12"
-                                                value={newItem.contractName}
-                                                onChange={(e) => setNewItem({ ...newItem, contractName: e.target.value })}
-                                                placeholder="Enter contractor name..."
-                                            />
-                                        </div>
-                                    )}
+                                )}
+                            </div>
+
+                            {newItem.ownershipType === 'Contract' && selectedVendor && selectedVendor.vehicles?.length > 0 && (
+                                <div className="mt-6 p-5 bg-warning/5 rounded-2xl border border-warning/20">
+                                    <label className="text-[10px] font-black text-warning uppercase tracking-widest mb-3 block">Vendor's Registered Vehicles</label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {selectedVendor.vehicles.map((v: any, idx: number) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                className={`px-4 py-3 rounded-xl text-xs font-black transition-all border shadow-sm ${newItem.vehicleNumber === v.vehicleNumber ? 'bg-warning text-white border-warning scale-105' : 'bg-white text-warning border-warning/30 hover:bg-warning/10'}`}
+                                                onClick={() => handleVendorVehicleSelect(v)}
+                                            >
+                                                {v.vehicleNumber} ({v.vehicleType})
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-white-dark mt-3 font-bold opacity-70">Click to auto-fill vehicle details.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-6 bg-info/5 p-6 rounded-2xl border border-info/10">
+                            <div className="flex items-center gap-2 text-info font-black uppercase text-xs tracking-[0.2em] border-b border-info/10 pb-3 mb-4">
+                                <IconPlus className="w-4 h-4" />
+                                2. Vehicle Specifications (வாகன விவரங்கள்)
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Vehicle Category</label>
+                                    <select
+                                        name="category"
+                                        className="form-select border-2 font-bold rounded-xl h-12"
+                                        value={newItem.category}
+                                        onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Select Category</option>
+                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Vehicle Name / Model</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        className="form-input border-2 font-bold rounded-xl h-12"
+                                        value={newItem.name}
+                                        onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                                        required
+                                        placeholder="e.g. Ashok Leyland"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Vehicle Plate Number</label>
+                                    <input
+                                        type="text"
+                                        name="vehicleNumber"
+                                        className="form-input border-2 font-bold rounded-xl h-12 uppercase"
+                                        value={newItem.vehicleNumber}
+                                        onChange={(e) => setNewItem({ ...newItem, vehicleNumber: e.target.value })}
+                                        placeholder="TN 99 XX 1234"
+                                        required
+                                    />
                                 </div>
                             </div>
 
-                            <div className="md:col-span-3 border-l-4 border-info pl-4 my-4 bg-info/5 py-4 rounded-r-xl">
-                                <h6 className="font-black text-info uppercase text-sm tracking-widest">Ownership & Operations</h6>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Owner Name</label>
+                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.ownerName} onChange={(e) => setNewItem({ ...newItem, ownerName: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Driver Name</label>
+                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.driverName} onChange={(e) => setNewItem({ ...newItem, driverName: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Permit Expiry Date</label>
+                                    <input type="date" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.permitExpiryDate} onChange={(e) => setNewItem({ ...newItem, permitExpiryDate: e.target.value })} />
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Owner Name</label>
-                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.ownerName} onChange={(e) => setNewItem({ ...newItem, ownerName: e.target.value })} />
+                            <div className="grid grid-cols-1 gap-6 pt-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">RC / Insurance Details</label>
+                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.rcInsuranceDetails} onChange={(e) => setNewItem({ ...newItem, rcInsuranceDetails: e.target.value })} placeholder="Policy Number, Expiry, etc." />
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Driver Name</label>
-                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.driverName} onChange={(e) => setNewItem({ ...newItem, driverName: e.target.value })} />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Permit Expiry Date</label>
-                                <input type="date" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.permitExpiryDate} onChange={(e) => setNewItem({ ...newItem, permitExpiryDate: e.target.value })} />
-                            </div>
+                        </div>
 
-                            <div className="md:col-span-3">
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">RC / Insurance Details</label>
-                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.rcInsuranceDetails} onChange={(e) => setNewItem({ ...newItem, rcInsuranceDetails: e.target.value })} placeholder="Policy Number, Expiry, etc." />
+                        <div className="space-y-6 bg-success/5 p-6 rounded-2xl border border-success/10">
+                            <div className="flex items-center gap-2 text-success font-black uppercase text-xs tracking-[0.2em] border-b border-success/10 pb-3 mb-4">
+                                <IconPlus className="w-4 h-4" />
+                                3. Financials & Condition (நிதி மற்றும் நிலை)
                             </div>
-
-                            <div className="md:col-span-3 border-l-4 border-success pl-4 my-4 bg-success/5 py-4 rounded-r-xl">
-                                <h6 className="font-black text-success uppercase text-sm tracking-widest">Financials & Efficiency</h6>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Cost (₹)</label>
+                                    <input type="number" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseCost} onChange={(e) => setNewItem({ ...newItem, purchaseCost: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Mileage / Stats</label>
+                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.mileageDetails} onChange={(e) => setNewItem({ ...newItem, mileageDetails: e.target.value })} placeholder="Kmpl information" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Date</label>
+                                    <input type="date" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseDate} onChange={(e) => setNewItem({ ...newItem, purchaseDate: e.target.value })} />
+                                </div>
                             </div>
-
-                            <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Cost (₹)</label>
-                                <input type="number" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseCost} onChange={(e) => setNewItem({ ...newItem, purchaseCost: e.target.value })} />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Mileage / Stats</label>
-                                <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.mileageDetails} onChange={(e) => setNewItem({ ...newItem, mileageDetails: e.target.value })} placeholder="Kmpl information" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Date</label>
-                                <input type="date" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseDate} onChange={(e) => setNewItem({ ...newItem, purchaseDate: e.target.value })} />
-                            </div>
-
-                            <div className="md:col-span-3">
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Notes</label>
-                                <textarea
-                                    className="form-textarea border-2 font-bold rounded-xl min-h-[100px]"
-                                    value={newItem.description}
-                                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                                ></textarea>
+                            <div className="grid grid-cols-1 gap-6 pt-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Notes</label>
+                                    <textarea
+                                        className="form-textarea border-2 font-bold rounded-xl min-h-[100px]"
+                                        value={newItem.description}
+                                        onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                                    ></textarea>
+                                </div>
                             </div>
                         </div>
 
                         <div className="flex items-center justify-end gap-4 pt-10 border-t-2 border-primary/5">
-                            <button type="button" className="btn btn-outline-danger px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]" onClick={() => { setFormView(false); setEditItem(null); }}>
+                            <button type="button" className="btn btn-outline-danger px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]" onClick={resetForm}>
                                 Cancel
                             </button>
                             <button type="submit" className="btn btn-primary px-14 h-12 rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-[0_10px_20px_rgba(67,97,238,0.3)]">
@@ -281,22 +383,31 @@ const VehicleDetails = () => {
                             <h5 className="text-2xl font-black text-black dark:text-white-light uppercase tracking-tight">Vehicle Details</h5>
                             <p className="text-white-dark text-sm font-bold mt-1">Manage Lorries, Tippers, and Transport Fleet</p>
                         </div>
-                        <button
-                            onClick={() => {
-                                setNewItem({
-                                    name: '', category: '', description: '', type: 'Vehicle', vehicleNumber: '', mobile: '',
-                                    modelNumber: '', registrationNumber: '', purchaseDate: '', purchaseCost: '',
-                                    currentCondition: '', operatorName: '', ownerName: '', driverName: '',
-                                    rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
-                                    ownershipType: 'Own', contractName: ''
-                                });
-                                setEditItem(null);
-                                setFormView(true);
-                            }}
-                            className="btn btn-primary shadow-[0_10px_20px_rgba(67,97,238,0.3)] rounded-xl py-3 px-8 font-black uppercase tracking-widest text-xs"
-                        >
-                            <IconPlus className="mr-2" /> Add Vehicle
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <div className="flex bg-white-light dark:bg-[#1b2a47] p-1 rounded-xl">
+                                <button
+                                    onClick={() => setActiveTab('own')}
+                                    className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all ${activeTab === 'own' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white-dark hover:text-primary transition-colors'}`}
+                                >
+                                    Own Fleet
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('contract')}
+                                    className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all ${activeTab === 'contract' ? 'bg-warning text-white shadow-lg shadow-warning/20' : 'text-white-dark hover:text-warning transition-colors'}`}
+                                >
+                                    Contractor Fleet
+                                </button>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    resetForm();
+                                    setFormView(true);
+                                }}
+                                className="btn btn-primary shadow-[0_10px_20px_rgba(67,97,238,0.3)] rounded-xl py-3 px-8 font-black uppercase tracking-widest text-xs"
+                            >
+                                <IconPlus className="mr-2" /> Add Vehicle
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -304,22 +415,22 @@ const VehicleDetails = () => {
                             Array(4).fill(0).map((_, i) => (
                                 <div key={i} className="panel h-72 animate-pulse bg-gray-100 dark:bg-gray-800 rounded-3xl"></div>
                             ))
-                        ) : assets.length === 0 ? (
-                            <div className="col-span-full panel py-20 text-center uppercase font-black tracking-[0.2em] opacity-20 text-xl">No Vehicles Registered</div>
+                        ) : filteredAssets.length === 0 ? (
+                            <div className="col-span-full panel py-20 text-center uppercase font-black tracking-[0.2em] opacity-20 text-xl">No {activeTab === 'own' ? 'Own' : 'Contract'} Vehicles Found</div>
                         ) : (
-                            assets.map((asset) => (
+                            filteredAssets.map((asset) => (
                                 <div key={asset._id} className="relative group">
-                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-info to-blue-600 rounded-3xl blur opacity-20 group-hover:opacity-100 transition duration-500"></div>
+                                    <div className={`absolute -inset-0.5 bg-gradient-to-r rounded-3xl blur opacity-20 group-hover:opacity-100 transition duration-500 ${activeTab === 'own' ? 'from-primary to-blue-600' : 'from-warning to-orange-600'}`}></div>
                                     <div className="relative panel p-0 rounded-3xl bg-white dark:bg-black border-none shadow-xl transform group-hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                                        <div className="bg-info/10 p-5 flex items-center justify-between">
+                                        <div className={`p-5 flex items-center justify-between ${activeTab === 'own' ? 'bg-primary/10' : 'bg-warning/10'}`}>
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-info rounded-xl text-white shadow-lg shadow-info/20">
+                                                <div className={`p-2 rounded-xl text-white shadow-lg ${activeTab === 'own' ? 'bg-primary shadow-primary/20' : 'bg-warning shadow-warning/20'}`}>
                                                     <IconMenuWidgets className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <span className="font-black text-[10px] uppercase tracking-[0.2em] text-info block leading-none">{asset.category || 'Transport Vehicle'}</span>
-                                                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${asset.ownershipType === 'Contract' ? 'bg-danger text-white' : 'bg-success text-white'} mt-1 inline-block`}>
-                                                        {asset.ownershipType === 'Contract' ? `Contract: ${asset.contractName}` : 'Own Vehicle'}
+                                                    <span className={`font-black text-[10px] uppercase tracking-[0.2em] block leading-none ${activeTab === 'own' ? 'text-primary' : 'text-warning'}`}>{asset.category || 'Vehicle'}</span>
+                                                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded mt-1 inline-block ${activeTab === 'own' ? 'bg-success text-white' : 'bg-warning text-white'}`}>
+                                                        {activeTab === 'own' ? 'Own Fleet' : asset.contractor?.name || 'Contractor'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -346,20 +457,18 @@ const VehicleDetails = () => {
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <span className="text-[9px] font-black uppercase text-white-dark block tracking-widest mb-1">Driver</span>
-                                                        <span className="text-sm font-bold text-black dark:text-white-light">{asset.driverName || 'Not Assigned'}</span>
+                                                        <span className="text-sm font-bold text-black dark:text-white-light truncate block">{asset.driverName || 'Not Assigned'}</span>
                                                     </div>
                                                     <div>
                                                         <span className="text-[9px] font-black uppercase text-white-dark block tracking-widest mb-1">Owner</span>
-                                                        <span className="text-sm font-bold text-black dark:text-white-light">{asset.ownerName || '-'}</span>
+                                                        <span className="text-sm font-bold text-black dark:text-white-light truncate block">{asset.ownerName || '-'}</span>
                                                     </div>
                                                 </div>
-                                                <div className="grid grid-cols-1 gap-4">
-                                                    <div className="bg-gray-50 dark:bg-white-light/5 p-3 rounded-xl border border-gray-100 dark:border-white-light/5">
-                                                        <span className="text-[9px] font-black uppercase text-white-dark block tracking-widest mb-1">Permit Expiry</span>
-                                                        <span className={`text-sm font-black ${asset.permitExpiryDate && new Date(asset.permitExpiryDate) < new Date() ? 'text-danger animate-pulse' : 'text-success'}`}>
-                                                            {asset.permitExpiryDate ? new Date(asset.permitExpiryDate).toLocaleDateString() : 'No Data'}
-                                                        </span>
-                                                    </div>
+                                                <div className="bg-gray-50 dark:bg-white-light/5 p-3 rounded-xl border border-gray-100 dark:border-white-light/5">
+                                                    <span className="text-[9px] font-black uppercase text-white-dark block tracking-widest mb-1">Permit Status</span>
+                                                    <span className={`text-sm font-black ${asset.permitExpiryDate && new Date(asset.permitExpiryDate) < new Date() ? 'text-danger animate-pulse' : 'text-success'}`}>
+                                                        {asset.permitExpiryDate ? new Date(asset.permitExpiryDate).toLocaleDateString() : 'No Data'}
+                                                    </span>
                                                 </div>
                                                 <div className="text-[10px] text-white-dark font-bold truncate">
                                                     RC/Ins: {asset.rcInsuranceDetails || 'Not Provided'}

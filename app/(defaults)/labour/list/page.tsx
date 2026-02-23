@@ -9,9 +9,12 @@ import axios from 'axios';
 
 const LabourListPage = () => {
     const [data, setData] = useState<any[]>([]);
+    const [contractors, setContractors] = useState<any[]>([]);
+    const [selectedContractor, setSelectedContractor] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState('direct');
     const [formData, setFormData] = useState({
         name: '',
         mobile: '',
@@ -19,6 +22,8 @@ const LabourListPage = () => {
         workType: 'Helper',
         wage: '',
         wageType: 'Daily',
+        labourType: 'Direct',
+        contractor: '',
         joiningDate: new Date().toISOString().split('T')[0],
         description: '',
         status: 'active'
@@ -29,8 +34,12 @@ const LabourListPage = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const { data: json } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour`);
-            if (json.success) setData(json.data);
+            const [labourRes, contractorRes] = await Promise.all([
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/labour`)
+            ]);
+            if (labourRes.data.success) setData(labourRes.data.data);
+            if (contractorRes.data.success) setContractors(contractorRes.data.data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -44,19 +53,56 @@ const LabourListPage = () => {
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            const updated = { ...prev, [name]: value };
+
+            if (name === 'labourType') {
+                if (value === 'Direct') {
+                    updated.contractor = '';
+                    updated.wage = '';
+                    updated.workType = 'Helper';
+                }
+            }
+
+            if (name === 'contractor') {
+                const vendor = contractors.find(c => c._id === value);
+                setSelectedContractor(vendor);
+                if (vendor && vendor.contracts && vendor.contracts.length > 0) {
+                    const firstContract = vendor.contracts[0];
+                    updated.workType = firstContract.workType;
+                    updated.wage = firstContract.agreedRate;
+                    updated.wageType = firstContract.rateType === 'Per Month' || firstContract.rateType === 'Monthly Contract' ? 'Monthly' : 'Daily';
+                }
+            }
+
+            return updated;
+        });
+    };
+
+    const handleContractChange = (contract: any) => {
+        setFormData(prev => ({
+            ...prev,
+            workType: contract.workType,
+            wage: contract.agreedRate,
+            wageType: contract.rateType === 'Per Month' || contract.rateType === 'Monthly Contract' ? 'Monthly' : 'Daily'
+        }));
     };
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         try {
+            const payload = { ...formData };
+            if (payload.labourType === 'Direct') {
+                payload.contractor = '';
+            }
+
             const endpoint = editItem
                 ? `${process.env.NEXT_PUBLIC_API_URL}/labour/${editItem._id}`
                 : `${process.env.NEXT_PUBLIC_API_URL}/labour`;
 
             const method = editItem ? 'put' : 'post';
 
-            const { data: json } = await axios[method](endpoint, formData);
+            const { data: json } = await axios[method](endpoint, payload);
             if (json.success) {
                 alert(editItem ? 'Updated successfully!' : 'Added successfully!');
                 resetForm();
@@ -75,16 +121,22 @@ const LabourListPage = () => {
             workType: 'Helper',
             wage: '',
             wageType: 'Daily',
+            labourType: activeTab === 'direct' ? 'Direct' : 'Vendor',
+            contractor: '',
             joiningDate: new Date().toISOString().split('T')[0],
             description: '',
             status: 'active'
         });
+        setSelectedContractor(null);
         setEditItem(null);
         setFormView(false);
     };
 
     const handleEdit = (item: any) => {
         setEditItem(item);
+        const vendor = item.contractor?._id ? contractors.find(c => c._id === item.contractor._id) : null;
+        setSelectedContractor(vendor);
+
         setFormData({
             name: item.name,
             mobile: item.mobile || '',
@@ -92,6 +144,8 @@ const LabourListPage = () => {
             workType: item.workType || 'Helper',
             wage: item.wage || '',
             wageType: item.wageType || 'Daily',
+            labourType: item.labourType || 'Direct',
+            contractor: item.contractor?._id || item.contractor || '',
             joiningDate: item.joiningDate ? new Date(item.joiningDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             description: item.description || '',
             status: item.status || 'active'
@@ -108,6 +162,11 @@ const LabourListPage = () => {
             console.error(error);
         }
     };
+
+    const filteredLabours = data.filter(item => {
+        if (activeTab === 'direct') return item.labourType === 'Direct' || !item.labourType;
+        return item.labourType === 'Vendor';
+    });
 
     return (
         <div>
@@ -136,15 +195,63 @@ const LabourListPage = () => {
                     </div>
 
                     <form className="max-w-4xl mx-auto space-y-8" onSubmit={handleSubmit}>
-                        <div className="space-y-5">
-                            <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2">
+                        {/* Section 1: Registration Type */}
+                        <div className="space-y-5 bg-primary/5 p-6 rounded-2xl border border-primary/10">
+                            <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2 mb-4">
                                 <IconPlus className="w-4 h-4" />
-                                Basic Information
+                                1. Registration Type (பதிவு வகை)
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Labour Category (வகை)</label>
+                                    <select name="labourType" className="form-select border-primary" value={formData.labourType} onChange={handleChange}>
+                                        <option value="Direct">Direct Labour (நேரடி தொழிலாளர்)</option>
+                                        <option value="Vendor">Contractor/Vendor Labour (ஒப்பந்த தொழிலாளர்)</option>
+                                    </select>
+                                </div>
+                                {formData.labourType === 'Vendor' && (
+                                    <div>
+                                        <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Select Contractor (ஒப்பந்ததாரர்)</label>
+                                        <select name="contractor" className="form-select border-warning" value={formData.contractor} onChange={handleChange} required>
+                                            <option value="">Select Vendor...</option>
+                                            {contractors.map(c => (
+                                                <option key={c._id} value={c._id}>{c.name} {c.companyName ? `(${c.companyName})` : ''}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            {formData.labourType === 'Vendor' && selectedContractor && (
+                                <div className="mt-4 p-4 bg-warning/5 rounded-xl border border-warning/20">
+                                    <label className="text-xs font-bold text-warning uppercase mb-2 block">Available Contracts for this Vendor</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedContractor.contracts?.map((c: any, idx: number) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${formData.workType === c.workType ? 'bg-warning text-white border-warning' : 'bg-white text-warning border-warning/30 hover:bg-warning/10'}`}
+                                                onClick={() => handleContractChange(c)}
+                                            >
+                                                {c.workType} (₹{c.agreedRate}/{c.rateType})
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-white-dark mt-2 font-medium">Selecting a contract will automatically fetch details and make them non-editable to prevent mismatch.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Section 2: Personal & Work Info */}
+                        <div className="space-y-5 bg-info/5 p-6 rounded-2xl border border-info/10">
+                            <div className="flex items-center gap-2 text-info font-bold uppercase text-xs tracking-wider border-b border-info/10 pb-2 mb-4">
+                                <IconPlus className="w-4 h-4" />
+                                2. Personal & Work Information (தனிப்பட்ட விவரங்கள்)
                             </div>
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                                 <div className="md:col-span-2 lg:col-span-1">
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Labour Name (பெயர்)</label>
-                                    <input type="text" name="name" className="form-input border-primary" value={formData.name} onChange={handleChange} required placeholder="Enter full name" />
+                                    <input type="text" name="name" className="form-input border-info focus:ring-info" value={formData.name} onChange={handleChange} required placeholder="Enter full name" />
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Mobile number (தொலைபேசி)</label>
@@ -160,20 +267,41 @@ const LabourListPage = () => {
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Work Type (வேலை வகை)</label>
-                                    <select name="workType" className="form-select" value={formData.workType} onChange={handleChange}>
+                                    <select
+                                        name="workType"
+                                        className={`form-select ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                        value={formData.workType}
+                                        onChange={handleChange}
+                                        disabled={formData.labourType === 'Vendor'}
+                                    >
                                         {workTypes.map(type => <option key={type} value={type}>{type}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Wage Amount (சம்பளம்)</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">₹</span>
-                                        <input type="number" name="wage" className="form-input pl-8 font-bold border-primary" value={formData.wage} onChange={handleChange} required placeholder="0.00" />
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-info font-bold">₹</span>
+                                        <input
+                                            type="number"
+                                            name="wage"
+                                            className={`form-input pl-8 font-bold border-info ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                            value={formData.wage}
+                                            onChange={handleChange}
+                                            required
+                                            placeholder="0.00"
+                                            readOnly={formData.labourType === 'Vendor'}
+                                        />
                                     </div>
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Wage Type (சம்பள முறை)</label>
-                                    <select name="wageType" className="form-select" value={formData.wageType} onChange={handleChange}>
+                                    <select
+                                        name="wageType"
+                                        className={`form-select ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                        value={formData.wageType}
+                                        onChange={handleChange}
+                                        disabled={formData.labourType === 'Vendor'}
+                                    >
                                         <option value="Daily">Daily Wage (தினக்கூலி)</option>
                                         <option value="Monthly">Monthly Salary (மாதச் சம்பளம்)</option>
                                     </select>
@@ -201,17 +329,38 @@ const LabourListPage = () => {
             ) : (
                 <div className="panel">
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-                        <h5 className="text-xl font-bold dark:text-white-light">Labour List (தொழிலாளர் பட்டியல்)</h5>
-                        <button type="button" className="btn btn-primary shadow-lg" onClick={() => setFormView(true)}>
+                        <div className="flex items-center gap-4">
+                            <h5 className="text-xl font-bold dark:text-white-light">Labour List (தொழிலாளர் பட்டியல்)</h5>
+                            <div className="flex items-center gap-2 bg-gray-100 dark:bg-dark-light/10 p-1 rounded-lg ml-4">
+                                <button
+                                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'direct' ? 'bg-white dark:bg-dark text-primary shadow-sm' : 'text-white-dark hover:text-primary'}`}
+                                    onClick={() => setActiveTab('direct')}
+                                >
+                                    DIRECT
+                                </button>
+                                <button
+                                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'vendor' ? 'bg-white dark:bg-dark text-primary shadow-sm' : 'text-white-dark hover:text-primary'}`}
+                                    onClick={() => setActiveTab('vendor')}
+                                >
+                                    CONTRACTOR
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" className="btn btn-primary shadow-lg" onClick={() => {
+                            setFormData(prev => ({ ...prev, labourType: activeTab === 'direct' ? 'Direct' : 'Vendor' }));
+                            setFormView(true);
+                        }}>
                             <IconPlus className="mr-2" /> Add New Labour
                         </button>
                     </div>
+
                     <div className="table-responsive">
                         <table className="table-hover">
                             <thead>
                                 <tr>
                                     <th>Labour Name</th>
                                     <th>Work Type</th>
+                                    {activeTab === 'vendor' && <th>Contractor</th>}
                                     <th>Mobile</th>
                                     <th>Wage Rate</th>
                                     <th>Join Date</th>
@@ -220,16 +369,22 @@ const LabourListPage = () => {
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan={6} className="text-center py-10">Loading...</td></tr>
-                                ) : data.length === 0 ? (
-                                    <tr><td colSpan={6} className="text-center py-10 font-bold uppercase text-white-dark">No labours found</td></tr>
+                                    <tr><td colSpan={7} className="text-center py-10">Loading...</td></tr>
+                                ) : filteredLabours.length === 0 ? (
+                                    <tr><td colSpan={7} className="text-center py-10 font-bold uppercase text-white-dark">No {activeTab} labours found</td></tr>
                                 ) : (
-                                    data.map((item: any) => (
+                                    filteredLabours.map((item: any) => (
                                         <tr key={item._id}>
                                             <td className="font-bold text-primary">{item.name}</td>
                                             <td>
                                                 <span className="badge badge-outline-info">{item.workType}</span>
                                             </td>
+                                            {activeTab === 'vendor' && (
+                                                <td className="font-semibold text-warning whitespace-nowrap">
+                                                    {item.contractor?.name || 'Unknown'}
+                                                    <div className="text-[10px] opacity-70 italic">{item.contractor?.companyName}</div>
+                                                </td>
+                                            )}
                                             <td>{item.mobile || '-'}</td>
                                             <td>
                                                 <div className="font-semibold">₹{item.wage}</div>
