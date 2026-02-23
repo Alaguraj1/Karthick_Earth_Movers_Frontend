@@ -5,6 +5,8 @@ import IconSave from '@/components/icon/icon-save';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
+import IconEye from '@/components/icon/icon-eye';
+import Link from 'next/link';
 import axios from 'axios';
 
 const LabourListPage = () => {
@@ -393,6 +395,9 @@ const LabourListPage = () => {
                                             <td>{new Date(item.joiningDate).toLocaleDateString()}</td>
                                             <td className="text-center">
                                                 <div className="flex justify-center items-center gap-3">
+                                                    <Link href={`/labour/list/${item._id}`} className="hover:text-primary">
+                                                        <IconEye className="h-5 w-5" />
+                                                    </Link>
                                                     <button type="button" className="hover:text-primary" onClick={() => handleEdit(item)}>
                                                         <IconEdit className="h-5 w-5" />
                                                     </button>

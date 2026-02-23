@@ -57,6 +57,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         advanceDeduction: '',
         netPay: '',
         siteAssigned: '',
+        labourType: '',
         // Explosive specialized fields
         site: '',
         explosiveType: '',
@@ -205,6 +206,18 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
             // Calculation for Labour Wages
             if (category === 'Labour Wages') {
+                if (name === 'workType' || name === 'labourType') {
+                    // Reset name when work type or labour type changes to avoid mismatch
+                    updated.labourName = '';
+                    updated.wageType = '';
+                    updated.rate = '';
+                    updated.quantity = '';
+                    updated.amount = '';
+                    updated.netPay = '';
+                    updated.perDaySalary = '';
+                    updated.advanceDeduction = '';
+                }
+
                 if (name === 'labourName') {
                     const worker = labours.find((l: any) => l.name === value);
                     if (worker) {
@@ -334,6 +347,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             advanceDeduction: '',
             netPay: '',
             siteAssigned: '',
+            labourType: '',
             site: '',
             explosiveType: '',
             unit: 'Nos',
@@ -392,6 +406,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             advanceDeduction: expense.advanceDeduction?.toString() || '',
             netPay: expense.netPay?.toString() || '',
             siteAssigned: expense.siteAssigned || '',
+            labourType: expense.labourType || '',
             site: expense.site || '',
             explosiveType: expense.explosiveType || '',
             unit: expense.unit || 'Nos',
@@ -467,7 +482,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     ) : category === 'Labour Wages' ? (
                                         <>
                                             <th>Labour</th>
-                                            <th>Type</th>
+                                            <th>Work Type</th>
+                                            <th>Wage Type</th>
                                             <th>Days/Hrs</th>
                                             <th>Total</th>
                                             <th>Net Pay</th>
@@ -541,6 +557,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             ) : category === 'Labour Wages' ? (
                                                 <>
                                                     <td>{expense.labourName || '-'}</td>
+                                                    <td><span className="badge badge-outline-info">{expense.workType || 'General'}</span></td>
                                                     <td>{expense.wageType || '-'}</td>
                                                     <td>{expense.quantity || '-'}</td>
                                                     <td>₹{expense.amount?.toLocaleString() || '0'}</td>
@@ -770,22 +787,38 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 {category === 'Labour Wages' && (
                                     <>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Labour Name</label>
-                                            <select name="labourName" className="form-select" value={formData.labourName} onChange={handleChange} required>
-                                                <option value="">Select Labour</option>
-                                                {labours.map((l: any) => <option key={l._id} value={l.name}>{l.name}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Work Type</label>
-                                            <select name="workType" className="form-select bg-gray-50 dark:bg-dark-light/10" value={formData.workType} onChange={handleChange} disabled>
-                                                <option value="">Select Work</option>
+                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-primary">Work Type (வேலை வகை)</label>
+                                            <select name="workType" className="form-select border-primary/50 font-bold" value={formData.workType} onChange={handleChange}>
+                                                <option value="">All Work Types</option>
                                                 <option value="Machine Operator">Machine Operator</option>
                                                 <option value="Helper">Helper</option>
                                                 <option value="Driver">Driver</option>
                                                 <option value="Supervisor">Supervisor</option>
                                                 <option value="Cleaner">Cleaner</option>
                                                 <option value="Office Staff">Office Staff</option>
+                                                <option value="Quarry loading">Quarry loading</option>
+                                                <option value="Drilling">Drilling</option>
+                                                <option value="Crusher labour">Crusher labour</option>
+                                                <option value="Blasting support">Blasting support</option>
+                                                <option value="Transporter">Transporter</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-secondary">Labour Type (தொழிலாளர் வகை)</label>
+                                            <select name="labourType" className="form-select border-secondary/50 font-bold" value={formData.labourType} onChange={handleChange}>
+                                                <option value="">All Types</option>
+                                                <option value="Direct">நேரடி (Direct)</option>
+                                                <option value="Vendor">கான்ட்ராக்டர் (Contractor)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Labour Name (தொழிலாளர் பெயர்)</label>
+                                            <select name="labourName" className="form-select" value={formData.labourName} onChange={handleChange} required>
+                                                <option value="">Select Labour</option>
+                                                {labours
+                                                    .filter(l => (!formData.workType || l.workType === formData.workType) &&
+                                                        (!formData.labourType || l.labourType === formData.labourType))
+                                                    .map((l: any) => <option key={l._id} value={l.name}>{l.name}</option>)}
                                             </select>
                                         </div>
                                         <div>
