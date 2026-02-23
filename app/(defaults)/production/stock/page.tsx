@@ -101,13 +101,16 @@ const StockTracking = () => {
                     <IconMenuCharts className="w-40 h-40 rtl:rotate-180" />
                 </div>
                 <div className="relative z-10 md:max-w-xl">
-                    <h4 className="text-2xl font-black uppercase tracking-tight mb-4">Stock Control & Loss Prevention</h4>
+                    <h4 className="text-2xl font-black uppercase tracking-tight mb-4">Live Stock Control</h4>
                     <p className="text-gray-400 font-medium text-sm leading-relaxed">
-                        This dashboard tracks the balance stock by comparing daily production quantity against sales quantity.
-                        Live data ensures accurate inventory management at any given time.
+                        This dashboard calculates real-time balance stock by comparing **Total Production** quantity against **Live Sales** invoices.
+                        Formula: `(Opening Stock + Produced) - Sold = Current Stock`.
                     </p>
                     <div className="mt-8 flex gap-4">
-                        <div className="px-4 py-2 bg-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest">Sales Integration Pending</div>
+                        <div className="px-4 py-2 bg-success/20 text-success rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+                            Sales Aggregation Active
+                        </div>
                     </div>
                 </div>
             </div>

@@ -31,7 +31,8 @@ const MasterManagement = () => {
         mileageDetails: '',
         category: '',
         unit: 'Unit',
-        defaultPrice: ''
+        defaultPrice: '',
+        openingStock: ''
     });
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
@@ -79,7 +80,7 @@ const MasterManagement = () => {
                     currentCondition: '', operatorName: '', ownerName: '', driverName: '',
                     rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
                     category: '',
-                    unit: 'Unit', defaultPrice: ''
+                    unit: 'Unit', defaultPrice: '', openingStock: ''
                 });
                 setEditItem(null);
                 setFormView(false);
@@ -112,7 +113,8 @@ const MasterManagement = () => {
             mileageDetails: item.mileageDetails || '',
             category: item.category || '',
             unit: item.unit || 'Unit',
-            defaultPrice: item.defaultPrice || ''
+            defaultPrice: item.defaultPrice || '',
+            openingStock: item.openingStock || ''
         });
         setFormView(true);
     };
@@ -356,6 +358,16 @@ const MasterManagement = () => {
                                             placeholder="0.00"
                                         />
                                     </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Opening Stock (தொடக்க இருப்பு)</label>
+                                        <input
+                                            type="number"
+                                            className="form-input border-2 font-bold rounded-xl h-12"
+                                            value={newItem.openingStock}
+                                            onChange={(e) => setNewItem({ ...newItem, openingStock: e.target.value })}
+                                            placeholder="0"
+                                        />
+                                    </div>
                                 </>
                             )}
 
@@ -380,7 +392,7 @@ const MasterManagement = () => {
                             </button>
                         </div>
                     </form>
-                </div>
+                </div >
             ) : (
                 <div className="panel shadow-lg rounded-2xl border-none">
                     <div className="mb-5 flex items-center justify-between">
@@ -394,7 +406,7 @@ const MasterManagement = () => {
                                 currentCondition: '', operatorName: '', ownerName: '', driverName: '',
                                 rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
                                 category: '',
-                                unit: 'Unit', defaultPrice: ''
+                                unit: 'Unit', defaultPrice: '', openingStock: ''
                             });
                             setEditItem(null);
                             setFormView(true);
@@ -475,7 +487,7 @@ const MasterManagement = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </div >
     );
 };
 

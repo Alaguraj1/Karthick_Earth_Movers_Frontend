@@ -29,6 +29,31 @@ const WagesCalculationPage = () => {
         }
     };
 
+    const handleSettle = async (summary: any) => {
+        const mode = window.prompt("Enter Payment Mode (Cash/Bank Transfer/UPI):", "Cash");
+        if (!mode) return;
+
+        if (confirm(`Confirm payment of ₹${summary.netPayable} to ${summary.labourName}? This will record it as an Expense.`)) {
+            try {
+                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, {
+                    category: 'Labour Wages',
+                    amount: parseFloat(summary.netPayable),
+                    date: new Date(),
+                    paymentMode: mode,
+                    description: `Wages for ${selectedMonth}/${selectedYear}`,
+                    labourName: summary.labourName,
+                    workType: summary.workType,
+                    quantity: summary.attendance.total,
+                    rate: summary.totalWages / summary.attendance.total
+                });
+                alert("Payment Success! Recorded in Expenses.");
+            } catch (error) {
+                console.error(error);
+                alert("Error recording payment.");
+            }
+        }
+    };
+
     useEffect(() => {
         fetchWagesSummary();
     }, [selectedMonth, selectedYear]);
@@ -41,53 +66,71 @@ const WagesCalculationPage = () => {
                 <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2"><span>Wages Calculation</span></li>
             </ul>
 
-            <div className="panel">
-                <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#ebedf2] dark:border-[#1b2e4b] pb-5">
+            <div className="panel border-none shadow-xl rounded-3xl overflow-hidden">
+                <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 px-6 pt-6">
                     <div>
-                        <h5 className="text-xl font-bold dark:text-white-light text-primary uppercase">Wages Calculation (சம்பளம் கணக்கீடு)</h5>
-                        <p className="text-white-dark text-xs mt-1">Based on attendance and advances for the selected period</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <select className="form-select w-auto font-bold border-primary" value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))}>
+                        <label className="text-[10px] font-black uppercase text-white-dark mb-2 block">Select Month</label>
+                        <select className="form-select font-bold rounded-xl" value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))}>
                             {months.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                         </select>
-                        <select className="form-select w-auto font-bold border-primary" value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))}>
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-black uppercase text-white-dark mb-2 block">Select Year</label>
+                        <select className="form-select font-bold rounded-xl" value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))}>
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
+                    </div>
+                    <div className="flex items-end">
+                        <button className="btn btn-primary w-full rounded-xl font-black uppercase h-[42px]" onClick={fetchWagesSummary}>Calculate Wages</button>
                     </div>
                 </div>
 
                 <div className="table-responsive">
                     <table className="table-hover">
                         <thead>
-                            <tr className="bg-primary/5">
-                                <th>Labour Name</th>
-                                <th>Work Type</th>
-                                <th>Rate (Day)</th>
-                                <th>Att. Days</th>
-                                <th>Total Wages</th>
-                                <th className="text-danger">Advance</th>
-                                <th className="text-success font-bold">Net Payable</th>
+                            <tr className="bg-gray-50 dark:bg-black/20 text-[10px] font-black uppercase tracking-widest text-white-dark">
+                                <th className="py-4">Labourer</th>
+                                <th>Category</th>
+                                <th>Work Days</th>
+                                <th>OT Hours</th>
+                                <th>Basic + OT</th>
+                                <th>Advance</th>
+                                <th className="text-success text-center">Net Payable</th>
+                                <th className="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={7} className="text-center py-10">Calculating Wages...</td></tr>
+                                <tr><td colSpan={8} className="text-center py-10"><span className="animate-spin border-2 border-primary border-l-transparent rounded-full w-6 h-6 inline-block"></span></td></tr>
                             ) : summaries.length === 0 ? (
-                                <tr><td colSpan={7} className="text-center py-10 font-bold uppercase text-white-dark">No data found for this period</td></tr>
+                                <tr><td colSpan={8} className="text-center py-10 opacity-30 font-black uppercase">No records found for this period</td></tr>
                             ) : (
-                                summaries.map((summary) => (
-                                    <tr key={summary.labourId}>
-                                        <td className="font-bold">{summary.name}</td>
-                                        <td><span className="badge badge-sm badge-outline-secondary">{summary.workType}</span></td>
-                                        <td>₹{summary.dailyWage}</td>
+                                summaries.map((summary: any) => (
+                                    <tr key={summary.labourId} className="group hover:bg-primary/5 transition-all">
+                                        <td className="py-4 font-black text-black dark:text-white uppercase px-6">{summary.labourName}</td>
+                                        <td className="text-[10px] font-black text-white-dark group-hover:text-primary transition-colors">{summary.workType}</td>
                                         <td>
                                             <div className="font-bold">{summary.attendance.total} Days</div>
                                             <div className="text-[10px] text-white-dark">P: {summary.attendance.present} | H: {summary.attendance.half}</div>
                                         </td>
-                                        <td className="font-semibold italic">₹{summary.totalWages.toLocaleString()}</td>
+                                        <td>
+                                            <div className="font-bold text-info">{summary.attendance.otHours || 0} Hrs</div>
+                                            <div className="text-[10px] text-info italic">₹{summary.otAmount}</div>
+                                        </td>
+                                        <td className="font-semibold italic">
+                                            ₹{parseFloat(summary.totalWages).toLocaleString()}
+                                            <div className="text-[10px] text-success font-black tracking-widest">+ ₹{summary.otAmount} (OT)</div>
+                                        </td>
                                         <td className="text-danger font-semibold italic">₹{summary.totalAdvance.toLocaleString()}</td>
-                                        <td className="text-success font-extrabold text-lg">₹{summary.netPayable.toLocaleString()}</td>
+                                        <td className="text-success font-extrabold text-lg text-center bg-success/5">₹{parseFloat(summary.netPayable).toLocaleString()}</td>
+                                        <td className="text-center px-6">
+                                            <button
+                                                onClick={() => handleSettle(summary)}
+                                                className="btn btn-sm btn-outline-success rounded-lg font-black text-[9px] uppercase tracking-widest hover:scale-105"
+                                            >
+                                                Settle & Pay
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))
                             )}
@@ -95,12 +138,12 @@ const WagesCalculationPage = () => {
                     </table>
                 </div>
 
-                <div className="mt-8 p-4 bg-primary/5 rounded-lg border border-primary/20 flex flex-wrap justify-between items-center">
-                    <div className="text-xs italic text-white-dark uppercase tracking-wider">
-                        Formula: (Work Days * Daily Wage) - Advance = Net Payable
+                <div className="m-6 p-6 bg-primary/5 rounded-2xl border border-primary/10 flex flex-wrap justify-between items-center bg-gradient-to-r from-primary/5 to-transparent">
+                    <div className="text-[10px] italic text-white-dark uppercase tracking-widest font-black">
+                        Formula: (Work Days * Daily Wage) + (OT Hours * Hourly Rate) - Advance = Net Payable
                     </div>
-                    <div className="font-bold text-primary">
-                        Total Payout: ₹ {summaries.reduce((sum, s) => sum + s.netPayable, 0).toLocaleString()}
+                    <div className="text-2xl font-black text-primary">
+                        Total Payout: ₹ {summaries.reduce((sum, s) => sum + parseFloat(s.netPayable), 0).toLocaleString()}
                     </div>
                 </div>
             </div>
