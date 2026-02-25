@@ -71,6 +71,15 @@ module.exports = {
             boxShadow: {
                 '3xl': '0 2px 2px rgb(224 230 237 / 46%), 1px 6px 7px rgb(224 230 237 / 46%)',
             },
+            keyframes: {
+                pulseSubtle: {
+                    '0%, 100%': { opacity: '1' },
+                    '50%': { opacity: '0.8' },
+                },
+            },
+            animation: {
+                'pulse-subtle': 'pulseSubtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
             typography: ({ theme }) => ({
                 DEFAULT: {
                     css: {

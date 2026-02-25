@@ -24,41 +24,44 @@ const TripManagement = () => {
 
     const initialForm = {
         date: new Date().toISOString().split('T')[0],
-        vehicleNumber: '',
+        vehicleId: '',
         vehicleType: 'Lorry',
-        driverName: '',
+        driverId: '',
         fromLocation: 'Quarry',
         toLocation: '',
-        materialType: 'Jelly',
+        stoneTypeId: '',
+        customerId: '',
         loadQuantity: '',
         loadUnit: 'Tons',
         tripRate: '',
-        dieselQuantity: '',
-        dieselRate: '',
-        driverAmount: '',
-        driverBata: '',
-        otherExpenses: '',
-        startingPoint: '',
-        endingPoint: '',
         notes: ''
     };
 
     const [formData, setFormData] = useState(initialForm);
 
+    const [labours, setLabours] = useState<any[]>([]);
+    const [customers, setCustomers] = useState<any[]>([]);
+    const [stoneTypes, setStoneTypes] = useState<any[]>([]);
+
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [tripRes, vehicleRes] = await Promise.all([
+            const [tripRes, vehicleRes, labourRes, customerRes, stoneRes] = await Promise.all([
                 axios.get(`${API}/trips`),
-                axios.get(`${API}/master/vehicles`)
+                axios.get(`${API}/master/vehicles`),
+                axios.get(`${API}/master/labours`),
+                axios.get(`${API}/master/customers`),
+                axios.get(`${API}/master/stone-types`),
             ]);
 
             if (tripRes.data.success) setTrips(tripRes.data.data);
             if (vehicleRes.data.success) {
                 setVehicles(vehicleRes.data.data);
-                // Initial filter
                 filterVehiclesBy(vehicleRes.data.data, 'Lorry');
             }
+            if (labourRes.data.success) setLabours(labourRes.data.data);
+            if (customerRes.data.success) setCustomers(customerRes.data.data);
+            if (stoneRes.data.success) setStoneTypes(stoneRes.data.data);
         } catch (error) {
             console.error(error);
             showToast('Error fetching data', 'error');
@@ -88,12 +91,27 @@ const TripManagement = () => {
             setFormData(prev => ({ ...prev, vehicleNumber: '' })); // Reset vehicle number when type changes
         }
 
-        if (name === 'vehicleNumber') {
-            // Auto fill driver if available in vehicle data
-            const selectedVehicle = vehicles.find(v => v.vehicleNumber === value || v.registrationNumber === value);
+        if (name === 'vehicleId') {
+            const selectedVehicle = vehicles.find(v => v._id === value);
             if (selectedVehicle?.driverName) {
-                setFormData(prev => ({ ...prev, driverName: selectedVehicle.driverName }));
+                // If the vehicle has a driver name in master, try to find the matching labour ID
+                const worker = labours.find(l => l.name === selectedVehicle.driverName);
+                if (worker) {
+                    setFormData(prev => ({ ...prev, driverId: worker._id }));
+                }
             }
+        }
+    };
+
+    const handleConvertToSale = async (tripId: string) => {
+        try {
+            const { data } = await axios.post(`${API}/trips/${tripId}/convert-to-sale`);
+            if (data.success) {
+                showToast('Trip converted to Sale successfully!', 'success');
+                fetchData();
+            }
+        } catch (error: any) {
+            showToast(error.response?.data?.message || 'Error converting trip', 'error');
         }
     };
 
@@ -121,22 +139,16 @@ const TripManagement = () => {
 
         setFormData({
             date: trip.date.split('T')[0],
-            vehicleNumber: trip.vehicleNumber || trip.lorryNumber,
+            vehicleId: trip.vehicleId?._id || trip.vehicleId,
             vehicleType: vType,
-            driverName: trip.driverName,
+            driverId: trip.driverId?._id || trip.driverId,
             fromLocation: trip.fromLocation,
             toLocation: trip.toLocation,
-            materialType: trip.materialType,
+            stoneTypeId: trip.stoneTypeId?._id || trip.stoneTypeId,
+            customerId: trip.customerId?._id || trip.customerId,
             loadQuantity: trip.loadQuantity,
             loadUnit: trip.loadUnit,
             tripRate: trip.tripRate,
-            dieselQuantity: trip.dieselQuantity || '',
-            dieselRate: trip.dieselRate || '',
-            driverAmount: trip.driverAmount || '',
-            driverBata: trip.driverBata || '',
-            otherExpenses: trip.otherExpenses || '',
-            startingPoint: trip.startingPoint || '',
-            endingPoint: trip.endingPoint || '',
             notes: trip.notes || ''
         });
         setEditId(trip._id);
@@ -203,46 +215,56 @@ const TripManagement = () => {
                             </div>
                             <div>
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Vehicle Number</label>
-                                <select name="vehicleNumber" className="form-select" value={formData.vehicleNumber} onChange={handleChange} required>
+                                <select name="vehicleId" className="form-select border-primary" value={formData.vehicleId} onChange={handleChange} required>
                                     <option value="">Select Vehicle</option>
                                     {filteredVehicles.map((v: any) => (
-                                        <option key={v._id} value={v.vehicleNumber || v.registrationNumber}>
+                                        <option key={v._id} value={v._id}>
                                             {v.vehicleNumber || v.registrationNumber} ({v.name})
                                         </option>
                                     ))}
-                                    {filteredVehicles.length === 0 && (
-                                        <option disabled>No {formData.vehicleType}s found</option>
-                                    )}
                                 </select>
                             </div>
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Driver Name</label>
-                                <input type="text" name="driverName" className="form-input" value={formData.driverName} onChange={handleChange} required placeholder="Enter driver name" />
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Driver (Master)</label>
+                                <select name="driverId" className="form-select" value={formData.driverId} onChange={handleChange}>
+                                    <option value="">Select Driver</option>
+                                    {labours.filter(l => l.workType?.toLowerCase() === 'driver').map((l: any) => (
+                                        <option key={l._id} value={l._id}>{l.name}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">From Location</label>
-                                <input type="text" name="fromLocation" className="form-input font-bold text-primary" value={formData.fromLocation} onChange={handleChange} required />
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary">Customer (Link to Sale)</label>
+                                <select name="customerId" className="form-select border-primary/50" value={formData.customerId} onChange={handleChange}>
+                                    <option value="">None (Internal Trip)</option>
+                                    {customers.map((c: any) => (
+                                        <option key={c._id} value={c._id}>{c.name}</option>
+                                    ))}
+                                </select>
                             </div>
-                            <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">To Location</label>
-                                <input type="text" name="toLocation" className="form-input" value={formData.toLocation} onChange={handleChange} required placeholder="Destination address" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label className="text-sm font-bold text-white-dark uppercase mb-2 block">From Location</label>
+                                    <input type="text" name="fromLocation" className="form-input font-bold text-primary" value={formData.fromLocation} onChange={handleChange} required />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-bold text-white-dark uppercase mb-2 block">To Location</label>
+                                    <input type="text" name="toLocation" className="form-input" value={formData.toLocation} onChange={handleChange} required placeholder="Destination address" />
+                                </div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                             <div>
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Material Type</label>
-                                <select name="materialType" className="form-select" value={formData.materialType} onChange={handleChange} required>
-                                    <option value="Jelly">Jelly (ஜல்லி)</option>
-                                    <option value="M-Sand">M-Sand (எம்-சாண்ட்)</option>
-                                    <option value="P-Sand">P-Sand (பி-சாண்ட்)</option>
-                                    <option value="Boulder">Boulder (பாறை)</option>
-                                    <option value="Dust">Dust (தூசி)</option>
-                                    <option value="GSB">GSB</option>
-                                    <option value="WMM">WMM</option>
+                                <select name="stoneTypeId" className="form-select" value={formData.stoneTypeId} onChange={handleChange} required>
+                                    <option value="">Select Material</option>
+                                    {stoneTypes.map((s: any) => (
+                                        <option key={s._id} value={s._id}>{s.name} ({s.unit})</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
@@ -263,41 +285,9 @@ const TripManagement = () => {
                             </div>
                         </div>
 
-                        <div className="bg-primary/5 p-4 rounded-lg flex flex-col gap-5">
-                            <h6 className="font-black text-primary uppercase text-xs tracking-widest border-b border-primary/10 pb-2">Trip Expenses (செலவுகள்)</h6>
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Diesel (Ltrs)</label>
-                                    <input type="number" name="dieselQuantity" className="form-input border-danger/20" value={formData.dieselQuantity} onChange={handleChange} step="0.01" />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Diesel Rate (₹)</label>
-                                    <input type="number" name="dieselRate" className="form-input border-danger/20" value={formData.dieselRate} onChange={handleChange} step="0.01" />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Driver Pay (₹)</label>
-                                    <input type="number" name="driverAmount" className="form-input border-warning/20" value={formData.driverAmount} onChange={handleChange} />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Driver Bata (₹)</label>
-                                    <input type="number" name="driverBata" className="form-input border-warning/20" value={formData.driverBata} onChange={handleChange} />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Other Exp (₹)</label>
-                                    <input type="number" name="otherExpenses" className="form-input" value={formData.otherExpenses} onChange={handleChange} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-3 bg-gray-50 dark:bg-dark-light/5 p-4 rounded-lg">
-                            <div>
-                                <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Starting Odometer</label>
-                                <input type="text" name="startingPoint" className="form-input" value={formData.startingPoint} onChange={handleChange} placeholder="Reading or location" />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Ending Odometer</label>
-                                <input type="text" name="endingPoint" className="form-input" value={formData.endingPoint} onChange={handleChange} placeholder="Reading or location" />
-                            </div>
+                        <div className="bg-info/5 p-4 rounded-lg">
+                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Remarks / Notes</label>
+                            <textarea name="notes" className="form-textarea min-h-[80px]" value={formData.notes || ''} onChange={handleChange}></textarea>
                         </div>
 
                         <div className="flex items-center justify-end gap-3 pt-4">
@@ -346,32 +336,52 @@ const TripManagement = () => {
                                             <td>{new Date(trip.date).toLocaleDateString('en-GB')}</td>
                                             <td>
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`badge badge-outline-primary text-[10px] py-0.5 px-1.5`}>{trip.vehicleType || 'Lorry'}</span>
-                                                    <div className="font-bold text-primary">{trip.vehicleNumber || trip.lorryNumber}</div>
+                                                    <span className={`badge badge-outline-primary text-[10px] py-0.5 px-1.5`}>{trip.vehicleId?.category || trip.vehicleType || 'Vehicle'}</span>
+                                                    <div className="font-bold text-primary">{trip.vehicleId?.vehicleNumber || trip.vehicleId?.registrationNumber || 'Unknown'}</div>
                                                 </div>
-                                                <div className="text-xs text-white-dark">{trip.driverName}</div>
+                                                <div className="text-xs text-secondary font-medium italic mt-1">{trip.driverId?.name || 'No Driver'}</div>
                                             </td>
                                             <td>
-                                                <div className="text-xs font-bold uppercase">{trip.fromLocation}</div>
-                                                <div className="text-xs text-white-dark">to</div>
-                                                <div className="text-xs font-bold uppercase">{trip.toLocation}</div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-black text-white-dark uppercase tracking-tighter">CUSTOMER: {trip.customerId?.name || 'INTERNAL'}</span>
+                                                    <div className="mt-1">
+                                                        <span className="text-[10px] font-bold uppercase">{trip.fromLocation}</span>
+                                                        <span className="mx-1 text-white-dark">→</span>
+                                                        <span className="text-[10px] font-bold uppercase">{trip.toLocation}</span>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td>
-                                                <span className="badge badge-outline-dark">{trip.materialType}</span>
+                                                <span className="badge badge-outline-dark">{trip.stoneTypeId?.name || 'Material'}</span>
+                                                <div className="text-[10px] mt-1 font-bold">{trip.loadQuantity} {trip.loadUnit}</div>
                                             </td>
-                                            <td className="!text-right font-bold text-primary font-mono whitespace-nowrap">₹{trip.tripRate?.toLocaleString()}</td>
-                                            <td className="!text-right font-bold text-danger font-mono whitespace-nowrap">₹{trip.totalExpense?.toLocaleString()}</td>
-                                            <td className={`!text-right font-black font-mono whitespace-nowrap bg-success/5 ${trip.netProfit >= 0 ? 'text-success' : 'text-danger'}`}>
-                                                ₹{trip.netProfit?.toLocaleString()}
+                                            <td className="!text-right font-black text-primary font-mono whitespace-nowrap">₹{trip.tripRate?.toLocaleString()}</td>
+                                            <td className="!text-center">
+                                                {trip.isConvertedToSale ? (
+                                                    <span className="badge badge-outline-success bg-success/5 border-dashed">Invoiced</span>
+                                                ) : trip.customerId ? (
+                                                    <button
+                                                        onClick={() => handleConvertToSale(trip._id)}
+                                                        className="btn btn-xs btn-primary shadow-none text-[10px] py-1 px-2"
+                                                    >
+                                                        Convert to Sale
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-[10px] text-white-dark italic">Internal Trip</span>
+                                                )}
                                             </td>
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => handleEdit(trip)} className="btn btn-sm btn-outline-primary p-1">
-                                                        <IconEdit className="w-4 h-4" />
-                                                    </button>
-                                                    <button onClick={() => setDeleteId(trip._id)} className="btn btn-sm btn-outline-danger p-1">
-                                                        <IconTrashLines className="w-4 h-4" />
-                                                    </button>
+                                                    {!trip.isConvertedToSale && (
+                                                        <>
+                                                            <button onClick={() => handleEdit(trip)} className="btn btn-sm btn-outline-primary p-1">
+                                                                <IconEdit className="w-4 h-4" />
+                                                            </button>
+                                                            <button onClick={() => setDeleteId(trip._id)} className="btn btn-sm btn-outline-danger p-1">
+                                                                <IconTrashLines className="w-4 h-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

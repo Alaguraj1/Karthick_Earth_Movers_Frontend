@@ -12,6 +12,7 @@ const ProductionEntry = () => {
     const [productions, setProductions] = useState([]);
     const [machines, setMachines] = useState([]);
     const [stoneTypes, setStoneTypes] = useState([]);
+    const [labours, setLabours] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
@@ -33,6 +34,13 @@ const ProductionEntry = () => {
         closingStock: string;
     }
 
+    interface WorkerEntry {
+        labourId: string;
+        name: string;
+        wage: string;
+        wageType: string;
+    }
+
     interface ProductionFormData {
         date: string;
         shift: string;
@@ -41,7 +49,8 @@ const ProductionEntry = () => {
         machines: MachineEntry[];
         productionDetails: ProductionDetail[];
         noOfWorkers: string;
-        operatorName: string;
+        labourDetails: WorkerEntry[];
+        operatorDetails: WorkerEntry[];
         shiftWage: string;
         remarks: {
             breakdown: boolean;
@@ -53,6 +62,8 @@ const ProductionEntry = () => {
         };
         [key: string]: any;
     }
+
+    const emptyWorker: WorkerEntry = { labourId: '', name: '', wage: '0', wageType: 'Daily' };
 
     const initialFormState: ProductionFormData = {
         date: new Date().toISOString().split('T')[0],
@@ -71,8 +82,9 @@ const ProductionEntry = () => {
             closingStock: '0'
         }],
         noOfWorkers: '',
-        operatorName: '',
-        shiftWage: '',
+        labourDetails: [{ ...emptyWorker }],
+        operatorDetails: [{ ...emptyWorker }],
+        shiftWage: '0',
         remarks: {
             breakdown: false,
             rainDelay: false,
@@ -87,14 +99,16 @@ const ProductionEntry = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [prodRes, machRes, stoneRes] = await Promise.all([
+            const [prodRes, machRes, stoneRes, labourRes] = await Promise.all([
                 axios.get(`${process.env.NEXT_PUBLIC_API_URL}/production`),
                 axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/stone-types`)
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/stone-types`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/labours`)
             ]);
             setProductions(prodRes.data.data);
             setMachines(machRes.data.data.filter((v: any) => v.type === 'Machine' || v.category?.toLowerCase().includes('crusher') || v.category?.toLowerCase().includes('jcb')));
             setStoneTypes(stoneRes.data.data);
+            setLabours(labourRes.data.data);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -132,14 +146,20 @@ const ProductionEntry = () => {
     const addMachineRow = () => {
         setFormData(prev => ({
             ...prev,
-            machines: [...prev.machines, { machineId: '', workingHours: '', dieselUsed: '' }]
+            machines: [...prev.machines, { machineId: '', workingHours: '', dieselUsed: '' }],
+            // Auto-add operator row to match machine count
+            operatorDetails: [...prev.operatorDetails, { ...emptyWorker }]
         }));
     };
 
     const removeMachineRow = (index: number) => {
         if (formData.machines.length > 1) {
-            const updated = formData.machines.filter((_, i) => i !== index);
-            setFormData(prev => ({ ...prev, machines: updated }));
+            const updatedMachines = formData.machines.filter((_, i) => i !== index);
+            // Auto-remove last operator row to match machine count
+            const updatedOperators = formData.operatorDetails.length > updatedMachines.length
+                ? formData.operatorDetails.slice(0, updatedMachines.length)
+                : formData.operatorDetails;
+            setFormData(prev => ({ ...prev, machines: updatedMachines, operatorDetails: updatedOperators.length > 0 ? updatedOperators : [{ ...emptyWorker }] }));
         }
     };
 
@@ -176,7 +196,7 @@ const ProductionEntry = () => {
         const updated = [...formData.productionDetails];
         updated[index] = { ...updated[index], [field]: value };
 
-        // Auto unit selection & Normalization
+        // Auto unit selection & Normalization & Stock Fetching
         if (field === 'stoneType') {
             const selected = stoneTypes.find((s: any) => s._id === value);
             if (selected) {
@@ -185,11 +205,95 @@ const ProductionEntry = () => {
                 if (unit === 'Ton') unit = 'Tons';
                 if (unit === 'Unit') unit = 'Units';
                 updated[index].unit = unit;
+
+                // Auto-fetch Opening Stock from Master Current Stock (only for new entries)
+                if (!editId) {
+                    updated[index].openingStock = (selected as any).currentStock?.toString() || '0';
+                }
             }
         }
 
         setFormData(prev => ({ ...prev, productionDetails: updated }));
     };
+
+    // --- Labour Helpers ---
+    const addLabourRow = () => {
+        setFormData(prev => ({ ...prev, labourDetails: [...prev.labourDetails, { ...emptyWorker }] }));
+    };
+    const removeLabourRow = (index: number) => {
+        if (formData.labourDetails.length > 1) {
+            const updated = formData.labourDetails.filter((_, i) => i !== index);
+            setFormData(prev => ({ ...prev, labourDetails: updated }));
+        }
+    };
+    const handleLabourSelect = (index: number, labourId: string) => {
+        const updated = [...formData.labourDetails];
+        const found = labours.find((l: any) => l._id === labourId);
+        if (found) {
+            updated[index] = {
+                labourId: (found as any)._id,
+                name: (found as any).name,
+                wage: (found as any).wage?.toString() || '0',
+                wageType: (found as any).wageType || 'Daily'
+            };
+        } else {
+            updated[index] = { ...emptyWorker };
+        }
+        setFormData(prev => ({ ...prev, labourDetails: updated }));
+    };
+
+    // --- Operator Helpers ---
+    // Note: Operator rows are auto-managed based on machine count.
+    // Manual add only if more operators are needed beyond machine count.
+    const addOperatorRow = () => {
+        setFormData(prev => ({ ...prev, operatorDetails: [...prev.operatorDetails, { ...emptyWorker }] }));
+    };
+    const removeOperatorRow = (index: number) => {
+        if (formData.operatorDetails.length > 1) {
+            const updated = formData.operatorDetails.filter((_, i) => i !== index);
+            setFormData(prev => ({ ...prev, operatorDetails: updated }));
+        }
+    };
+    const handleOperatorSelect = (index: number, labourId: string) => {
+        const updated = [...formData.operatorDetails];
+        const found = labours.find((l: any) => l._id === labourId);
+        if (found) {
+            updated[index] = {
+                labourId: (found as any)._id,
+                name: (found as any).name,
+                wage: (found as any).wage?.toString() || '0',
+                wageType: (found as any).wageType || 'Daily'
+            };
+        } else {
+            updated[index] = { ...emptyWorker };
+        }
+        setFormData(prev => ({ ...prev, operatorDetails: updated }));
+    };
+
+    // --- Auto-calculate total shift wage ---
+    useEffect(() => {
+        let total = 0;
+        for (const w of formData.labourDetails) {
+            const wage = parseFloat(w.wage) || 0;
+            if (w.wageType === 'Monthly') {
+                total += Math.round(wage / 30); // daily equivalent
+            } else {
+                total += wage;
+            }
+        }
+        for (const w of formData.operatorDetails) {
+            const wage = parseFloat(w.wage) || 0;
+            if (w.wageType === 'Monthly') {
+                total += Math.round(wage / 30);
+            } else {
+                total += wage;
+            }
+        }
+        const newTotal = total.toString();
+        if (newTotal !== formData.shiftWage) {
+            setFormData(prev => ({ ...prev, shiftWage: newTotal }));
+        }
+    }, [formData.labourDetails, formData.operatorDetails]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const target = e.target as HTMLInputElement;
@@ -254,8 +358,23 @@ const ProductionEntry = () => {
                 }))
                 : initialFormState.productionDetails,
             noOfWorkers: prod.noOfWorkers?.toString() || '',
-            operatorName: prod.operatorName || '',
-            shiftWage: prod.shiftWage?.toString() || '',
+            labourDetails: prod.labourDetails && prod.labourDetails.length > 0
+                ? prod.labourDetails.map((l: any) => ({
+                    labourId: l.labourId?._id || l.labourId || '',
+                    name: l.name || '',
+                    wage: l.wage?.toString() || '0',
+                    wageType: l.wageType || 'Daily'
+                }))
+                : [{ ...emptyWorker }],
+            operatorDetails: prod.operatorDetails && prod.operatorDetails.length > 0
+                ? prod.operatorDetails.map((o: any) => ({
+                    labourId: o.labourId?._id || o.labourId || '',
+                    name: o.name || '',
+                    wage: o.wage?.toString() || '0',
+                    wageType: o.wageType || 'Daily'
+                }))
+                : [{ ...emptyWorker }],
+            shiftWage: prod.shiftWage?.toString() || '0',
             remarks: prod.remarks || initialFormState.remarks
         });
         setEditId(prod._id);
@@ -315,7 +434,24 @@ const ProductionEntry = () => {
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black uppercase tracking-widest text-white-dark mb-2 block">Supervisor Name</label>
-                                    <input type="text" name="supervisorName" className="form-input font-bold rounded-xl h-12" value={formData.supervisorName} onChange={handleChange} placeholder="Name..." />
+                                    <select
+                                        name="supervisorName"
+                                        className="form-select font-bold rounded-xl h-12"
+                                        value={formData.supervisorName}
+                                        onChange={handleChange}
+                                        required
+                                    >
+                                        <option value="">Select Supervisor</option>
+                                        {labours
+                                            .filter((l: any) => l.workType?.toLowerCase() === 'supervisor' || l.workType?.toLowerCase() === 'superviser')
+                                            .map((l: any) => (
+                                                <option key={l._id} value={l.name}>{l.name}</option>
+                                            ))
+                                        }
+                                        {labours.filter((l: any) => l.workType?.toLowerCase() === 'supervisor' || l.workType?.toLowerCase() === 'superviser').length === 0 && (
+                                            <option disabled>No Supervisors found in Labour list</option>
+                                        )}
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -503,18 +639,131 @@ const ProductionEntry = () => {
                         {/* Section 4: Labour & Operator */}
                         <div className="panel border-none shadow-xl rounded-2xl p-8">
                             <h5 className="text-lg font-black uppercase tracking-widest text-secondary mb-6 border-l-4 border-secondary pl-4">4. Labour & Operator Details</h5>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-white-dark mb-2 block">Workers Present</label>
-                                    <input type="number" name="noOfWorkers" className="form-input font-bold rounded-xl h-12" value={formData.noOfWorkers} onChange={handleChange} />
+
+                            {/* Helpers / Labours */}
+                            <div className="mb-6">
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="text-xs font-black uppercase tracking-widest text-info">Helpers / Labours</label>
+                                    <button type="button" className="btn btn-outline-info btn-xs rounded-lg py-1 font-bold text-[9px]" onClick={addLabourRow}>
+                                        <IconPlus className="w-3 h-3 mr-1" /> Add Labour
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-white-dark mb-2 block">Operator Name</label>
-                                    <input type="text" name="operatorName" className="form-input font-bold rounded-xl h-12" value={formData.operatorName} onChange={handleChange} />
+                                <div className="space-y-3">
+                                    {formData.labourDetails.map((item, index) => (
+                                        <div key={index} className="flex gap-3 items-center bg-gray-50 dark:bg-gray-900/30 p-3 rounded-xl">
+                                            <select
+                                                className="form-select font-bold rounded-xl h-12 flex-1"
+                                                value={item.labourId}
+                                                onChange={(e) => handleLabourSelect(index, e.target.value)}
+                                                required
+                                            >
+                                                <option value="">Select Labour</option>
+                                                {labours
+                                                    .filter((l: any) => {
+                                                        const wt = l.workType?.toLowerCase() || '';
+                                                        // Exclude operators, supervisors from helper list
+                                                        if (wt.includes('operator') || wt === 'supervisor' || wt === 'superviser') return false;
+                                                        // Prevent duplicate: exclude already selected labours (except current row)
+                                                        const alreadySelected = formData.labourDetails
+                                                            .filter((_, i) => i !== index)
+                                                            .map(ld => ld.labourId);
+                                                        return !alreadySelected.includes(l._id);
+                                                    })
+                                                    .map((l: any) => (
+                                                        <option key={l._id} value={l._id}>{l.name}</option>
+                                                    ))
+                                                }
+                                            </select>
+                                            <div className="text-center min-w-[100px]">
+                                                <div className="text-[9px] font-bold text-white-dark uppercase tracking-wider">Wage</div>
+                                                <div className="font-black text-info text-lg">₹{parseFloat(item.wage || '0').toLocaleString()}</div>
+                                                <span className={`badge text-[8px] py-0 px-1.5 ${item.wageType === 'Monthly' ? 'badge-outline-warning' : 'badge-outline-success'}`}>{item.wageType}</span>
+                                            </div>
+                                            {item.wageType === 'Monthly' && parseFloat(item.wage) > 0 && (
+                                                <div className="text-center min-w-[80px]">
+                                                    <div className="text-[9px] font-bold text-white-dark uppercase">Per Day</div>
+                                                    <div className="font-black text-success text-sm">₹{Math.round(parseFloat(item.wage) / 30).toLocaleString()}</div>
+                                                </div>
+                                            )}
+                                            {formData.labourDetails.length > 1 && (
+                                                <button type="button" className="btn btn-outline-danger btn-sm p-2 rounded-xl" onClick={() => removeLabourRow(index)}>
+                                                    <IconTrashLines className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-white-dark mb-2 block">Shift Wage (Optional)</label>
-                                    <input type="number" name="shiftWage" className="form-input font-bold rounded-xl h-12" value={formData.shiftWage} onChange={handleChange} />
+                            </div>
+
+                            {/* Operators (Auto-matched with Machines) */}
+                            <div className="mb-6">
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="text-xs font-black uppercase tracking-widest text-secondary">Operators <span className="text-[9px] text-white-dark font-normal normal-case">({formData.operatorDetails.length} for {formData.machines.length} machine{formData.machines.length > 1 ? 's' : ''})</span></label>
+                                    <button type="button" className="btn btn-outline-secondary btn-xs rounded-lg py-1 font-bold text-[9px]" onClick={addOperatorRow}>
+                                        <IconPlus className="w-3 h-3 mr-1" /> Add Operator
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    {formData.operatorDetails.map((item, index) => (
+                                        <div key={index} className="flex gap-3 items-center bg-gray-50 dark:bg-gray-900/30 p-3 rounded-xl">
+                                            <div className="min-w-[28px] h-7 flex items-center justify-center bg-secondary/10 text-secondary rounded-lg text-[10px] font-black">M{index + 1}</div>
+                                            <select
+                                                className="form-select font-bold rounded-xl h-12 flex-1"
+                                                value={item.labourId}
+                                                onChange={(e) => handleOperatorSelect(index, e.target.value)}
+                                                required
+                                            >
+                                                <option value="">Select Operator</option>
+                                                {labours
+                                                    .filter((l: any) => {
+                                                        const wt = l.workType?.toLowerCase() || '';
+                                                        // Include only operator types (Operator, Machine Operator, etc.)
+                                                        if (!wt.includes('operator')) return false;
+                                                        // Prevent duplicate: exclude already selected operators (except current row)
+                                                        const alreadySelected = formData.operatorDetails
+                                                            .filter((_, i) => i !== index)
+                                                            .map(od => od.labourId);
+                                                        return !alreadySelected.includes(l._id);
+                                                    })
+                                                    .map((l: any) => (
+                                                        <option key={l._id} value={l._id}>{l.name}</option>
+                                                    ))
+                                                }
+                                            </select>
+                                            <div className="text-center min-w-[100px]">
+                                                <div className="text-[9px] font-bold text-white-dark uppercase tracking-wider">Wage</div>
+                                                <div className="font-black text-secondary text-lg">₹{parseFloat(item.wage || '0').toLocaleString()}</div>
+                                                <span className={`badge text-[8px] py-0 px-1.5 ${item.wageType === 'Monthly' ? 'badge-outline-warning' : 'badge-outline-success'}`}>{item.wageType}</span>
+                                            </div>
+                                            {item.wageType === 'Monthly' && parseFloat(item.wage) > 0 && (
+                                                <div className="text-center min-w-[80px]">
+                                                    <div className="text-[9px] font-bold text-white-dark uppercase">Per Day</div>
+                                                    <div className="font-black text-success text-sm">₹{Math.round(parseFloat(item.wage) / 30).toLocaleString()}</div>
+                                                </div>
+                                            )}
+                                            {formData.operatorDetails.length > 1 && (
+                                                <button type="button" className="btn btn-outline-danger btn-sm p-2 rounded-xl" onClick={() => removeOperatorRow(index)}>
+                                                    <IconTrashLines className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Total Shift Wage - Auto Calculated */}
+                            <div className="mt-6 p-5 bg-gradient-to-r from-primary/10 via-info/5 to-success/10 rounded-2xl border-2 border-primary/20">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-white-dark">Total Shift Wage (Auto-Calculated)</div>
+                                        <div className="text-[9px] text-white-dark mt-1">
+                                            {formData.labourDetails.filter(l => l.name).length} Helpers + {formData.operatorDetails.filter(o => o.name).length} Operators
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="font-black text-primary text-3xl">₹{parseFloat(formData.shiftWage || '0').toLocaleString()}</div>
+                                        <div className="text-[9px] text-white-dark font-bold">Today's Cost</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -593,7 +842,19 @@ const ProductionEntry = () => {
                                                             </div>
                                                         </div>
                                                     ))}
-                                                    <span className="text-[10px] text-white-dark uppercase tracking-wide border-t pt-1 border-gray-100 italic">Op: {item.operatorName || 'N/A'}</span>
+                                                    <span className="text-[10px] text-white-dark uppercase tracking-wide border-t pt-1 border-gray-100 italic">
+                                                        Op: {item.operatorDetails?.map((o: any) => o.name).filter(Boolean).join(', ') || 'N/A'}
+                                                    </span>
+                                                    {item.labourDetails && item.labourDetails.length > 0 && item.labourDetails.some((l: any) => l.name) && (
+                                                        <span className="text-[10px] text-white-dark uppercase tracking-wide border-t pt-1 border-gray-100 italic block mt-1">
+                                                            Helpers: {item.labourDetails.map((l: any) => l.name).filter(Boolean).join(', ')}
+                                                        </span>
+                                                    )}
+                                                    {item.shiftWage > 0 && (
+                                                        <span className="text-[10px] text-success font-black border-t pt-1 border-gray-100 block mt-1">
+                                                            Wage: ₹{item.shiftWage.toLocaleString()}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td>

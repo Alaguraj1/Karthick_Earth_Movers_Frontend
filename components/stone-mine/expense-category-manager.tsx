@@ -50,6 +50,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         labourCharge: '',
         vendorName: '',
         // Labour specialized fields
+        labourId: '',
         labourName: '',
         workType: '',
         wageType: '',
@@ -129,6 +130,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                         if (summary) {
                             setFormData(prev => ({
                                 ...prev,
+                                labourId: summary.labourId,
                                 quantity: summary.attendance.total.toString(),
                                 perDaySalary: summary.dailyRate.toString(),
                                 rate: summary.dailyWage.toString(),
@@ -219,8 +221,12 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                 }
 
                 if (name === 'labourName') {
-                    const worker = labours.find((l: any) => l.name === value);
+                    // Note: In Labour Wages, name='labourName' is triggered by the select. 
+                    // We'll pass the ID in value for better reliability.
+                    const worker = labours.find((l: any) => l._id === value);
                     if (worker) {
+                        updated.labourId = worker._id;
+                        updated.labourName = worker.name;
                         updated.workType = worker.workType || '';
                         updated.wageType = worker.wageType === 'Daily' ? 'Daily Wage' : (worker.wageType === 'Monthly' ? 'Monthly Salary' : '');
                         updated.rate = (worker.wage || '').toString();
@@ -340,6 +346,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             sparePartsCost: '',
             labourCharge: '',
             vendorName: '',
+            labourId: '',
             labourName: '',
             workType: '',
             wageType: '',
@@ -399,6 +406,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             sparePartsCost: expense.sparePartsCost?.toString() || '',
             labourCharge: expense.labourCharge?.toString() || '',
             vendorName: expense.vendorName || '',
+            labourId: expense.labourId || '',
             labourName: expense.labourName || '',
             workType: expense.workType || '',
             wageType: expense.wageType || '',
@@ -502,7 +510,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         </>
                                     )}
                                     <th>Amount</th>
-                                    <th>Payment</th>
+                                    <th>Source</th>
                                     <th className="text-center">Action</th>
                                 </tr>
                             </thead>
@@ -577,7 +585,16 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 </>
                                             )}
                                             <td className="font-bold text-primary">₹{expense.amount.toLocaleString()}</td>
-                                            <td>{expense.paymentMode}</td>
+                                            <td>
+                                                {expense.sourceModel !== 'Manual' ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="badge badge-outline-warning text-[8px] py-0 px-1">{expense.sourceModel}</span>
+                                                        <span className="text-[9px] text-white-dark mt-1 font-bold">{expense.referenceId}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-white-dark italic">Manual</span>
+                                                )}
+                                            </td>
                                             <td className="text-center">
                                                 {expense.billUrl && (
                                                     <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${expense.billUrl}`} target="_blank" className="text-primary hover:underline block mb-1">
@@ -585,12 +602,18 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                     </a>
                                                 )}
                                                 <div className="flex justify-center gap-2">
-                                                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditModal(expense)}>
-                                                        <IconEdit className="h-4 w-4" />
-                                                    </button>
-                                                    <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
-                                                        <IconTrashLines className="h-4 w-4" />
-                                                    </button>
+                                                    {expense.sourceModel === 'Manual' ? (
+                                                        <>
+                                                            <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditModal(expense)}>
+                                                                <IconEdit className="h-4 w-4" />
+                                                            </button>
+                                                            <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
+                                                                <IconTrashLines className="h-4 w-4" />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-[10px] text-white-dark italic">System Entry (No Edit)</span>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -818,7 +841,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 {labours
                                                     .filter(l => (!formData.workType || l.workType === formData.workType) &&
                                                         (!formData.labourType || l.labourType === formData.labourType))
-                                                    .map((l: any) => <option key={l._id} value={l.name}>{l.name}</option>)}
+                                                    .map((l: any) => <option key={l._id} value={l._id}>{l.name}</option>)}
                                             </select>
                                         </div>
                                         <div>

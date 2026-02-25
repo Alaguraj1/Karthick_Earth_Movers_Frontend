@@ -9,6 +9,10 @@ import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
 import IconInbox from '@/components/icon/icon-inbox';
 import IconShoppingCart from '@/components/icon/icon-shopping-cart';
 import IconTag from '@/components/icon/icon-tag';
+import IconBellBing from '@/components/icon/icon-bell-bing';
+import IconInfoCircle from '@/components/icon/icon-info-circle';
+import IconBox from '@/components/icon/icon-box';
+import IconAlertTriangle from '@/components/icon/icon-info-triangle';
 import { IRootState } from '@/store';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
@@ -245,6 +249,72 @@ const ComponentsDashboardSales = () => {
                     <li><Link href="/" className="text-primary hover:underline">Dashboard</Link></li>
                     <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2"><span>Mine Overview</span></li>
                 </ul>
+
+                {/* Real-time Alerts Section */}
+                {(data?.alerts?.lowStock?.length > 0 || data?.alerts?.compliance?.length > 0) && (
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Low Stock Alerts */}
+                        {data?.alerts?.lowStock?.length > 0 && (
+                            <div className="panel bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 border-orange-200 dark:border-orange-800 rounded-2xl shadow-lg animate-pulse-subtle">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="h-10 w-10 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
+                                        <IconBox className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h5 className="font-black uppercase tracking-tight text-orange-800 dark:text-orange-400">Low Stock Alert (குறைவான இருப்பு)</h5>
+                                        <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Re-order required immediately</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    {data?.alerts?.lowStock.map((item: any) => (
+                                        <div key={item._id} className="flex items-center justify-between bg-white/50 dark:bg-black/20 p-3 rounded-xl border border-orange-200/50 dark:border-orange-800/50 group hover:scale-[1.02] transition-transform">
+                                            <span className="font-black text-sm uppercase italic tracking-tight">{item.name}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-black text-danger bg-danger/10 px-2 py-1 rounded-lg italic">{item.currentStock} {item.unit}</span>
+                                                <IconAlertTriangle className="w-4 h-4 text-danger animate-bounce" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Compliance Alerts */}
+                        {data?.alerts?.compliance?.length > 0 && (
+                            <div className="panel bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20 border-red-200 dark:border-red-800 rounded-2xl shadow-lg">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="h-10 w-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-600/30">
+                                        <IconBellBing className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h5 className="font-black uppercase tracking-tight text-red-800 dark:text-red-400">Compliance Expiry (காலாவதி எச்சரிக்கை)</h5>
+                                        <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Documents expiring within 30 days</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    {data?.alerts?.compliance.map((v: any) => (
+                                        <div key={v._id} className="flex items-start justify-between bg-white/50 dark:bg-black/20 p-3 rounded-xl border border-red-200/50 dark:border-red-800/50">
+                                            <div>
+                                                <span className="font-black text-sm uppercase italic tracking-tight block">{v.name} ({v.registrationNumber || v.vehicleNumber})</span>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {(['insuranceExpiryDate', 'fitnessExpiryDate', 'pollutionExpiryDate', 'taxExpiryDate', 'permitExpiryDate']).map((key) => {
+                                                        const dateVal = v[key];
+                                                        if (dateVal && new Date(dateVal) <= new Date(new Date().setDate(new Date().getDate() + 30))) {
+                                                            const label = key.replace('ExpiryDate', '').toUpperCase();
+                                                            return <span key={key} className="text-[8px] font-black bg-danger/10 text-danger px-1.5 py-0.5 rounded uppercase tracking-tighter">{label}</span>
+                                                        }
+                                                        return null;
+                                                    })}
+                                                </div>
+                                            </div>
+                                            <IconInfoCircle className="w-4 h-4 text-red-500 shrink-0" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="pt-2">
                     <div className="mb-6 grid gap-6 xl:grid-cols-3">
