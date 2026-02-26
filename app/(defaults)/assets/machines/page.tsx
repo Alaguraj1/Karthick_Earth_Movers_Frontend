@@ -71,8 +71,10 @@ const MachineDetails = () => {
                 resetForm();
                 fetchAssets();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
+            const message = error.response?.data?.message || 'Error saving data';
+            alert(message);
         }
     };
 

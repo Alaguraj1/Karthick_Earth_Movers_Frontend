@@ -187,32 +187,7 @@ const Sidebar = () => {
                                             </ul>
                                         </AnimateHeight>
                                     </li>
-                                    <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'production-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('production-mgmt')}>
-                                            <div className="flex items-center">
-                                                <IconMenuScrumboard className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark uppercase tracking-widest text-[10px] font-black">Production</span>
-                                            </div>
 
-                                            <div className={currentMenu !== 'production-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
-                                                <IconCaretDown />
-                                            </div>
-                                        </button>
-
-                                        <AnimateHeight duration={300} height={currentMenu === 'production-mgmt' ? 'auto' : 0}>
-                                            <ul className="sub-menu text-gray-500">
-                                                <li>
-                                                    <Link href="/production/entry">Daily Entry</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/production/stock">Stock Tracking</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/production/analysis">Analysis</Link>
-                                                </li>
-                                            </ul>
-                                        </AnimateHeight>
-                                    </li>
 
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'asset-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('asset-mgmt')}>
@@ -233,15 +208,6 @@ const Sidebar = () => {
                                                 </li>
                                                 <li>
                                                     <Link href="/assets/vehicles">Vehicle Details</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/assets/fuel-log">Fuel Tracking</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/assets/maintenance">Maintenance History</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/assets/cost-analysis">Cost per Machine</Link>
                                                 </li>
                                             </ul>
                                         </AnimateHeight>
@@ -299,9 +265,6 @@ const Sidebar = () => {
                                                 </li>
                                                 <li>
                                                     <Link href="/transport/driver-payments">Driver Payment</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/transport/profitability">Profit per Trip</Link>
                                                 </li>
                                             </ul>
                                         </AnimateHeight>
@@ -370,13 +333,28 @@ const Sidebar = () => {
                                         </AnimateHeight>
                                     </li>
 
-                                    <li className="nav-item">
-                                        <Link href="/masters" className="group">
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'masters-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('masters-mgmt')}>
                                             <div className="flex items-center">
                                                 <IconMenuForms className="shrink-0 group-hover:!text-primary" />
                                                 <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Masters</span>
                                             </div>
-                                        </Link>
+
+                                            <div className={currentMenu !== 'masters-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'masters-mgmt' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/masters/stone-types">Stone Types</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/masters/explosive-materials">Explosive Materials</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
                                     </li>
                                     <li className="nav-item">
                                         <Link href="/workflow" className="group">

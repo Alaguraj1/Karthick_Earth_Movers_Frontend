@@ -63,9 +63,10 @@ const CustomerManagement = () => {
             }
             resetForm();
             fetchCustomers();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            showToast('Error saving customer', 'error');
+            const message = error.response?.data?.message || 'Error saving customer';
+            showToast(message, 'error');
         }
     };
 

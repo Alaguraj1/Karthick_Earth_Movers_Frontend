@@ -5,6 +5,7 @@ import IconPlus from '@/components/icon/icon-plus';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrash from '@/components/icon/icon-trash';
 import IconX from '@/components/icon/icon-x';
+import IconSearch from '@/components/icon/icon-search';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import axios from 'axios';
@@ -25,13 +26,31 @@ const SalesEntryForm = () => {
         gstPercentage: 0,
         dueDate: '',
         notes: '',
+        vehicleId: '',
+        vehicleType: 'Lorry',
+        driverId: '',
+        fromLocation: 'Quarry',
+        toLocation: '',
     });
+
+    const [vehicles, setVehicles] = useState<any[]>([]);
+    const [filteredVehicles, setFilteredVehicles] = useState<any[]>([]);
+    const [labours, setLabours] = useState<any[]>([]);
+
+    const filterVehiclesBy = (allVehicles: any[], type: string) => {
+        const filtered = allVehicles.filter((v: any) =>
+            v.category?.toLowerCase() === type.toLowerCase() ||
+            (type === 'Lorry' && !v.category) // Fallback for old data
+        );
+        setFilteredVehicles(filtered);
+    };
 
     const [items, setItems] = useState<any[]>([
         { item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }
     ]);
 
     const [recentSales, setRecentSales] = useState<any[]>([]);
+    const [search, setSearch] = useState('');
 
     const fetchSales = async () => {
         try {
@@ -43,25 +62,60 @@ const SalesEntryForm = () => {
     };
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchMasterData = async () => {
             try {
-                const [custRes, stoneRes] = await Promise.all([
-                    axios.get(`${API}/customers?status=active`),
-                    axios.get(`${API}/master/stone-types`),
-                ]);
-                if (custRes.data.success) setCustomers(custRes.data.data);
-                if (stoneRes.data.success) setStoneTypes(stoneRes.data.data);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
+                const res = await axios.get(`${API}/customers?status=active`);
+                if (res.data.success) setCustomers(res.data.data);
+            } catch (error) { console.error('Error fetching customers:', error); }
+
+            try {
+                const res = await axios.get(`${API}/master/stone-types`);
+                if (res.data.success) setStoneTypes(res.data.data);
+            } catch (error) { console.error('Error fetching stone types:', error); }
+
+            try {
+                const res = await axios.get(`${API}/master/vehicles`);
+                if (res.data.success) {
+                    setVehicles(res.data.data);
+                    filterVehiclesBy(res.data.data, 'Lorry');
+                }
+            } catch (error) { console.error('Error fetching vehicles:', error); }
+
+            try {
+                const res = await axios.get(`${API}/master/labours`);
+                if (res.data.success) setLabours(res.data.data);
+            } catch (error) { console.error('Error fetching labours:', error); }
         };
-        fetchData();
+        fetchMasterData();
         fetchSales();
     }, []);
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            const updated = { ...prev, [name]: value };
+
+            if (name === 'vehicleType') {
+                filterVehiclesBy(vehicles, value);
+                updated.vehicleId = ''; // Reset vehicle ID when type changes
+            }
+
+            // Auto-select driver based on vehicle's assigned driver name
+            if (name === 'vehicleId') {
+                const selectedVehicle = vehicles.find((v: any) => v._id === value);
+                if (selectedVehicle?.driverName) {
+                    const vehicleDriverName = selectedVehicle.driverName.trim().toLowerCase();
+                    const worker = labours.find((l: any) =>
+                        l.name?.trim().toLowerCase() === vehicleDriverName
+                    );
+                    if (worker) {
+                        updated.driverId = worker._id;
+                    }
+                }
+            }
+
+            return updated;
+        });
     };
 
     const handleItemChange = (index: number, e: any) => {
@@ -111,6 +165,11 @@ const SalesEntryForm = () => {
             gstPercentage: 0,
             dueDate: '',
             notes: '',
+            vehicleId: '',
+            vehicleType: 'Lorry',
+            driverId: '',
+            fromLocation: 'Quarry',
+            toLocation: '',
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]);
     };
@@ -124,6 +183,11 @@ const SalesEntryForm = () => {
             gstPercentage: 0,
             dueDate: '',
             notes: '',
+            vehicleId: '',
+            vehicleType: 'Lorry',
+            driverId: '',
+            fromLocation: 'Quarry',
+            toLocation: '',
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]);
         setShowForm(true);
@@ -142,6 +206,11 @@ const SalesEntryForm = () => {
                     gstPercentage: sale.gstPercentage || 0,
                     dueDate: sale.dueDate ? new Date(sale.dueDate).toISOString().split('T')[0] : '',
                     notes: sale.notes || '',
+                    vehicleId: sale.vehicleId?._id || sale.vehicleId || '',
+                    vehicleType: sale.vehicleId?.category || 'Lorry',
+                    driverId: sale.driverId?._id || sale.driverId || '',
+                    fromLocation: sale.fromLocation || 'Quarry',
+                    toLocation: sale.toLocation || '',
                 });
                 setItems(
                     sale.items?.map((item: any) => ({
@@ -342,7 +411,54 @@ const SalesEntryForm = () => {
                             </div>
                         </div>
 
-                        {/* Section 3: GST & Totals */}
+                        {/* Section 3: Vehicle & Loading Details */}
+                        <div className="space-y-5">
+                            <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2">
+                                <IconEdit className="w-4 h-4" />
+                                Vehicle & Loading Details (வண்டி விவரங்கள்)
+                            </div>
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+                                <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Vehicle Type</label>
+                                    <select name="vehicleType" className="form-select" value={formData.vehicleType} onChange={handleChange}>
+                                        <option value="Lorry">Lorry</option>
+                                        <option value="Tipper">Tipper</option>
+                                        <option value="Tractor">Tractor</option>
+                                        <option value="JCB">JCB</option>
+                                        <option value="Poclain">Poclain</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block font-primary">Vehicle Number</label>
+                                    <select name="vehicleId" className="form-select border-primary/50" value={formData.vehicleId} onChange={handleChange}>
+                                        <option value="">Select Vehicle (optional)</option>
+                                        {filteredVehicles.map(v => (
+                                            <option key={v._id} value={v._id}>{v.vehicleNumber || v.registrationNumber} ({v.name})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Driver Name</label>
+                                    <select name="driverId" className="form-select" value={formData.driverId} onChange={handleChange}>
+                                        <option value="">Select Driver</option>
+                                        {labours.filter(l => l.workType?.toLowerCase().includes('driver')).map(l => (
+                                            <option key={l._id} value={l._id}>{l.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">From Location</label>
+                                    <input type="text" name="fromLocation" className="form-input font-bold text-primary" value={formData.fromLocation} onChange={handleChange} placeholder="Quarry" />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">To Location (Destination)</label>
+                                    <input type="text" name="toLocation" className="form-input" value={formData.toLocation} onChange={handleChange} placeholder="Enter destination..." />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 4: GST & Totals */}
                         <div className="space-y-5">
                             <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2">
                                 <IconEdit className="w-4 h-4" />
@@ -400,14 +516,24 @@ const SalesEntryForm = () => {
             {/* Sales Table — hidden when form is open */}
             {!showForm && (
                 <div className="panel">
-                    <div className="flex items-center justify-between mb-5">
-                        <h5 className="text-lg font-bold dark:text-white-light">விற்பனை பட்டியல் (Sales List)</h5>
-                        {!showForm && (
-                            <button className="btn btn-primary shadow-lg shadow-primary/20" onClick={handleCreateNew}>
+                    <div className="flex items-center justify-between flex-wrap gap-4 mb-5">
+                        <h5 className="text-lg font-bold dark:text-white-light whitespace-nowrap">விற்பனை பட்டியல் (Sales List)</h5>
+                        <div className="flex items-center gap-3 flex-1 justify-end min-w-[300px]">
+                            <div className="relative flex-1">
+                                <input
+                                    type="text"
+                                    placeholder="Search invoice, customer, or vehicle..."
+                                    className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                                <IconSearch className="w-5 h-5 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                            </div>
+                            <button className="btn btn-primary shadow-lg shadow-primary/20 whitespace-nowrap" onClick={handleCreateNew}>
                                 <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
                                 Create New Sale
                             </button>
-                        )}
+                        </div>
                     </div>
                     <div className="table-responsive">
                         <table className="table-hover">
@@ -417,6 +543,7 @@ const SalesEntryForm = () => {
                                     <th>Invoice #</th>
                                     <th>Date</th>
                                     <th>Customer</th>
+                                    <th>Vehicle</th>
                                     <th>Items</th>
                                     <th>Type</th>
                                     <th className="!text-right">Total</th>
@@ -425,51 +552,73 @@ const SalesEntryForm = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {recentSales.length === 0 ? (
-                                    <tr><td colSpan={9} className="text-center py-6 text-white-dark">No sales yet</td></tr>
+                                {recentSales.filter(s =>
+                                    s.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
+                                    s.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
+                                    s.vehicleId?.vehicleNumber?.toLowerCase().includes(search.toLowerCase()) ||
+                                    s.vehicleId?.registrationNumber?.toLowerCase().includes(search.toLowerCase())
+                                ).length === 0 ? (
+                                    <tr><td colSpan={10} className="text-center py-6 text-white-dark">No sales records found</td></tr>
                                 ) : (
-                                    recentSales.map((sale, idx) => (
-                                        <tr key={sale._id} className={editId === sale._id ? 'bg-primary/5' : ''}>
-                                            <td>{idx + 1}</td>
-                                            <td className="font-bold text-primary">{sale.invoiceNumber}</td>
-                                            <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
-                                            <td className="font-semibold">{sale.customer?.name || '—'}</td>
-                                            <td>
-                                                <span className="badge bg-dark/10 text-dark dark:bg-dark-light/10 dark:text-white-dark">
-                                                    {sale.items?.length || 0} items
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className={`badge ${sale.paymentType === 'Cash' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                                                    {sale.paymentType === 'Cash' ? '💵 Cash' : '📒 Credit'}
-                                                </span>
-                                            </td>
-                                            <td className="!text-right font-bold">₹{sale.grandTotal?.toLocaleString()}</td>
-                                            <td className="!text-center">
-                                                <span className={`badge ${sale.paymentStatus === 'Paid' ? 'bg-success/10 text-success' : sale.paymentStatus === 'Partial' ? 'bg-warning/10 text-warning' : 'bg-danger/10 text-danger'}`}>
-                                                    {sale.paymentStatus}
-                                                </span>
-                                            </td>
-                                            <td className="!text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        className="btn btn-sm btn-outline-primary"
-                                                        onClick={() => handleEdit(sale._id)}
-                                                        title="Edit Sale"
-                                                    >
-                                                        <IconEdit className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-sm btn-outline-danger"
-                                                        onClick={() => setDeleteId(sale._id)}
-                                                        title="Delete Sale"
-                                                    >
-                                                        <IconTrash className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    recentSales
+                                        .filter(s =>
+                                            s.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
+                                            s.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
+                                            s.vehicleId?.vehicleNumber?.toLowerCase().includes(search.toLowerCase()) ||
+                                            s.vehicleId?.registrationNumber?.toLowerCase().includes(search.toLowerCase())
+                                        )
+                                        .map((sale, idx) => (
+                                            <tr key={sale._id} className={editId === sale._id ? 'bg-primary/5' : ''}>
+                                                <td>{idx + 1}</td>
+                                                <td className="font-bold text-primary">{sale.invoiceNumber}</td>
+                                                <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
+                                                <td className="font-semibold">{sale.customer?.name || '—'}</td>
+                                                <td>
+                                                    {sale.vehicleId ? (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[11px] font-bold text-primary">{sale.vehicleId.vehicleNumber || sale.vehicleId.registrationNumber}</span>
+                                                            <span className="text-[9px] text-white-dark italic">@{sale.toLocation || '—'}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-white-dark text-xs">N/A</span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <span className="badge bg-dark/10 text-dark dark:bg-dark-light/10 dark:text-white-dark">
+                                                        {sale.items?.length || 0} items
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className={`badge ${sale.paymentType === 'Cash' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                                                        {sale.paymentType === 'Cash' ? '💵 Cash' : '📒 Credit'}
+                                                    </span>
+                                                </td>
+                                                <td className="!text-right font-bold">₹{sale.grandTotal?.toLocaleString()}</td>
+                                                <td className="!text-center">
+                                                    <span className={`badge ${sale.paymentStatus === 'Paid' ? 'bg-success/10 text-success' : sale.paymentStatus === 'Partial' ? 'bg-warning/10 text-warning' : 'bg-danger/10 text-danger'}`}>
+                                                        {sale.paymentStatus}
+                                                    </span>
+                                                </td>
+                                                <td className="!text-center">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => handleEdit(sale._id)}
+                                                            title="Edit Sale"
+                                                        >
+                                                            <IconEdit className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-outline-danger"
+                                                            onClick={() => setDeleteId(sale._id)}
+                                                            title="Delete Sale"
+                                                        >
+                                                            <IconTrash className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
                                 )}
                             </tbody>
                         </table>

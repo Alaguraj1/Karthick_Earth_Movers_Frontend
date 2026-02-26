@@ -195,35 +195,7 @@ const ComponentsDashboardSales = () => {
         },
     };
 
-    //Daily Sales (Weekly Production)
-    const productionLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const productionDataArr = [0, 0, 0, 0, 0, 0, 0];
-    data?.weeklyProduction?.forEach((p: any) => {
-        productionDataArr[p._id - 1] = p.total;
-    });
 
-    const dailySales: any = {
-        series: [
-            {
-                name: 'Production (Tons)',
-                data: productionDataArr,
-            }
-        ],
-        options: {
-            chart: { height: 160, type: 'bar', fontFamily: 'Nunito, sans-serif', toolbar: { show: false } },
-            dataLabels: { enabled: false },
-            stroke: { show: true, width: 1 },
-            colors: ['#00ab55'],
-            xaxis: {
-                categories: productionLabels,
-                axisBorder: { show: false }, axisTicks: { show: false },
-            },
-            yaxis: { show: false },
-            fill: { opacity: 1 },
-            plotOptions: { bar: { horizontal: false, columnWidth: '40%', borderRadius: 4 } },
-            grid: { show: false, padding: { top: 10, right: 0, bottom: 0, left: 0 } },
-        },
-    };
 
     //Total Loads Sent Chart
     const totalOrders: any = {
@@ -351,15 +323,7 @@ const ComponentsDashboardSales = () => {
                     </div>
 
                     <div className="mb-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                        <div className="panel h-full sm:col-span-2 xl:col-span-1 border-none shadow-xl rounded-3xl">
-                            <div className="mb-5 flex items-center px-2">
-                                <h5 className="text-xl font-black uppercase tracking-tight dark:text-white-light">Weekly Production (வார உற்பத்தி)</h5>
-                            </div>
-                            <div>
-                                {isMounted && <ReactApexChart series={dailySales.series} options={dailySales.options} type="bar" height={160} width={'100%'} />}
-                                <p className="text-[10px] font-black uppercase text-white-dark mt-4 text-center tracking-widest italic opacity-50">Last 7 days production records</p>
-                            </div>
-                        </div>
+
 
                         <div className="panel h-full border-none shadow-xl rounded-3xl bg-gradient-to-br from-white to-gray-50 dark:from-black dark:to-gray-900">
                             <div className="mb-8 flex items-center px-2">
