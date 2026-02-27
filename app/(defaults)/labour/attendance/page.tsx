@@ -29,7 +29,7 @@ const AttendancePage = () => {
 
                 const initial: any = {};
                 activeLabours.forEach((l: any) => {
-                    initial[l._id] = { status: 'Present', overtimeHours: 0 };
+                    initial[l._id] = { status: null, overtimeHours: 0 };
                 });
 
                 const { data: attJson } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/attendance?date=${selectedDate}`);
@@ -164,7 +164,7 @@ const AttendancePage = () => {
     };
 
     const renderWorkerCard = (labour: any) => {
-        const status = attendanceData[labour._id]?.status || 'Present';
+        const status = attendanceData[labour._id]?.status || null;
         const isVendor = labour.labourType === 'Vendor';
 
         return (
@@ -174,13 +174,16 @@ const AttendancePage = () => {
                     ? 'border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-900/20 dark:to-gray-800 dark:border-emerald-800'
                     : status === 'Half Day'
                         ? 'border-amber-200 bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-900/20 dark:to-gray-800 dark:border-amber-800'
-                        : 'border-red-200 bg-gradient-to-br from-red-50/80 to-white dark:from-red-900/20 dark:to-gray-800 dark:border-red-800'
+                        : status === 'Absent'
+                            ? 'border-red-200 bg-gradient-to-br from-red-50/80 to-white dark:from-red-900/20 dark:to-gray-800 dark:border-red-800'
+                            : 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700'
                     }`}
             >
                 {/* Status Indicator Strip */}
                 <div className={`h-1 w-full ${status === 'Present' ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
                     status === 'Half Day' ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
-                        'bg-gradient-to-r from-red-400 to-red-500'
+                        status === 'Absent' ? 'bg-gradient-to-r from-red-400 to-red-500' :
+                            'bg-gray-200 dark:bg-gray-700'
                     }`}></div>
 
                 <div className="p-4">
@@ -272,7 +275,7 @@ const AttendancePage = () => {
     };
 
     const renderWorkerRow = (labour: any) => {
-        const status = attendanceData[labour._id]?.status || 'Present';
+        const status = attendanceData[labour._id]?.status || null;
         const isVendor = labour.labourType === 'Vendor';
 
         return (

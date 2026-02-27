@@ -64,7 +64,7 @@ const SalesEntryForm = () => {
     useEffect(() => {
         const fetchMasterData = async () => {
             try {
-                const res = await axios.get(`${API}/customers?status=active`);
+                const res = await axios.get(`${API}/customers`);
                 if (res.data.success) setCustomers(res.data.data);
             } catch (error) { console.error('Error fetching customers:', error); }
 

@@ -455,137 +455,137 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Date</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Date</th>
                                     {category === 'Diesel' ? (
                                         <>
-                                            <th>Vehicle/Machine</th>
-                                            <th>Litres</th>
-                                            <th>Rate</th>
-                                            <th>Meter</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Vehicle/Machine</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Litres</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Rate</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Meter</th>
                                         </>
                                     ) : category === 'Explosive Cost' ? (
                                         <>
-                                            <th>Site</th>
-                                            <th>Material</th>
-                                            <th>Qty/Rate</th>
-                                            <th>Supplier</th>
-                                            <th>Supervisor</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Site</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Material</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Qty/Rate</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Supplier</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Supervisor</th>
                                         </>
                                     ) : category === 'Transport Charges' ? (
                                         <>
-                                            <th>Type</th>
-                                            <th>Route (From-To)</th>
-                                            <th>Vehicle</th>
-                                            <th>Load</th>
-                                            <th>Qty/Rate</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Type</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Route (From-To)</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Vehicle</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Load</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Qty/Rate</th>
                                         </>
                                     ) : category === 'Machine Maintenance' ? (
                                         <>
-                                            <th>Machine</th>
-                                            <th>Type</th>
-                                            <th>Parts</th>
-                                            <th>Labour</th>
-                                            <th>Hours</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Machine</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Type</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Parts</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Labour</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Hours</th>
                                         </>
                                     ) : category === 'Labour Wages' ? (
                                         <>
-                                            <th>Labour</th>
-                                            <th>Work Type</th>
-                                            <th>Wage Type</th>
-                                            <th>Days/Hrs</th>
-                                            <th>Total</th>
-                                            <th>Net Pay</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Labour</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Work Type</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Wage Type</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Days/Hrs</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Total</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Net Pay</th>
                                         </>
                                     ) : category === 'Office & Misc' ? (
                                         <>
-                                            <th>Expense Type</th>
-                                            <th>Paid To</th>
-                                            <th>Bill No</th>
-                                            <th>Description</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Expense Type</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Paid To</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Bill No</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Description</th>
                                         </>
                                     ) : (
                                         <>
-                                            <th>Vehicle/Machine</th>
-                                            <th>Description</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Vehicle/Machine</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Description</th>
                                         </>
                                     )}
-                                    <th>Amount</th>
-                                    <th>Source</th>
-                                    <th className="text-center">Action</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Amount</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Source</th>
+                                    <th className="text-center font-black uppercase tracking-widest text-[10px] py-4">Action</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="font-bold">
                                 {loading ? (
                                     <tr><td colSpan={7} className="text-center">Loading...</td></tr>
                                 ) : expenses.length === 0 ? (
                                     <tr><td colSpan={7} className="text-center">No records found.</td></tr>
                                 ) : (
                                     expenses.map((expense: any) => (
-                                        <tr key={expense._id}>
-                                            <td>{new Date(expense.date).toLocaleDateString()}</td>
+                                        <tr key={expense._id} className="group hover:bg-primary/5 transition-all">
+                                            <td className="py-2">{new Date(expense.date).toLocaleDateString()}</td>
                                             {category === 'Diesel' ? (
                                                 <>
-                                                    <td>{expense.vehicleOrMachine || '-'}</td>
-                                                    <td>{expense.quantity || '-'}</td>
-                                                    <td>₹{expense.rate || '-'}</td>
-                                                    <td>{expense.meterReading || '-'}</td>
+                                                    <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
+                                                    <td className="py-2">{expense.quantity || '-'}</td>
+                                                    <td className="py-2">₹{expense.rate || '-'}</td>
+                                                    <td className="py-2">{expense.meterReading || '-'}</td>
                                                 </>
                                             ) : category === 'Explosive Cost' ? (
                                                 <>
-                                                    <td>{expense.site || '-'}</td>
-                                                    <td><span className="badge badge-outline-warning">{expense.explosiveType || '-'}</span></td>
-                                                    <td>{expense.quantity} {expense.unit} @ ₹{expense.rate}</td>
-                                                    <td>
+                                                    <td className="py-2">{expense.site || '-'}</td>
+                                                    <td className="py-2"><span className="badge badge-outline-warning">{expense.explosiveType || '-'}</span></td>
+                                                    <td className="py-2">{expense.quantity} {expense.unit} @ ₹{expense.rate}</td>
+                                                    <td className="py-2">
                                                         <div className="font-semibold">{expense.supplierName || '-'}</div>
                                                         {expense.licenseNumber && <div className="text-[10px] text-white-dark">Lic: {expense.licenseNumber}</div>}
                                                     </td>
-                                                    <td>{expense.supervisorName || '-'}</td>
+                                                    <td className="py-2">{expense.supervisorName || '-'}</td>
                                                 </>
                                             ) : category === 'Transport Charges' ? (
                                                 <>
-                                                    <td><span className="badge badge-outline-secondary">{expense.transportType || '-'}</span></td>
-                                                    <td className="text-xs">
+                                                    <td className="py-2"><span className="badge badge-outline-secondary">{expense.transportType || '-'}</span></td>
+                                                    <td className="text-xs py-2">
                                                         <div className="flex flex-col">
                                                             <span className="text-primary font-medium">{expense.fromLocation || '-'}</span>
                                                             <span className="text-white-dark">to {expense.toLocation || '-'}</span>
                                                         </div>
                                                     </td>
-                                                    <td>{expense.vehicleOrMachine || '-'}</td>
+                                                    <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
                                                     <td className="text-xs italic">{expense.loadDetails || '-'}</td>
-                                                    <td>{expense.quantity || '1'} @ ₹{expense.rate || '0'}</td>
+                                                    <td className="py-2">{expense.quantity || '1'} @ ₹{expense.rate || '0'}</td>
                                                 </>
                                             ) : category === 'Machine Maintenance' ? (
                                                 <>
-                                                    <td>{expense.vehicleOrMachine || '-'}</td>
-                                                    <td><span className="badge badge-outline-info">{expense.maintenanceType || '-'}</span></td>
-                                                    <td>₹{expense.sparePartsCost || '0'}</td>
-                                                    <td>₹{expense.labourCharge || '0'}</td>
-                                                    <td>{expense.meterReading || '-'} Hrs</td>
+                                                    <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
+                                                    <td className="py-2"><span className="badge badge-outline-info">{expense.maintenanceType || '-'}</span></td>
+                                                    <td className="py-2">₹{expense.sparePartsCost || '0'}</td>
+                                                    <td className="py-2">₹{expense.labourCharge || '0'}</td>
+                                                    <td className="py-2">{expense.meterReading || '-'} Hrs</td>
                                                 </>
                                             ) : category === 'Labour Wages' ? (
                                                 <>
-                                                    <td>{expense.labourName || '-'}</td>
-                                                    <td><span className="badge badge-outline-info">{expense.workType || 'General'}</span></td>
-                                                    <td>{expense.wageType || '-'}</td>
-                                                    <td>{expense.quantity || '-'}</td>
-                                                    <td>₹{expense.amount?.toLocaleString() || '0'}</td>
-                                                    <td className="font-bold text-success">₹{expense.netPay?.toLocaleString() || '0'}</td>
+                                                    <td className="py-2">{expense.labourName || '-'}</td>
+                                                    <td className="py-2"><span className="badge badge-outline-info">{expense.workType || 'General'}</span></td>
+                                                    <td className="py-2">{expense.wageType || '-'}</td>
+                                                    <td className="py-2">{expense.quantity || '-'}</td>
+                                                    <td className="py-2">₹{expense.amount?.toLocaleString() || '0'}</td>
+                                                    <td className="font-bold text-success py-2">₹{expense.netPay?.toLocaleString() || '0'}</td>
                                                 </>
                                             ) : category === 'Office & Misc' ? (
                                                 <>
-                                                    <td><span className="badge badge-outline-primary">{expense.officeExpenseType || '-'}</span></td>
-                                                    <td>{expense.paidTo || '-'}</td>
-                                                    <td>{expense.billNumber || '-'}</td>
-                                                    <td className="text-xs">{expense.description || '-'}</td>
+                                                    <td className="py-2"><span className="badge badge-outline-primary">{expense.officeExpenseType || '-'}</span></td>
+                                                    <td className="py-2">{expense.paidTo || '-'}</td>
+                                                    <td className="py-2">{expense.billNumber || '-'}</td>
+                                                    <td className="text-xs py-2">{expense.description || '-'}</td>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <td>{expense.vehicleOrMachine || '-'}</td>
-                                                    <td>{expense.description || '-'}</td>
+                                                    <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
+                                                    <td className="py-2">{expense.description || '-'}</td>
                                                 </>
                                             )}
-                                            <td className="font-bold text-primary">₹{expense.amount.toLocaleString()}</td>
-                                            <td>
+                                            <td className="font-bold text-primary py-2 text-lg">₹{expense.amount.toLocaleString()}</td>
+                                            <td className="py-2">
                                                 {expense.sourceModel !== 'Manual' ? (
                                                     <div className="flex flex-col">
                                                         <span className="badge badge-outline-warning text-[8px] py-0 px-1">{expense.sourceModel}</span>
@@ -595,7 +595,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                     <span className="text-xs text-white-dark italic">Manual</span>
                                                 )}
                                             </td>
-                                            <td className="text-center">
+                                            <td className="text-center py-2">
                                                 {expense.billUrl && (
                                                     <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${expense.billUrl}`} target="_blank" className="text-primary hover:underline block mb-1">
                                                         View Bill
@@ -650,14 +650,14 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                             </div>
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                                 <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Date (தேதி)</label>
-                                    <input type="date" name="date" className="form-input" value={formData.date} onChange={handleChange} required />
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Date (தேதி)</label>
+                                    <input type="date" name="date" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.date} onChange={handleChange} required />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block font-primary">
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">
                                         {category === 'Transport Charges' ? 'Transport Vehicle Type' : (category === 'Labour Wages' ? 'Link to Machine' : 'Category Type')}
                                     </label>
-                                    <select name="vehicleType" className="form-select border-primary/20" value={formData.vehicleType} onChange={handleChange}>
+                                    <select name="vehicleType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.vehicleType} onChange={handleChange}>
                                         <option value="">{category === 'Labour Wages' ? 'None / General' : 'Select Category'}</option>
                                         {category === 'Transport Charges' ? (
                                             <>
@@ -678,8 +678,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 </div>
                                 {formData.vehicleType && filteredVehicles.length > 0 && (
                                     <div>
-                                        <label className="text-xs font-bold text-primary uppercase mb-2 block">Specific Number / ID (வண்டி எண்)</label>
-                                        <select name="vehicleNumber" className="form-select border-primary animate-pulse-once" value={formData.vehicleNumber} onChange={handleChange}>
+                                        <label className="text-[10px] font-black text-primary uppercase tracking-widest mb-2 block">Specific Number / ID (வண்டி எண்)</label>
+                                        <select name="vehicleNumber" className="form-select border-2 font-bold rounded-xl h-12 border-primary animate-pulse-once" value={formData.vehicleNumber} onChange={handleChange}>
                                             <option value="">Select No / ID</option>
                                             {filteredVehicles.map((v: any) => (
                                                 <option key={v._id} value={v.vehicleNumber || v.registrationNumber}>
@@ -703,19 +703,19 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 {['Diesel', 'Explosive Cost', 'Transport Charges'].includes(category) && (
                                     <>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">
                                                 {category === 'Diesel' ? 'Litres (லிட்டர்)' : category === 'Explosive Cost' ? 'Quantity' : 'Trips / Qty'}
                                             </label>
-                                            <input type="number" name="quantity" className="form-input" value={formData.quantity} onChange={handleChange} required step="any" min="0" />
+                                            <input type="number" name="quantity" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.quantity} onChange={handleChange} required step="any" min="0" />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Rate per Unit (விலை)</label>
-                                            <input type="number" name="rate" className="form-input" value={formData.rate} onChange={handleChange} required step="any" min="0" />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Rate per Unit (விலை)</label>
+                                            <input type="number" name="rate" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.rate} onChange={handleChange} required step="any" min="0" />
                                         </div>
                                         {category === 'Diesel' && (
                                             <div>
-                                                <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Meter Reading (மீட்டர்)</label>
-                                                <input type="text" name="meterReading" className="form-input" value={formData.meterReading} onChange={handleChange} placeholder="Odo / Hours" />
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Meter Reading (மீட்டர்)</label>
+                                                <input type="text" name="meterReading" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.meterReading} onChange={handleChange} placeholder="Odo / Hours" />
                                             </div>
                                         )}
                                     </>
@@ -724,8 +724,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 {category === 'Explosive Cost' && (
                                     <>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Site Location (இடம்)</label>
-                                            <select name="site" className="form-select border-primary" value={formData.site} onChange={handleChange} required>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Site Location (இடம்)</label>
+                                            <select name="site" className="form-select border-2 font-bold rounded-xl h-12 border-primary" value={formData.site} onChange={handleChange} required>
                                                 <option value="">Select Location</option>
                                                 <option value="Main Quarry Pit">Main Quarry Pit</option>
                                                 <option value="Crusher Side">Crusher Side</option>
@@ -735,8 +735,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Explosive Type (வகை)</label>
-                                            <select name="explosiveType" className="form-select" value={formData.explosiveType} onChange={handleChange} required>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Explosive Type (வகை)</label>
+                                            <select name="explosiveType" className="form-select border-2 font-bold rounded-xl h-12" value={formData.explosiveType} onChange={handleChange} required>
                                                 <option value="">Select Material</option>
                                                 <option value="Gelatin">Gelatin</option>
                                                 <option value="Detonator">Detonator</option>
@@ -748,8 +748,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Unit (அலகு)</label>
-                                            <select name="unit" className="form-select" value={formData.unit} onChange={handleChange}>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Unit (அலகு)</label>
+                                            <select name="unit" className="form-select border-2 font-bold rounded-xl h-12" value={formData.unit} onChange={handleChange}>
                                                 <option value="Nos">Nos</option>
                                                 <option value="Kg">Kg</option>
                                                 <option value="Meter">Meter</option>
@@ -757,16 +757,16 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-primary">Supplier Name (விநியோகஸ்தர்)</label>
-                                            <input type="text" name="supplierName" className="form-input border-primary/20" value={formData.supplierName} onChange={handleChange} placeholder="ABC Explosives etc." />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary">Supplier Name (விநியோகஸ்தர்)</label>
+                                            <input type="text" name="supplierName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20" value={formData.supplierName} onChange={handleChange} placeholder="ABC Explosives etc." />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">License / Permit No</label>
-                                            <input type="text" name="licenseNumber" className="form-input" value={formData.licenseNumber} onChange={handleChange} placeholder="Supplier / Blasting License" />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">License / Permit No</label>
+                                            <input type="text" name="licenseNumber" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.licenseNumber} onChange={handleChange} placeholder="Supplier / Blasting License" />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-primary">Supervisor / Blaster Name</label>
-                                            <input type="text" name="supervisorName" className="form-input border-primary/20" value={formData.supervisorName} onChange={handleChange} placeholder="Licensed Blaster Name" />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary">Supervisor / Blaster Name</label>
+                                            <input type="text" name="supervisorName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20" value={formData.supervisorName} onChange={handleChange} placeholder="Licensed Blaster Name" />
                                         </div>
                                     </>
                                 )}
@@ -774,8 +774,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 {category === 'Transport Charges' && (
                                     <>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Transport Type (வகை)</label>
-                                            <select name="transportType" className="form-select border-primary/20 font-medium" value={formData.transportType} onChange={handleChange}>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Transport Type (வகை)</label>
+                                            <select name="transportType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20 font-medium" value={formData.transportType} onChange={handleChange}>
                                                 <option value="">Select Type</option>
                                                 <option value="Material Transport">Material Transport</option>
                                                 <option value="Machine Transport">Machine Transport</option>
@@ -785,24 +785,24 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">From Location (எங்கிருந்து)</label>
-                                            <input type="text" name="fromLocation" className="form-input" value={formData.fromLocation} onChange={handleChange} placeholder="e.g. Salem Yard" />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">From Location (எங்கிருந்து)</label>
+                                            <input type="text" name="fromLocation" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.fromLocation} onChange={handleChange} placeholder="e.g. Salem Yard" />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">To Location (எங்கு)</label>
-                                            <input type="text" name="toLocation" className="form-input text-primary font-medium" value={formData.toLocation} onChange={handleChange} placeholder="e.g. Client Site" />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">To Location (எங்கு)</label>
+                                            <input type="text" name="toLocation" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 text-primary font-medium" value={formData.toLocation} onChange={handleChange} placeholder="e.g. Client Site" />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Driver Name (ஓட்டுனர் பெயர்)</label>
-                                            <input type="text" name="driverName" className="form-input" value={formData.driverName} onChange={handleChange} placeholder="Enter name..." />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Driver Name (ஓட்டுனர் பெயர்)</label>
+                                            <input type="text" name="driverName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.driverName} onChange={handleChange} placeholder="Enter name..." />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Transport Owner / Vendor</label>
-                                            <input type="text" name="vendorName" className="form-input" value={formData.vendorName} onChange={handleChange} placeholder="Siva Transports etc." />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Transport Owner / Vendor</label>
+                                            <input type="text" name="vendorName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.vendorName} onChange={handleChange} placeholder="Siva Transports etc." />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Load Details (சுமை விவரம்)</label>
-                                            <input type="text" name="loadDetails" className="form-input" value={formData.loadDetails} onChange={handleChange} placeholder="e.g. 10 Units Blue Metal" />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Load Details (சுமை விவரம்)</label>
+                                            <input type="text" name="loadDetails" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.loadDetails} onChange={handleChange} placeholder="e.g. 10 Units Blue Metal" />
                                         </div>
                                     </>
                                 )}
@@ -810,8 +810,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 {category === 'Labour Wages' && (
                                     <>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-primary">Work Type (வேலை வகை)</label>
-                                            <select name="workType" className="form-select border-primary/50 font-bold" value={formData.workType} onChange={handleChange}>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary">Work Type (வேலை வகை)</label>
+                                            <select name="workType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/50 font-bold" value={formData.workType} onChange={handleChange}>
                                                 <option value="">All Work Types</option>
                                                 <option value="Machine Operator">Machine Operator</option>
                                                 <option value="Helper">Helper</option>
@@ -827,16 +827,16 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-secondary">Labour Type (தொழிலாளர் வகை)</label>
-                                            <select name="labourType" className="form-select border-secondary/50 font-bold" value={formData.labourType} onChange={handleChange}>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-secondary">Labour Type (தொழிலாளர் வகை)</label>
+                                            <select name="labourType" className="form-select border-2 font-bold rounded-xl h-12 border-secondary/50 font-bold" value={formData.labourType} onChange={handleChange}>
                                                 <option value="">All Types</option>
                                                 <option value="Direct">நேரடி (Direct)</option>
                                                 <option value="Vendor">கான்ட்ராக்டர் (Contractor)</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Labour Name (தொழிலாளர் பெயர்)</label>
-                                            <select name="labourName" className="form-select" value={formData.labourName} onChange={handleChange} required>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Name (தொழிலாளர் பெயர்)</label>
+                                            <select name="labourName" className="form-select border-2 font-bold rounded-xl h-12" value={formData.labourName} onChange={handleChange} required>
                                                 <option value="">Select Labour</option>
                                                 {labours
                                                     .filter(l => (!formData.workType || l.workType === formData.workType) &&
@@ -845,8 +845,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Wage Type</label>
-                                            <select name="wageType" className="form-select bg-gray-50 dark:bg-dark-light/10" value={formData.wageType} onChange={handleChange} disabled>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Wage Type</label>
+                                            <select name="wageType" className="form-select border-2 font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10" value={formData.wageType} onChange={handleChange} disabled>
                                                 <option value="">Select Type</option>
                                                 <option value="Daily Wage">Daily Wage</option>
                                                 <option value="Monthly Salary">Monthly Salary</option>
@@ -855,23 +855,23 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Quantity / Days</label>
-                                            <input type="number" name="quantity" className="form-input bg-gray-50 dark:bg-dark-light/10" value={formData.quantity} onChange={handleChange} readOnly />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Quantity / Days</label>
+                                            <input type="number" name="quantity" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10" value={formData.quantity} onChange={handleChange} readOnly />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Rate (Monthly/Daily)</label>
-                                            <input type="number" name="rate" className="form-input bg-gray-50 dark:bg-dark-light/10" value={formData.rate} onChange={handleChange} readOnly />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Rate (Monthly/Daily)</label>
+                                            <input type="number" name="rate" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10" value={formData.rate} onChange={handleChange} readOnly />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Per Day Salary</label>
-                                            <input type="text" name="perDaySalary" className="form-input bg-gray-50 dark:bg-dark-light/10" value={formData.perDaySalary} readOnly />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Per Day Salary</label>
+                                            <input type="text" name="perDaySalary" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10" value={formData.perDaySalary} readOnly />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-danger font-bold">Advance Deduction</label>
-                                            <input type="number" name="advanceDeduction" className="form-input bg-gray-50 dark:bg-dark-light/10 border-danger/20" value={formData.advanceDeduction} onChange={handleChange} readOnly />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-danger font-bold">Advance Deduction</label>
+                                            <input type="number" name="advanceDeduction" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10 border-danger/20" value={formData.advanceDeduction} onChange={handleChange} readOnly />
                                         </div>
                                         <div className="bg-success/5 p-3 rounded-lg border border-success/20 sm:col-span-2 lg:col-span-1">
-                                            <label className="text-xs font-bold text-success uppercase mb-1 block">Net Payable</label>
+                                            <label className="text-[10px] font-black text-success uppercase tracking-widest mb-1 block">Net Payable</label>
                                             <div className="text-xl font-bold text-success">₹ {parseFloat(formData.netPay || '0').toLocaleString()}</div>
                                         </div>
                                     </>
@@ -880,8 +880,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 {category === 'Machine Maintenance' && (
                                     <>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Maintenance Type</label>
-                                            <select name="maintenanceType" className="form-select" value={formData.maintenanceType} onChange={handleChange} required>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Maintenance Type</label>
+                                            <select name="maintenanceType" className="form-select border-2 font-bold rounded-xl h-12" value={formData.maintenanceType} onChange={handleChange} required>
                                                 <option value="">Select Type</option>
                                                 <option value="Service (General Service)">Service (General Service)</option>
                                                 <option value="Oil Change">Oil Change</option>
@@ -893,20 +893,20 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Spare Parts Cost</label>
-                                            <input type="number" name="sparePartsCost" className="form-input" value={formData.sparePartsCost} onChange={handleChange} min="0" />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Spare Parts Cost</label>
+                                            <input type="number" name="sparePartsCost" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.sparePartsCost} onChange={handleChange} min="0" />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Labour Charge</label>
-                                            <input type="number" name="labourCharge" className="form-input" value={formData.labourCharge} onChange={handleChange} min="0" />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Charge</label>
+                                            <input type="number" name="labourCharge" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.labourCharge} onChange={handleChange} min="0" />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Meter Reading (Hrs)</label>
-                                            <input type="text" name="meterReading" className="form-input" value={formData.meterReading} onChange={handleChange} />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Meter Reading (Hrs)</label>
+                                            <input type="text" name="meterReading" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.meterReading} onChange={handleChange} />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-primary">Next Service Due (அடுத்த சர்வீஸ்)</label>
-                                            <input type="date" name="nextServiceDate" className="form-input border-primary/20" value={formData.nextServiceDate} onChange={handleChange} />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary">Next Service Due (அடுத்த சர்வீஸ்)</label>
+                                            <input type="date" name="nextServiceDate" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20" value={formData.nextServiceDate} onChange={handleChange} />
                                         </div>
                                     </>
                                 )}
@@ -914,8 +914,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 {category === 'Office & Misc' && (
                                     <>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Expense Category (செலவு வகை)</label>
-                                            <select name="officeExpenseType" className="form-select border-primary/20" value={formData.officeExpenseType} onChange={handleChange} required>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Expense Category (செலவு வகை)</label>
+                                            <select name="officeExpenseType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.officeExpenseType} onChange={handleChange} required>
                                                 <option value="">Select Category</option>
                                                 <option value="Stationery">Stationery</option>
                                                 <option value="Electricity (EB Bill)">Electricity (EB Bill)</option>
@@ -930,19 +930,19 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Paid To (யாருக்கு)</label>
-                                            <input type="text" name="paidTo" className="form-input text-primary" value={formData.paidTo} onChange={handleChange} placeholder="e.g. EB Office / Shop Name" />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Paid To (யாருக்கு)</label>
+                                            <input type="text" name="paidTo" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 text-primary" value={formData.paidTo} onChange={handleChange} placeholder="e.g. EB Office / Shop Name" />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Bill Number (வேண்டினால்)</label>
-                                            <input type="text" name="billNumber" className="form-input" value={formData.billNumber} onChange={handleChange} placeholder="Invoice No." />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Bill Number (வேண்டினால்)</label>
+                                            <input type="text" name="billNumber" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.billNumber} onChange={handleChange} placeholder="Invoice No." />
                                         </div>
                                     </>
                                 )}
                             </div>
                             <div className="mt-4">
-                                <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Remarks / Description</label>
-                                <textarea name="description" className="form-textarea min-h-[100px]" value={formData.description} onChange={handleChange} placeholder="Enter additional details..."></textarea>
+                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Remarks / Description</label>
+                                <textarea name="description" className="form-textarea border-2 font-bold rounded-xl  min-h-[100px]" value={formData.description} onChange={handleChange} placeholder="Enter additional details..."></textarea>
                             </div>
                         </div>
 
@@ -954,8 +954,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                             </div>
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                                 <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Payment Mode</label>
-                                    <select name="paymentMode" className="form-select border-primary" value={formData.paymentMode} onChange={handleChange}>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Payment Mode</label>
+                                    <select name="paymentMode" className="form-select border-2 font-bold rounded-xl h-12 border-primary" value={formData.paymentMode} onChange={handleChange}>
                                         <option value="Cash">Cash (ரொக்கம்)</option>
                                         <option value="Credit">Credit (கடன்)</option>
                                         <option value="Bank Transfer">Bank Transfer</option>
@@ -964,13 +964,13 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Total Amount (மொத்தம்)</label>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Total Amount (மொத்தம்)</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">₹</span>
                                         <input
                                             type="number"
                                             name="amount"
-                                            className="form-input pl-8 font-bold text-lg border-primary text-primary"
+                                            className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 pl-8 font-bold text-lg border-primary text-primary"
                                             value={formData.amount}
                                             onChange={handleChange}
                                             required
@@ -980,9 +980,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     </div>
                                 </div>
                                 <div className="lg:col-span-1">
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Bill Attachment</label>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Bill Attachment</label>
                                     <div className="flex items-center gap-2">
-                                        <input type="file" className="form-input flex-1" onChange={handleFileChange} accept=".jpg,.jpeg,.png,.pdf" />
+                                        <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={handleFileChange} accept=".jpg,.jpeg,.png,.pdf" />
                                         {formData.billUrl && (
                                             <a
                                                 href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${formData.billUrl}`}
@@ -1020,7 +1020,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     <div className="fixed inset-0 z-[999] overflow-y-auto">
                         <div className="flex min-h-screen items-start justify-center px-4">
                             <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-                                <DialogPanel className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                <DialogPanel className="panel my-8 w-full max-w-lg overflow-hidden rounded-2xl border-0 p-0 text-black shadow-2xl dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
                                         <div className="text-lg font-bold">Confirm Delete</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setDeleteModal(false)}>

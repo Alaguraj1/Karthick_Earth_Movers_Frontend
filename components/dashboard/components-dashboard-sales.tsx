@@ -223,33 +223,9 @@ const ComponentsDashboardSales = () => {
                 </ul>
 
                 {/* Real-time Alerts Section */}
-                {(data?.alerts?.lowStock?.length > 0 || data?.alerts?.compliance?.length > 0) && (
+                {(data?.alerts?.compliance?.length > 0) && (
                     <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Low Stock Alerts */}
-                        {data?.alerts?.lowStock?.length > 0 && (
-                            <div className="panel bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 border-orange-200 dark:border-orange-800 rounded-2xl shadow-lg animate-pulse-subtle">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="h-10 w-10 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
-                                        <IconBox className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h5 className="font-black uppercase tracking-tight text-orange-800 dark:text-orange-400">Low Stock Alert (குறைவான இருப்பு)</h5>
-                                        <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Re-order required immediately</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    {data?.alerts?.lowStock.map((item: any) => (
-                                        <div key={item._id} className="flex items-center justify-between bg-white/50 dark:bg-black/20 p-3 rounded-xl border border-orange-200/50 dark:border-orange-800/50 group hover:scale-[1.02] transition-transform">
-                                            <span className="font-black text-sm uppercase italic tracking-tight">{item.name}</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-black text-danger bg-danger/10 px-2 py-1 rounded-lg italic">{item.currentStock} {item.unit}</span>
-                                                <IconAlertTriangle className="w-4 h-4 text-danger animate-bounce" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {/* Low Stock Alerts removed */}
 
                         {/* Compliance Alerts */}
                         {data?.alerts?.compliance?.length > 0 && (

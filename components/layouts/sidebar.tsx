@@ -193,7 +193,7 @@ const Sidebar = () => {
                                         <button type="button" className={`${currentMenu === 'asset-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('asset-mgmt')}>
                                             <div className="flex items-center">
                                                 <IconMenuWidgets className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark uppercase tracking-widest text-[10px] font-black">Machine & Vehicle</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Machine & Vehicle</span>
                                             </div>
 
                                             <div className={currentMenu !== 'asset-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
@@ -250,7 +250,7 @@ const Sidebar = () => {
                                         <button type="button" className={`${currentMenu === 'transport-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('transport-mgmt')}>
                                             <div className="flex items-center">
                                                 <IconMenuScrumboard className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark uppercase tracking-widest text-[10px] font-black">Transport Management</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Transport Management</span>
                                             </div>
 
                                             <div className={currentMenu !== 'transport-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
@@ -274,7 +274,7 @@ const Sidebar = () => {
                                         <button type="button" className={`${currentMenu === 'vendor-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('vendor-mgmt')}>
                                             <div className="flex items-center">
                                                 <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark uppercase tracking-widest text-[10px] font-black">Vendor Management</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Vendor Management</span>
                                             </div>
 
                                             <div className={currentMenu !== 'vendor-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
@@ -307,7 +307,7 @@ const Sidebar = () => {
                                         <button type="button" className={`${currentMenu === 'accounts-reports' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('accounts-reports')}>
                                             <div className="flex items-center">
                                                 <IconMenuCharts className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark uppercase tracking-widest text-[10px] font-black">Accounts & Reports</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Accounts & Reports</span>
                                             </div>
 
                                             <div className={currentMenu !== 'accounts-reports' ? '-rotate-90 rtl:rotate-90' : ''}>

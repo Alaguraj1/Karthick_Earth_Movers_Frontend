@@ -15,8 +15,7 @@ const StoneTypesMaster = () => {
         name: '',
         description: '',
         unit: 'Tons',
-        defaultPrice: '',
-        openingStock: ''
+        defaultPrice: ''
     });
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
@@ -51,7 +50,7 @@ const StoneTypesMaster = () => {
                 alert(editItem ? 'Updated successfully!' : 'Added successfully!');
                 setNewItem({
                     name: '', description: '',
-                    unit: 'Tons', defaultPrice: '', openingStock: ''
+                    unit: 'Tons', defaultPrice: ''
                 });
                 setEditItem(null);
                 setFormView(false);
@@ -70,8 +69,7 @@ const StoneTypesMaster = () => {
             name: item.name,
             description: item.description || '',
             unit: item.unit || 'Tons',
-            defaultPrice: item.defaultPrice || '',
-            openingStock: item.openingStock || ''
+            defaultPrice: item.defaultPrice || ''
         });
         setFormView(true);
     };
@@ -150,16 +148,7 @@ const StoneTypesMaster = () => {
                                     placeholder="0.00"
                                 />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Opening Stock (தொடக்க இருப்பு)</label>
-                                <input
-                                    type="number"
-                                    className="form-input border-2 font-bold rounded-xl h-12"
-                                    value={newItem.openingStock}
-                                    onChange={(e) => setNewItem({ ...newItem, openingStock: e.target.value })}
-                                    placeholder="0"
-                                />
-                            </div>
+
 
                             <div className="md:col-span-3">
                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">விவரம் (Additional Remarks)</label>
@@ -191,7 +180,7 @@ const StoneTypesMaster = () => {
                         </h5>
                         <button type="button" className="btn btn-primary shadow-[0_10px_20px_rgba(67,97,238,0.3)] rounded-xl py-2.5 px-6 font-black uppercase tracking-widest text-[10px]" onClick={() => {
                             setNewItem({
-                                name: '', description: '', unit: 'Tons', defaultPrice: '', openingStock: ''
+                                name: '', description: '', unit: 'Tons', defaultPrice: ''
                             });
                             setEditItem(null);
                             setFormView(true);
