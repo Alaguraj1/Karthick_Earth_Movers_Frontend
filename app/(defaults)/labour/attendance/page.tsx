@@ -89,10 +89,26 @@ const AttendancePage = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const dataToSave = Object.keys(attendanceData).map(id => ({
-                labour: id,
-                ...attendanceData[id]
-            }));
+            const dataToSave = Object.keys(attendanceData)
+                .filter(id => attendanceData[id].status !== null && attendanceData[id].status !== '')
+                .map(id => ({
+                    labour: id,
+                    ...attendanceData[id]
+                }));
+
+            if (dataToSave.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Selection',
+                    text: 'Please select an attendance option for at least one worker.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+                setSaving(false);
+                return;
+            }
 
             const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/attendance`, {
                 date: selectedDate,
