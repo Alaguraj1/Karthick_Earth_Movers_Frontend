@@ -18,6 +18,7 @@ const ContentAnimation = ({ children }: { children: React.ReactNode }) => {
         setTimeout(() => {
             setAnimation('');
         }, 1100);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pathname]);
     return (
         <>

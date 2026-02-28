@@ -7,6 +7,7 @@ import IconPlus from '@/components/icon/icon-plus';
 import IconSave from '@/components/icon/icon-save';
 import IconSearch from '@/components/icon/icon-search';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
+import Link from 'next/link';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -74,6 +75,7 @@ const VendorPaymentManagement = () => {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleChange = (e: any) => {
@@ -172,10 +174,15 @@ const VendorPaymentManagement = () => {
                     <p className="text-white-dark text-sm">Track all invoices and payments made to suppliers and contractors.</p>
                 </div>
                 {!showForm && (
-                    <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-                        <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
-                        Record New Payment
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <Link href="/vendors/outstanding" className="btn btn-outline-info shadow-sm">
+                            <span>📊</span> View Outstanding
+                        </Link>
+                        <button className="btn btn-primary shadow-lg" onClick={() => setShowForm(true)}>
+                            <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
+                            Record New Payment
+                        </button>
+                    </div>
                 )}
             </div>
 

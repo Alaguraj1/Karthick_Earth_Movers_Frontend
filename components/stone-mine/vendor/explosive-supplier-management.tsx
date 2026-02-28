@@ -35,8 +35,7 @@ const ExplosiveSupplierManagement = () => {
         gstNumber: '',
         panNumber: '',
         authorizedDealerId: '',
-        supplyItems: [] as string[],
-        ratePerUnit: 0,
+        supplyItems: [] as { material: string, rate: number }[],
         paymentTerms: '',
         openingBalance: '0'
     };
@@ -74,6 +73,7 @@ const ExplosiveSupplierManagement = () => {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleChange = (e: any) => {
@@ -82,11 +82,19 @@ const ExplosiveSupplierManagement = () => {
 
     const handleItemChange = (materialName: string) => {
         let updatedItems = [...formData.supplyItems];
-        if (updatedItems.includes(materialName)) {
-            updatedItems = updatedItems.filter(item => item !== materialName);
+        const exists = updatedItems.find(i => i.material === materialName);
+        if (exists) {
+            updatedItems = updatedItems.filter(item => item.material !== materialName);
         } else {
-            updatedItems.push(materialName);
+            updatedItems.push({ material: materialName, rate: 0 });
         }
+        setFormData({ ...formData, supplyItems: updatedItems });
+    };
+
+    const handleRateUpdate = (materialName: string, rate: number) => {
+        const updatedItems = formData.supplyItems.map(item =>
+            item.material === materialName ? { ...item, rate } : item
+        );
         setFormData({ ...formData, supplyItems: updatedItems });
     };
 
@@ -95,7 +103,7 @@ const ExplosiveSupplierManagement = () => {
         try {
             const data = {
                 ...formData,
-                ratePerUnit: Number(formData.ratePerUnit),
+                supplyItems: formData.supplyItems.map(item => ({ ...item, rate: Number(item.rate) })),
                 openingBalance: Number(formData.openingBalance)
             };
             if (editId) {
@@ -123,7 +131,6 @@ const ExplosiveSupplierManagement = () => {
             explosiveLicenseNumber: supplier.explosiveLicenseNumber || '',
             licenseValidityDate: supplier.licenseValidityDate ? new Date(supplier.licenseValidityDate).toISOString().split('T')[0] : '',
             supplyItems: supplier.supplyItems || [],
-            ratePerUnit: supplier.ratePerUnit?.toString() || '0',
             paymentTerms: supplier.paymentTerms || '',
             openingBalance: supplier.openingBalance?.toString() || '0'
         });
@@ -243,49 +250,102 @@ const ExplosiveSupplierManagement = () => {
                             </div>
                         </div>
 
-                        {/* Section 3: Material Rates */}
+                        {/* Section 3: Material Catalog */}
                         <div className="space-y-6 bg-warning/5 p-6 rounded-2xl border border-warning/10">
                             <div className="flex items-center gap-2 text-warning font-black uppercase text-xs tracking-[0.2em] border-b border-warning/10 pb-3 mb-4">
                                 <span className="bg-warning text-white w-6 h-6 rounded-lg inline-flex items-center justify-center text-[10px]">3</span>
-                                Material Catalog & Pricing (பொருட்கள் மற்றும் விலை)
+                                Material Catalog / Tab List (பொருட்கள் பட்டியல்)
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="md:col-span-3">
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-3 block">Supplied Materials (Select all that apply)</label>
-                                    <div className="flex flex-wrap gap-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-3 block text-warning">Available Materials</label>
+                                    <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                                         {masterMaterials.map((mat) => (
                                             <button
                                                 key={mat._id}
                                                 type="button"
                                                 onClick={() => handleItemChange(mat.name)}
-                                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${formData.supplyItems.includes(mat.name) ? 'bg-warning text-white border-warning' : 'bg-white text-warning border-warning/20 hover:bg-warning/5'}`}
+                                                className={`flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all border text-left ${formData.supplyItems.find(i => i.material === mat.name) ? 'bg-warning text-white border-warning shadow-md' : 'bg-white text-gray-600 border-gray-100 hover:bg-warning/5'}`}
                                             >
-                                                {mat.name}
+                                                <span>{mat.name}</span>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-md ${formData.supplyItems.find(i => i.material === mat.name) ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'}`}>{mat.unit}</span>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Average Rate / Unit (₹)</label>
-                                    <input type="number" name="ratePerUnit" className="form-input border-2 font-bold rounded-xl h-12 border-warning/30" value={formData.ratePerUnit} onChange={handleChange} />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Payment Terms / Credit Limit</label>
-                                    <input type="text" name="paymentTerms" className="form-input border-2 font-bold rounded-xl h-12" value={formData.paymentTerms} onChange={handleChange} placeholder="e.g. 30 Days Credit / ₹5,00,000 Limit" />
+                                <div className="bg-white/50 dark:bg-black/20 p-5 rounded-2xl border border-dashed border-warning/20">
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-4 block">Selected for Supply</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {formData.supplyItems.length === 0 ? (
+                                            <p className="text-[11px] font-bold text-gray-400 italic">No materials selected yet...</p>
+                                        ) : (
+                                            formData.supplyItems.map((item, idx) => (
+                                                <span key={idx} className="bg-warning/10 text-warning px-3 py-1.5 rounded-lg text-[10px] font-black uppercase border border-warning/20">
+                                                    {item.material}
+                                                </span>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Section 4: Finance */}
+                        {/* Section 4: Pricing & Commercials */}
+                        <div className="space-y-6 bg-info/5 p-6 rounded-2xl border border-info/10">
+                            <div className="flex items-center gap-2 text-info font-black uppercase text-xs tracking-[0.2em] border-b border-info/10 pb-3 mb-4">
+                                <span className="bg-info text-white w-6 h-6 rounded-lg inline-flex items-center justify-center text-[10px]">4</span>
+                                Material-Wise Pricing (பொருட்களின் விலை பட்டியல்)
+                            </div>
+                            <div className="max-w-4xl">
+                                {formData.supplyItems.length === 0 ? (
+                                    <div className="p-10 text-center border-2 border-dashed border-info/20 rounded-2xl">
+                                        <p className="text-info font-bold text-sm">Please select materials in Section 3 to set their rates.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {formData.supplyItems.map((item, idx) => (
+                                            <div key={idx} className="flex items-center gap-3 bg-white dark:bg-black p-3 rounded-xl border border-info/10 shadow-sm">
+                                                <div className="flex-1">
+                                                    <span className="text-[10px] font-black text-white-dark uppercase tracking-widest block mb-1">{item.material}</span>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-info text-xs">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            className="form-input border-2 font-black rounded-lg h-10 pl-7 border-info/20 focus:border-info"
+                                                            value={item.rate}
+                                                            onChange={(e) => handleRateUpdate(item.material, Number(e.target.value))}
+                                                            placeholder="0.00"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="text-[10px] font-bold text-info bg-info/10 px-2 py-1 rounded-md uppercase">
+                                                    Rate / Unit
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="pt-6 mt-6 border-t border-info/10">
+                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-info">Payment Terms / Credit Limit</label>
+                                <input type="text" name="paymentTerms" className="form-input border-2 font-bold rounded-xl h-12 border-info/20 max-w-2xl" value={formData.paymentTerms} onChange={handleChange} placeholder="e.g. 30 Days Credit / ₹5,00,000 Limit" />
+                            </div>
+                        </div>
+
+                        {/* Section 5: Finance */}
                         <div className="space-y-6 bg-success/5 p-6 rounded-2xl border border-success/10">
                             <div className="flex items-center gap-2 text-success font-black uppercase text-xs tracking-[0.2em] border-b border-success/10 pb-3 mb-4">
-                                <span className="bg-success text-white w-6 h-6 rounded-lg inline-flex items-center justify-center text-[10px]">4</span>
+                                <span className="bg-success text-white w-6 h-6 rounded-lg inline-flex items-center justify-center text-[10px]">5</span>
                                 Opening Balance (தொடக்க இருப்பு)
                             </div>
                             <div className="max-w-xs">
                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Current Owed Amount (₹)</label>
-                                <input type="number" name="openingBalance" className="form-input border-2 font-bold rounded-xl h-12 border-success/30" value={formData.openingBalance} onChange={handleChange} />
-                                <p className="text-[9px] text-white-dark mt-2 font-bold italic opacity-70">Enter initial outstanding amount as of registration date.</p>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-success text-sm">₹</span>
+                                    <input type="number" name="openingBalance" className="form-input border-2 font-black rounded-xl h-12 pl-10 border-success/30 focus:border-success text-lg" value={formData.openingBalance} onChange={handleChange} />
+                                </div>
+                                <p className="text-[9px] text-white-dark mt-2 font-bold italic opacity-70">Outstanding amount as of registration.</p>
                             </div>
                         </div>
 
@@ -320,9 +380,9 @@ const ExplosiveSupplierManagement = () => {
                         <table className="table-hover">
                             <thead>
                                 <tr className="bg-gray-50 dark:bg-black/20 border-b border-gray-100 dark:border-white-light/5">
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Supplier & Materials</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Supplier & Detail</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Security License</th>
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 whitespace-nowrap">Avg Rate</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 whitespace-nowrap">Material Rates</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4 text-right">Outstanding (₹)</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Actions</th>
                                 </tr>
@@ -342,15 +402,8 @@ const ExplosiveSupplierManagement = () => {
                                                     </div>
                                                     <div>
                                                         <div className="font-black text-black dark:text-white-light text-sm">{s.name}</div>
-                                                        <div className="text-[10px] font-bold text-white-dark uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                        <div className="text-[10px] font-bold text-white-dark uppercase tracking-widest mb-1 flex items-center gap-2">
                                                             {s.contactNumber}
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {(s.supplyItems || []).map((item: string, idx: number) => (
-                                                                <span key={idx} className="px-2 py-0.5 rounded-md bg-warning/10 text-warning text-[9px] font-black uppercase border border-warning/20">
-                                                                    {item}
-                                                                </span>
-                                                            ))}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -361,8 +414,15 @@ const ExplosiveSupplierManagement = () => {
                                                     Exp: {s.licenseValidityDate ? new Date(s.licenseValidityDate).toLocaleDateString() : 'N/A'}
                                                 </div>
                                             </td>
-                                            <td className="py-4 font-black text-black dark:text-white-light text-sm">
-                                                ₹{(s.ratePerUnit || 0).toLocaleString()} <span className="text-[9px] text-white-dark font-normal">/unit</span>
+                                            <td className="py-4 font-black">
+                                                <div className="flex flex-col gap-1.5 min-w-[150px]">
+                                                    {(s.supplyItems || []).map((item: any, idx: number) => (
+                                                        <div key={idx} className="flex items-center justify-between text-[11px] border-b border-gray-50 pb-1 last:border-0 last:pb-0">
+                                                            <span className="text-white-dark uppercase font-bold">{item.material}:</span>
+                                                            <span className="text-info">₹{item.rate.toLocaleString()}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </td>
                                             <td className="py-4 text-right">
                                                 <div className={`font-black text-lg ${balances[s._id] > 0 ? 'text-danger' : 'text-success'}`}>

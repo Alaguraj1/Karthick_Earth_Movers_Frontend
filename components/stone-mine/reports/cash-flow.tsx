@@ -37,6 +37,7 @@ const CashFlow = () => {
 
     useEffect(() => {
         fetchCashFlow();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const exportToExcel = () => {

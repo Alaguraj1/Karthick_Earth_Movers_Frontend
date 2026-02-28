@@ -32,6 +32,7 @@ const SummaryReports = () => {
 
     useEffect(() => {
         fetchSummary();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [year]);
 
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

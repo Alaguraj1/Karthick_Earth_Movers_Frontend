@@ -34,6 +34,7 @@ const InvoiceGeneration = () => {
 
     useEffect(() => {
         fetchSales();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const viewInvoice = async (id: string) => {

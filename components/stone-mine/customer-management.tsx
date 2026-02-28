@@ -9,6 +9,7 @@ import IconX from '@/components/icon/icon-x';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import axios from 'axios';
+import Link from 'next/link';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -44,6 +45,7 @@ const CustomerManagement = () => {
 
     useEffect(() => {
         fetchCustomers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search]);
 
     const handleChange = (e: any) => {
@@ -114,10 +116,15 @@ const CustomerManagement = () => {
                     </h2>
                     <p className="text-white-dark text-sm mt-1">Customer Management — Manage all customer details</p>
                 </div>
-                <button className="btn btn-primary shadow-lg shadow-primary/30" onClick={() => { resetForm(); setShowModal(true); }}>
-                    <IconPlus className="ltr:mr-2 rtl:ml-2" />
-                    Add Customer
-                </button>
+                <div className="flex items-center gap-2">
+                    <Link href="/sales-billing/sales-entry" className="btn btn-outline-success shadow-sm">
+                        <span>📝</span> Go to Sales Entry
+                    </Link>
+                    <button className="btn btn-primary shadow-lg shadow-primary/30" onClick={() => { resetForm(); setShowModal(true); }}>
+                        <IconPlus className="ltr:mr-2 rtl:ml-2" />
+                        Add Customer
+                    </button>
+                </div>
             </div>
 
             {/* Search */}

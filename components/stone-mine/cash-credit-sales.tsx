@@ -29,6 +29,7 @@ const CashCreditSales = () => {
 
     useEffect(() => {
         fetchSales();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
 
     const cashSales = sales.filter(s => s.paymentType === 'Cash');

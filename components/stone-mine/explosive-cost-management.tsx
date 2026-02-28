@@ -69,6 +69,7 @@ const ExplosiveCostManagement = () => {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const calculateGrandTotal = (materials: any[]) => {
@@ -87,13 +88,22 @@ const ExplosiveCostManagement = () => {
             material.amount = qty * rate;
         }
 
-        // If material name changes, try to auto-set unit and rate from master
+        // If material name changes, try to auto-set unit and rate from master/supplier
         if (name === 'name') {
             const matMaster = masterMaterials.find(m => m.name === value);
             if (matMaster) {
                 material.unit = matMaster.unit || 'Nos';
-                // If supplier is selected, we might want to prioritize supplier rate, but for now let's use master if available
-                // Actually the user wants supplier rate to be default.
+            }
+
+            // Auto-fetch rate from selected supplier's specific pricing
+            const selectedSup = suppliers.find(s => s.name === formData.supplierName);
+            if (selectedSup && selectedSup.supplyItems) {
+                const supItem = selectedSup.supplyItems.find((si: any) => si.material === value);
+                if (supItem) {
+                    material.rate = supItem.rate;
+                    const qty = parseFloat(material.quantity) || 0;
+                    material.amount = qty * supItem.rate;
+                }
             }
         }
 
@@ -127,16 +137,31 @@ const ExplosiveCostManagement = () => {
 
     const handleGeneralChange = (e: any) => {
         const { name, value } = e.target;
-        setFormData(prev => {
+        setFormData((prev: any) => {
             const updated = { ...prev, [name]: value };
 
             if (name === 'supplierName') {
                 const selectedSup = suppliers.find(s => s.name === value);
                 if (selectedSup) {
                     updated.licenseNumber = selectedSup.explosiveLicenseNumber || '';
-                    // Update rates for all existing materials? 
-                    // Let's just update the first one or leave as is if user wants manual control per material
-                    // Usually rate is per supplier.
+
+                    // Automatically update rates and validate materials based on new supplier selection
+                    const supMaterials = selectedSup.supplyItems?.map((i: any) => i.material) || [];
+                    updated.materials = prev.materials.map((mat: any) => {
+                        // If material is not provided by new supplier, reset it
+                        if (mat.name && !supMaterials.includes(mat.name)) {
+                            return { ...initialMaterial };
+                        }
+
+                        const supItem = selectedSup.supplyItems?.find((si: any) => si.material === mat.name);
+                        if (supItem) {
+                            const rate = supItem.rate;
+                            const qty = parseFloat(mat.quantity) || 0;
+                            return { ...mat, rate, amount: qty * rate };
+                        }
+                        return mat;
+                    });
+                    updated.amount = calculateGrandTotal(updated.materials);
                 } else {
                     updated.licenseNumber = '';
                 }
@@ -314,8 +339,8 @@ const ExplosiveCostManagement = () => {
                                                         required
                                                     >
                                                         <option value="">Select</option>
-                                                        {masterMaterials.map(m => (
-                                                            <option key={m._id} value={m.name}>{m.name}</option>
+                                                        {suppliers.find(s => s.name === formData.supplierName)?.supplyItems?.map((item: any, idx: number) => (
+                                                            <option key={idx} value={item.material}>{item.material}</option>
                                                         ))}
                                                     </select>
                                                 </td>
@@ -327,9 +352,10 @@ const ExplosiveCostManagement = () => {
                                                         onChange={(e) => handleMaterialChange(index, e)}
                                                     >
                                                         <option value="Nos">Nos</option>
-                                                        <option value="Kg">Kg</option>
-                                                        <option value="Meter">Meter</option>
                                                         <option value="Box">Box</option>
+                                                        <option value="Kg">Kg</option>
+                                                        <option value="Meters">Meters</option>
+                                                        <option value="Units">Units</option>
                                                     </select>
                                                 </td>
                                                 <td>

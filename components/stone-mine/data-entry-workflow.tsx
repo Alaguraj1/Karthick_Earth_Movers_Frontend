@@ -502,6 +502,114 @@ const DataEntryWorkflow = () => {
                 </div>
             </div>
 
+            {/* Visual Workflow Path */}
+            <div className="mb-8 overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-gray-100 dark:border-gray-700 dark:bg-gray-800">
+                <h3 className="mb-6 text-lg font-black text-gray-800 dark:text-white flex items-center gap-2">
+                    <span className="text-2xl">🔗</span> Module Connection Flow (தரவு ஓட்டம்)
+                </h3>
+                
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 relative">
+                    {/* Background connecting line for desktop */}
+                    <div className="hidden md:block absolute top-[45%] left-10 right-10 h-1 bg-gray-200 dark:bg-gray-700 z-0 rounded-full"></div>
+
+                    {/* Step 1 */}
+                    <div className="flex-1 rounded-2xl bg-white p-5 border-2 border-indigo-100 text-center w-full dark:bg-gray-800 dark:border-indigo-900 shadow-[0_10px_20px_-10px_rgba(99,102,241,0.2)] z-10 transition-transform hover:-translate-y-1">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-2xl font-black mb-3 border border-indigo-200 dark:border-indigo-800">1</div>
+                        <h4 className="font-extrabold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider text-xs mb-1">Step 1: Masters</h4>
+                        <p className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-2">அடிப்படை தரவு</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">Vehicles, Labours, Customers, Vendors, Stone Types, Lease Owners</p>
+                    </div>
+                    
+                    <div className="md:hidden text-2xl text-gray-300 font-black">⬇</div>
+
+                    {/* Step 2 */}
+                    <div className="flex-1 rounded-2xl bg-white p-5 border-2 border-blue-100 text-center w-full dark:bg-gray-800 dark:border-blue-900 shadow-[0_10px_20px_-10px_rgba(59,130,246,0.2)] z-10 transition-transform hover:-translate-y-1">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-2xl font-black mb-3 border border-blue-200 dark:border-blue-800">2</div>
+                        <h4 className="font-extrabold text-blue-700 dark:text-blue-300 uppercase tracking-wider text-xs mb-1">Step 2: Operations</h4>
+                        <p className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-2">தினசரி வேலைகள்</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">Labour Attendance, Transport Trips, Daily Operations Setup</p>
+                    </div>
+
+                    <div className="md:hidden text-2xl text-gray-300 font-black">⬇</div>
+
+                    {/* Step 3 */}
+                    <div className="flex-1 rounded-2xl bg-white p-5 border-2 border-amber-100 text-center w-full dark:bg-gray-800 dark:border-amber-900 shadow-[0_10px_20px_-10px_rgba(245,158,11,0.2)] z-10 transition-transform hover:-translate-y-1">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 text-2xl font-black mb-3 border border-amber-200 dark:border-amber-800">3</div>
+                        <h4 className="font-extrabold text-amber-700 dark:text-amber-300 uppercase tracking-wider text-xs mb-1">Step 3: Transact</h4>
+                        <p className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-2">செலவு & விற்பனை</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">Diesel, Maintenance, Wages, Billing Entries, Invoices Generated</p>
+                    </div>
+
+                    <div className="md:hidden text-2xl text-gray-300 font-black">⬇</div>
+
+                    {/* Step 4 */}
+                    <div className="flex-1 rounded-2xl bg-white p-5 border-2 border-emerald-100 text-center w-full dark:bg-gray-800 dark:border-emerald-900 shadow-[0_10px_20px_-10px_rgba(16,185,129,0.2)] z-10 transition-transform hover:-translate-y-1">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 text-2xl font-black mb-3 border border-emerald-200 dark:border-emerald-800">4</div>
+                        <h4 className="font-extrabold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider text-xs mb-1">Step 4: Finalize</h4>
+                        <p className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-2">தீர்வு & அறிக்கை</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">Vendor Payments, Day Book, Cash Flow, Pending Payment Collections</p>
+                    </div>
+                </div>
+                
+                <div className="mt-8 rounded-2xl border-2 border-gray-100 p-5 dark:border-gray-700 dark:bg-gray-800/50 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    <p className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2 mb-4">
+                        <span className="w-2 h-6 bg-primary rounded-full block"></span> 
+                        Connected Modules (இணைக்கப்பட்ட பகுதிகள் எப்படி இயங்குகிறது):
+                    </p>
+                    <div className="grid md:grid-cols-2 gap-4 relative z-10">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                            <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wide mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Labour To Wages To Payment</p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Master (Labour)</span> 
+                                <span>➔</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Daily Attendance</span>
+                                <span>➔</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Wages Calculation</span>
+                                <span>➔</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Vendor Payment (If Contractor)</span>
+                            </div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                            <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wide mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div> Transport To Sales Generation</p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Transport Trips Entry</span> 
+                                <span>➔</span>
+                                <span className="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-1 rounded font-bold border border-emerald-100 dark:border-emerald-800">Convert to Sale Button</span>
+                                <span>➔</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Sales Entry Auto Created</span>
+                                <span>➔</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Generate Invoice</span>
+                            </div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                            <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wide mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Machine/Vehicle To Expenses</p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Master (Machine/Vehicle)</span> 
+                                <span>➔</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Diesel Used</span>
+                                <span>&amp;</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Maintenance Expense</span>
+                                <span>➔</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-primary font-bold">Reflected in Accounts</span>
+                            </div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                            <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wide mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div> Sales To Payment Lifecycle</p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Master (Customer)</span> 
+                                <span>➔</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Credit Sales Entry</span>
+                                <span>➔</span>
+                                <span className="bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 px-2 py-1 rounded font-bold border border-rose-100 dark:border-rose-800">Pending Payments Log</span>
+                                <span>➔</span>
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Receive Cash & Update Status</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Quick Navigation Cards */}
             <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
                 {workflowData.map((section) => (
@@ -648,7 +756,7 @@ const DataEntryWorkflow = () => {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="rounded-xl bg-white/10 p-4">
                         <p className="mb-1 text-sm font-bold text-yellow-300">⚠️ கட்டாய புலங்கள்</p>
-                        <p className="text-xs text-gray-300">சிவப்பு நிறத்தில் "ஆம்" என்று குறிக்கப்பட்ட fields கட்டாயம் நிரப்ப வேண்டும். இல்லையெனில் சேமிக்க முடியாது.</p>
+                        <p className="text-xs text-gray-300">சிவப்பு நிறத்தில் &quot;ஆம்&quot; என்று குறிக்கப்பட்ட fields கட்டாயம் நிரப்ப வேண்டும். இல்லையெனில் சேமிக்க முடியாது.</p>
                     </div>
                     <div className="rounded-xl bg-white/10 p-4">
                         <p className="mb-1 text-sm font-bold text-green-300">✅ தினசரி பதிவு</p>

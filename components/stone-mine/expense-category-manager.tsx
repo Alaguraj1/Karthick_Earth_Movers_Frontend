@@ -146,12 +146,14 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             };
             fetchLabourSummary();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData.labourName, formData.date, category, labours]);
 
     useEffect(() => {
         fetchExpenses();
         fetchVehicles();
         fetchLabours();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [category]);
 
     const uniqueVehicleTypes = Array.from(new Set(vehicles
@@ -601,19 +603,17 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                         View Bill
                                                     </a>
                                                 )}
-                                                <div className="flex justify-center gap-2">
+                                                <div className="flex justify-center items-center gap-2">
                                                     {expense.sourceModel === 'Manual' ? (
-                                                        <>
-                                                            <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditModal(expense)}>
-                                                                <IconEdit className="h-4 w-4" />
-                                                            </button>
-                                                            <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
-                                                                <IconTrashLines className="h-4 w-4" />
-                                                            </button>
-                                                        </>
+                                                        <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditModal(expense)}>
+                                                            <IconEdit className="h-4 w-4" />
+                                                        </button>
                                                     ) : (
-                                                        <span className="text-[10px] text-white-dark italic">System Entry (No Edit)</span>
+                                                        <span className="text-[10px] text-white-dark italic">System Entry</span>
                                                     )}
+                                                    <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
+                                                        <IconTrashLines className="h-4 w-4" />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>

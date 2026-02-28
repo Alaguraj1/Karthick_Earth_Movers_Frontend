@@ -50,6 +50,7 @@ const LabourDetailsPage = () => {
 
     useEffect(() => {
         if (params.id) fetchDetails();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id]);
 
     if (loading) return <div className="p-10 text-center font-bold">Loading Profile...</div>;

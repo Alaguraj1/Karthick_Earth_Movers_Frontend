@@ -71,6 +71,7 @@ const Sidebar = () => {
         if (window.innerWidth < 1024 && themeConfig.sidebar) {
             dispatch(toggleSidebar());
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pathname]);
 
     const setActiveRoute = () => {
@@ -91,8 +92,8 @@ const Sidebar = () => {
                 <div className="h-full bg-white dark:bg-black">
                     <div className="flex items-center justify-between px-4 py-3">
                         <Link href="/" className="main-logo flex shrink-0 items-center">
-                            <img className="ml-[5px] w-8 flex-none" src="/assets/images/logo.svg" alt="logo" />
-                            <span className="align-middle text-2xl font-semibold ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light lg:inline">VRISTO</span>
+                            <img className="ml-[5px] w-24 flex-none rounded-lg" src="/assets/images/logo.png" alt="logo" />
+                            {/* <span className="align-middle text-xl font-black ltr:ml-2 rtl:mr-2 dark:text-white-light lg:inline uppercase tracking-tighter">Karthick Earth Movers</span> */}
                         </Link>
 
                         <button

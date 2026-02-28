@@ -6,8 +6,8 @@ import { Nunito } from 'next/font/google';
 
 export const metadata: Metadata = {
     title: {
-        template: '%s | VRISTO - Multipurpose Tailwind Dashboard Template',
-        default: 'VRISTO - Multipurpose Tailwind Dashboard Template',
+        template: '%s | Karthick Earth Movers - Stone Quarry Management System',
+        default: 'Karthick Earth Movers - Stone Quarry Management System',
     },
 };
 const nunito = Nunito({

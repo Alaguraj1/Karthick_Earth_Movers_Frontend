@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import IconSearch from '@/components/icon/icon-search';
 import IconTrendingDown from '@/components/icon/icon-trending-down';
+import Link from 'next/link';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -77,6 +78,11 @@ const VendorOutstandingManagement = () => {
                 <div>
                     <h2 className="text-2xl font-bold dark:text-white-light">Outstanding Balance (பாக்கி தொகை)</h2>
                     <p className="text-white-dark text-sm">Payable Management: Total Invoice – Total Paid = Balance</p>
+                </div>
+                <div>
+                    <Link href="/vendors/payments" className="btn btn-primary shadow-lg">
+                        <span>💳</span> Make Payment
+                    </Link>
                 </div>
             </div>
 

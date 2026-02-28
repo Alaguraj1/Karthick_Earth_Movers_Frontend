@@ -15,7 +15,6 @@ const ExplosiveMaterialsMaster = () => {
         name: '',
         description: '',
         unit: 'Nos',
-        defaultPrice: '',
         openingStock: ''
     });
     const [formView, setFormView] = useState(false);
@@ -51,7 +50,7 @@ const ExplosiveMaterialsMaster = () => {
                 alert(editItem ? 'Updated successfully!' : 'Added successfully!');
                 setNewItem({
                     name: '', description: '',
-                    unit: 'Nos', defaultPrice: '', openingStock: ''
+                    unit: 'Nos', openingStock: ''
                 });
                 setEditItem(null);
                 setFormView(false);
@@ -70,7 +69,6 @@ const ExplosiveMaterialsMaster = () => {
             name: item.name,
             description: item.description || '',
             unit: item.unit || 'Nos',
-            defaultPrice: item.defaultPrice || '',
             openingStock: item.openingStock || ''
         });
         setFormView(true);
@@ -143,16 +141,6 @@ const ExplosiveMaterialsMaster = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Default Price per Unit (₹)</label>
-                                <input
-                                    type="number"
-                                    className="form-input border-2 font-bold rounded-xl h-12"
-                                    value={newItem.defaultPrice}
-                                    onChange={(e) => setNewItem({ ...newItem, defaultPrice: e.target.value })}
-                                    placeholder="0.00"
-                                />
-                            </div>
-                            <div>
                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Opening Stock (தொடக்க இருப்பு)</label>
                                 <input
                                     type="number"
@@ -193,7 +181,7 @@ const ExplosiveMaterialsMaster = () => {
                         </h5>
                         <button type="button" className="btn btn-primary shadow-[0_10px_20px_rgba(67,97,238,0.3)] rounded-xl py-2.5 px-6 font-black uppercase tracking-widest text-[10px]" onClick={() => {
                             setNewItem({
-                                name: '', description: '', unit: 'Nos', defaultPrice: '', openingStock: ''
+                                name: '', description: '', unit: 'Nos', openingStock: ''
                             });
                             setEditItem(null);
                             setFormView(true);
@@ -207,7 +195,6 @@ const ExplosiveMaterialsMaster = () => {
                                 <tr className="!bg-primary/5">
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Material Name</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Unit</th>
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Price</th>
                                     <th className="text-center font-black uppercase tracking-widest text-[10px] py-4">Actions</th>
                                 </tr>
                             </thead>
@@ -230,7 +217,6 @@ const ExplosiveMaterialsMaster = () => {
                                                 </div>
                                             </td>
                                             <td className="py-4 text-primary uppercase">{item.unit || '-'}</td>
-                                            <td className="py-4 font-black">₹{item.defaultPrice || '0'}</td>
                                             <td className="text-center py-4">
                                                 <div className="flex justify-center items-center gap-2">
                                                     <button type="button" className="p-2 rounded-lg text-primary hover:bg-primary hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>

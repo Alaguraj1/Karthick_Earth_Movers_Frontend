@@ -348,12 +348,22 @@ const LabourListPage = () => {
                                 </button>
                             </div>
                         </div>
-                        <button type="button" className="btn btn-primary shadow-lg" onClick={() => {
-                            setFormData(prev => ({ ...prev, labourType: activeTab === 'direct' ? 'Direct' : 'Vendor' }));
-                            setFormView(true);
-                        }}>
-                            <IconPlus className="mr-2" /> Add New Labour
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {activeTab === 'vendor' && (
+                                <Link 
+                                    href="/vendors/labour" 
+                                    className="btn btn-outline-warning shadow-sm"
+                                >
+                                    <span>⚙️</span> Manage Contractors
+                                </Link>
+                            )}
+                            <button type="button" className="btn btn-primary shadow-lg" onClick={() => {
+                                setFormData(prev => ({ ...prev, labourType: activeTab === 'direct' ? 'Direct' : 'Vendor' }));
+                                setFormView(true);
+                            }}>
+                                <IconPlus className="mr-2" /> Add New Labour
+                            </button>
+                        </div>
                     </div>
 
                     <div className="table-responsive">

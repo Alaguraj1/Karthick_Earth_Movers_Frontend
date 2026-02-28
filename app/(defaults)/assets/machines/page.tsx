@@ -314,6 +314,14 @@ const MachineDetails = () => {
                                     Rentals
                                 </button>
                             </div>
+                            {activeTab === 'contract' && (
+                                <Link 
+                                    href="/vendors/transport" 
+                                    className="btn btn-outline-warning shadow-[0_10px_20px_rgba(230,165,11,0.3)] rounded-xl py-3 px-8 font-black uppercase tracking-widest text-xs flex items-center gap-2"
+                                >
+                                    <span>⚙️</span> Transport Vendors
+                                </Link>
+                            )}
                             <button
                                 onClick={() => {
                                     resetForm();

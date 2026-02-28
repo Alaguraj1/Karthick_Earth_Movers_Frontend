@@ -10,6 +10,7 @@ import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrash from '@/components/icon/icon-trash';
 import IconWheel from '@/components/icon/icon-wheel';
+import Link from 'next/link';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -80,6 +81,7 @@ const TransportVendorManagement = () => {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleChange = (e: any) => {
@@ -187,16 +189,24 @@ const TransportVendorManagement = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                     <h2 className="text-2xl font-black text-black dark:text-white-light uppercase tracking-tight">Transport Vendors</h2>
                     <p className="text-white-dark text-sm font-bold mt-1">Lorry & Transport Fleet Partners (போக்குவரத்து ஒப்பந்ததாரர்கள்)</p>
                 </div>
                 {!showForm && (
-                    <button className="btn btn-primary shadow-[0_10px_20px_rgba(67,97,238,0.3)] rounded-xl py-3 px-8 font-black uppercase tracking-widest text-xs" onClick={() => setShowForm(true)}>
-                        <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
-                        Add New Vendor
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <Link href="/assets/vehicles" className="btn btn-outline-info shadow-sm py-3 px-6 font-black uppercase tracking-widest text-xs">
+                            <IconWheel className="w-4 h-4 mr-2" /> Vehicles
+                        </Link>
+                        <Link href="/assets/machines" className="btn btn-outline-success shadow-sm py-3 px-6 font-black uppercase tracking-widest text-xs">
+                            <span>🚜</span> Machines
+                        </Link>
+                        <button className="btn btn-primary shadow-[0_10px_20px_rgba(67,97,238,0.3)] rounded-xl py-3 px-8 font-black uppercase tracking-widest text-xs" onClick={() => setShowForm(true)}>
+                            <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
+                            Add New Vendor
+                        </button>
+                    </div>
                 )}
             </div>
 

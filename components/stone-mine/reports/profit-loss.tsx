@@ -37,6 +37,7 @@ const ProfitLoss = () => {
 
     useEffect(() => {
         fetchProfitLoss();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const exportToExcel = () => {

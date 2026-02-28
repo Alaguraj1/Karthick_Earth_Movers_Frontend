@@ -64,6 +64,7 @@ const VehicleDetails = () => {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleChange = (e: any) => {
@@ -250,7 +251,7 @@ const VehicleDetails = () => {
 
                             {newItem.ownershipType === 'Contract' && selectedVendor && selectedVendor.vehicles?.length > 0 && (
                                 <div className="mt-6 p-5 bg-warning/5 rounded-2xl border border-warning/20">
-                                    <label className="text-[10px] font-black text-warning uppercase tracking-widest mb-3 block">Vendor's Registered Vehicles</label>
+                                    <label className="text-[10px] font-black text-warning uppercase tracking-widest mb-3 block">Vendor&apos;s Registered Vehicles</label>
                                     <div className="flex flex-wrap gap-3">
                                         {selectedVendor.vehicles.map((v: any, idx: number) => (
                                             <button
@@ -400,6 +401,14 @@ const VehicleDetails = () => {
                                     Contractor Fleet
                                 </button>
                             </div>
+                            {activeTab === 'contract' && (
+                                <Link
+                                    href="/vendors/transport"
+                                    className="btn btn-outline-warning shadow-[0_10px_20px_rgba(230,165,11,0.3)] rounded-xl py-3 px-8 font-black uppercase tracking-widest text-xs flex items-center gap-2"
+                                >
+                                    <span>⚙️</span> Transport Vendors
+                                </Link>
+                            )}
                             <button
                                 onClick={() => {
                                     resetForm();

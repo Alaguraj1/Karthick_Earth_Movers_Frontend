@@ -54,6 +54,7 @@ const AttendancePage = () => {
 
     useEffect(() => {
         fetchLaboursAndAttendance();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDate]);
 
     const handleStatusChange = (labourId: string, status: string) => {

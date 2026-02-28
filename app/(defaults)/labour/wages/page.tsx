@@ -33,7 +33,7 @@ const WagesCalculationPage = () => {
         const mode = window.prompt("Enter Payment Mode (Cash/Bank Transfer/UPI):", "Cash");
         if (!mode) return;
 
-        if (confirm(`Confirm payment of ₹${summary.netPayable} to ${summary.labourName}? This will record it as an Expense.`)) {
+        if (confirm(`Confirm payment of ₹${summary.netPayable} to ${summary.name}? This will record it as an Expense.`)) {
             try {
                 await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, {
                     category: 'Labour Wages',
@@ -41,12 +41,20 @@ const WagesCalculationPage = () => {
                     date: new Date(),
                     paymentMode: mode,
                     description: `Wages for ${selectedMonth}/${selectedYear}`,
-                    labourName: summary.labourName,
+                    labourName: summary.name,
                     workType: summary.workType,
                     quantity: summary.attendance.total,
-                    rate: summary.totalWages / summary.attendance.total
+                    rate: summary.totalWages / Math.max(summary.attendance.total, 1)
                 });
+
+                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/mark-wages-paid`, {
+                    month: selectedMonth,
+                    year: selectedYear,
+                    labourId: summary.labourId
+                });
+
                 alert("Payment Success! Recorded in Expenses.");
+                fetchWagesSummary();
             } catch (error) {
                 console.error(error);
                 alert("Error recording payment.");
@@ -54,8 +62,42 @@ const WagesCalculationPage = () => {
         }
     };
 
+    const handleVendorSettle = async (summary: any) => {
+        const mode = window.prompt("Enter Payment Mode (Cash/Bank Transfer/UPI/Cheque):", "Cash");
+        if (!mode) return;
+
+        if (confirm(`Confirm direct payout of ₹${summary.netPayable} to Contractor ${summary.contractorName}? This will record a Vendor Payment.`)) {
+            try {
+                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/vendors/payments`, {
+                    date: new Date(),
+                    vendorId: summary.contractorId,
+                    vendorType: 'LabourContractor',
+                    vendorName: summary.contractorName,
+                    invoiceAmount: parseFloat(summary.netPayable),
+                    paidAmount: parseFloat(summary.netPayable),
+                    paymentMode: mode,
+                    referenceNumber: '',
+                    notes: `Wages payout for ${selectedMonth}/${selectedYear} based on actual attendance of ${summary.labourCount} vendor labours.`
+                });
+
+                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/mark-wages-paid`, {
+                    month: selectedMonth,
+                    year: selectedYear,
+                    contractorId: summary.contractorId
+                });
+
+                alert("Vendor Payment Success! Recorded in Vendor Payments.");
+                fetchWagesSummary();
+            } catch (error) {
+                console.error(error);
+                alert("Error recording vendor payment.");
+            }
+        }
+    };
+
     useEffect(() => {
         fetchWagesSummary();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedMonth, selectedYear]);
 
     return (
@@ -106,32 +148,68 @@ const WagesCalculationPage = () => {
                                 <tr><td colSpan={8} className="text-center py-10 opacity-30 font-black uppercase">No records found for this period</td></tr>
                             ) : (
                                 summaries.map((summary: any) => (
-                                    <tr key={summary.labourId} className="group hover:bg-primary/5 transition-all">
-                                        <td className="py-4 font-black text-black dark:text-white uppercase px-6">{summary.labourName}</td>
-                                        <td className="text-[10px] font-black text-white-dark group-hover:text-primary transition-colors">{summary.workType}</td>
-                                        <td>
-                                            <div className="font-bold">{summary.attendance.total} Days</div>
-                                            <div className="text-[10px] text-white-dark">P: {summary.attendance.present} | H: {summary.attendance.half}</div>
-                                        </td>
-                                        <td>
-                                            <div className="font-bold text-info">{summary.attendance.otHours || 0} Hrs</div>
-                                            <div className="text-[10px] text-info italic">₹{summary.otAmount}</div>
-                                        </td>
-                                        <td className="font-semibold italic">
-                                            ₹{parseFloat(summary.totalWages).toLocaleString()}
-                                            <div className="text-[10px] text-success font-black tracking-widest">+ ₹{summary.otAmount} (OT)</div>
-                                        </td>
-                                        <td className="text-danger font-semibold italic">₹{summary.totalAdvance.toLocaleString()}</td>
-                                        <td className="text-success font-extrabold text-lg text-center bg-success/5">₹{parseFloat(summary.netPayable).toLocaleString()}</td>
-                                        <td className="text-center px-6">
-                                            <button
-                                                onClick={() => handleSettle(summary)}
-                                                className="btn btn-sm btn-outline-success rounded-lg font-black text-[9px] uppercase tracking-widest hover:scale-105"
-                                            >
-                                                Settle & Pay
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    summary.isVendorGroup ? (
+                                        <tr key={`vendor-${summary.contractorId}`} className="group hover:bg-warning/5 transition-all bg-warning/5 border-l-4 border-warning">
+                                            <td className="py-4 font-black text-warning uppercase px-6">
+                                                <div className="flex flex-col">
+                                                    <span>{summary.contractorName}</span>
+                                                    <span className="text-[9px] text-warning/70 mt-0.5 tracking-widest">{summary.companyName || 'Contractor'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="text-[10px] font-black text-warning group-hover:text-warning transition-colors">
+                                                {summary.labourCount} Labours
+                                            </td>
+                                            <td>
+                                                <div className="font-bold text-warning">{summary.attendance.total} Days</div>
+                                                <div className="text-[10px] text-warning/70">P: {summary.attendance.present} | H: {summary.attendance.half}</div>
+                                            </td>
+                                            <td>
+                                                <div className="font-bold text-info">{summary.attendance.otHours || 0} Hrs</div>
+                                                <div className="text-[10px] text-info italic">₹{summary.otAmount}</div>
+                                            </td>
+                                            <td className="font-semibold italic">
+                                                ₹{parseFloat(summary.totalWages).toLocaleString()}
+                                                <div className="text-[10px] text-success font-black tracking-widest">+ ₹{summary.otAmount} (OT)</div>
+                                            </td>
+                                            <td className="text-danger font-semibold italic">₹{summary.totalAdvance.toLocaleString()}</td>
+                                            <td className="text-warning font-extrabold text-lg text-center bg-warning/10">₹{parseFloat(summary.netPayable).toLocaleString()}</td>
+                                            <td className="text-center px-6">
+                                                <button
+                                                    onClick={() => handleVendorSettle(summary)}
+                                                    className="btn btn-sm btn-warning rounded-lg font-black text-[9px] uppercase tracking-widest shadow-lg hover:scale-105"
+                                                >
+                                                    Pay Vendor
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        <tr key={`direct-${summary.labourId}`} className="group hover:bg-primary/5 transition-all">
+                                            <td className="py-4 font-black text-black dark:text-white uppercase px-6">{summary.name}</td>
+                                            <td className="text-[10px] font-black text-white-dark group-hover:text-primary transition-colors">{summary.workType}</td>
+                                            <td>
+                                                <div className="font-bold">{summary.attendance.total} Days</div>
+                                                <div className="text-[10px] text-white-dark">P: {summary.attendance.present} | H: {summary.attendance.half}</div>
+                                            </td>
+                                            <td>
+                                                <div className="font-bold text-info">{summary.attendance.otHours || 0} Hrs</div>
+                                                <div className="text-[10px] text-info italic">₹{summary.otAmount}</div>
+                                            </td>
+                                            <td className="font-semibold italic">
+                                                ₹{parseFloat(summary.totalWages).toLocaleString()}
+                                                <div className="text-[10px] text-success font-black tracking-widest">+ ₹{summary.otAmount} (OT)</div>
+                                            </td>
+                                            <td className="text-danger font-semibold italic">₹{summary.totalAdvance.toLocaleString()}</td>
+                                            <td className="text-success font-extrabold text-lg text-center bg-success/5">₹{parseFloat(summary.netPayable).toLocaleString()}</td>
+                                            <td className="text-center px-6">
+                                                <button
+                                                    onClick={() => handleSettle(summary)}
+                                                    className="btn btn-sm btn-outline-success rounded-lg font-black text-[9px] uppercase tracking-widest hover:scale-105"
+                                                >
+                                                    Settle & Pay
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    )
                                 ))
                             )}
                         </tbody>

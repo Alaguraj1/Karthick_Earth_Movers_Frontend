@@ -94,6 +94,7 @@ const DriverPaymentManagement = () => {
     useEffect(() => {
         fetchData();
         fetchTripsForDate(formData.date);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleChange = (e: any) => {
