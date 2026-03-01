@@ -30,6 +30,10 @@ const WagesCalculationPage = () => {
     };
 
     const handleSettle = async (summary: any) => {
+        if (summary.attendance.total === 0) {
+            alert('This worker is already fully paid for this month!');
+            return;
+        }
         const mode = window.prompt("Enter Payment Mode (Cash/Bank Transfer/UPI):", "Cash");
         if (!mode) return;
 
@@ -37,14 +41,20 @@ const WagesCalculationPage = () => {
             try {
                 await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, {
                     category: 'Labour Wages',
-                    amount: parseFloat(summary.netPayable),
+                    amount: parseFloat(summary.totalWages) + parseFloat(summary.otAmount || 0),
                     date: new Date(),
                     paymentMode: mode,
                     description: `Wages for ${selectedMonth}/${selectedYear}`,
+                    labourId: summary.labourId,
                     labourName: summary.name,
                     workType: summary.workType,
                     quantity: summary.attendance.total,
-                    rate: summary.totalWages / Math.max(summary.attendance.total, 1)
+                    rate: summary.dailyWage,
+                    otAmount: parseFloat(summary.otAmount || 0),
+                    advanceDeduction: parseFloat(summary.totalAdvance || 0),
+                    netPay: parseFloat(summary.netPayable),
+                    salaryMonth: selectedMonth,
+                    salaryYear: selectedYear
                 });
 
                 await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/mark-wages-paid`, {
@@ -63,6 +73,10 @@ const WagesCalculationPage = () => {
     };
 
     const handleVendorSettle = async (summary: any) => {
+        if (summary.attendance.total === 0) {
+            alert('This contractor is already fully paid for this month!');
+            return;
+        }
         const mode = window.prompt("Enter Payment Mode (Cash/Bank Transfer/UPI/Cheque):", "Cash");
         if (!mode) return;
 
@@ -162,6 +176,11 @@ const WagesCalculationPage = () => {
                                             <td>
                                                 <div className="font-bold text-warning">{summary.attendance.total} Days</div>
                                                 <div className="text-[10px] text-warning/70">P: {summary.attendance.present} | H: {summary.attendance.half}</div>
+                                                {summary.attendance.totalDaysAll > summary.attendance.total && (
+                                                    <div className="text-[9px] text-emerald-600 font-black mt-1 uppercase tracking-tighter bg-emerald-100/50 px-1 py-0.5 rounded inline-block">
+                                                        Confirmed: {summary.attendance.totalDaysAll} Days ({summary.attendance.totalDaysAll - summary.attendance.total} Paid)
+                                                    </div>
+                                                )}
                                             </td>
                                             <td>
                                                 <div className="font-bold text-info">{summary.attendance.otHours || 0} Hrs</div>
@@ -174,12 +193,18 @@ const WagesCalculationPage = () => {
                                             <td className="text-danger font-semibold italic">₹{summary.totalAdvance.toLocaleString()}</td>
                                             <td className="text-warning font-extrabold text-lg text-center bg-warning/10">₹{parseFloat(summary.netPayable).toLocaleString()}</td>
                                             <td className="text-center px-6">
-                                                <button
-                                                    onClick={() => handleVendorSettle(summary)}
-                                                    className="btn btn-sm btn-warning rounded-lg font-black text-[9px] uppercase tracking-widest shadow-lg hover:scale-105"
-                                                >
-                                                    Pay Vendor
-                                                </button>
+                                                {summary.attendance.total === 0 ? (
+                                                    <span className="badge badge-outline-success font-black text-[9px] uppercase tracking-widest bg-success/10 py-1.5 px-3">
+                                                        Already Paid
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleVendorSettle(summary)}
+                                                        className="btn btn-sm btn-warning rounded-lg font-black text-[9px] uppercase tracking-widest shadow-lg hover:scale-105"
+                                                    >
+                                                        Pay Vendor
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ) : (
@@ -188,7 +213,12 @@ const WagesCalculationPage = () => {
                                             <td className="text-[10px] font-black text-white-dark group-hover:text-primary transition-colors">{summary.workType}</td>
                                             <td>
                                                 <div className="font-bold">{summary.attendance.total} Days</div>
-                                                <div className="text-[10px] text-white-dark">P: {summary.attendance.present} | H: {summary.attendance.half}</div>
+                                                <div className="text-[10px] text-white-dark font-black">P: {summary.attendance.present} | H: {summary.attendance.half}</div>
+                                                {summary.attendance.totalDaysAll > summary.attendance.total && (
+                                                    <div className="text-[9px] text-emerald-600 font-black mt-1 uppercase tracking-tighter bg-emerald-100/50 px-1 py-0.5 rounded inline-block">
+                                                        Total: {summary.attendance.totalDaysAll} Days ({summary.attendance.totalDaysAll - summary.attendance.total} Paid)
+                                                    </div>
+                                                )}
                                             </td>
                                             <td>
                                                 <div className="font-bold text-info">{summary.attendance.otHours || 0} Hrs</div>
@@ -201,12 +231,18 @@ const WagesCalculationPage = () => {
                                             <td className="text-danger font-semibold italic">₹{summary.totalAdvance.toLocaleString()}</td>
                                             <td className="text-success font-extrabold text-lg text-center bg-success/5">₹{parseFloat(summary.netPayable).toLocaleString()}</td>
                                             <td className="text-center px-6">
-                                                <button
-                                                    onClick={() => handleSettle(summary)}
-                                                    className="btn btn-sm btn-outline-success rounded-lg font-black text-[9px] uppercase tracking-widest hover:scale-105"
-                                                >
-                                                    Settle & Pay
-                                                </button>
+                                                {summary.attendance.total === 0 ? (
+                                                    <span className="badge badge-outline-success font-black text-[9px] uppercase tracking-widest bg-success/10 py-1.5 px-3">
+                                                        Already Paid
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleSettle(summary)}
+                                                        className="btn btn-sm btn-outline-success rounded-lg font-black text-[9px] uppercase tracking-widest hover:scale-105"
+                                                    >
+                                                        Settle & Pay
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     )

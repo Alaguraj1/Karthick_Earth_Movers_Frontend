@@ -30,6 +30,10 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     // Form States
     const [selectedExpense, setSelectedExpense] = useState<any>(null);
+    const [lookupMonth, setLookupMonth] = useState(new Date().getMonth() + 1);
+    const [lookupYear, setLookupYear] = useState(new Date().getFullYear());
+    const [listMonth, setListMonth] = useState(new Date().getMonth() + 1);
+    const [listYear, setListYear] = useState(new Date().getFullYear());
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [formData, setFormData] = useState({
         category: category,
@@ -59,6 +63,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         netPay: '',
         siteAssigned: '',
         labourType: '',
+        otAmount: '',
+        salaryMonth: '',
+        salaryYear: '',
         // Explosive specialized fields
         site: '',
         explosiveType: '',
@@ -82,9 +89,12 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const fetchExpenses = async () => {
         setLoading(true);
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, {
-                params: { category }
-            });
+            const params: any = { category };
+            if (category === 'Labour Wages') {
+                params.month = listMonth;
+                params.year = listYear;
+            }
+            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, { params });
             if (data.success) {
                 setExpenses(data.data);
             }
@@ -114,29 +124,36 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     };
 
     useEffect(() => {
-        if (category === 'Labour Wages' && formData.labourName && formData.date && labours.length > 0) {
+        if (category === 'Labour Wages' && formData.labourName && labours.length > 0) {
             const fetchLabourSummary = async () => {
-                const selDate = new Date(formData.date);
-                const month = selDate.getMonth() + 1;
-                const year = selDate.getFullYear();
-
                 try {
                     const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/wages-summary`, {
-                        params: { month, year }
+                        params: { month: lookupMonth, year: lookupYear }
                     });
 
                     if (data.success) {
                         const summary = data.data.find((s: any) => s.name === formData.labourName);
                         if (summary) {
+                            if (summary.attendance.total === 0 && summary.attendance.totalDaysAll > 0) {
+                                showToast(`Salary for ${formData.labourName} is already fully paid for this month!`, 'error');
+                                setFormData(prev => ({ ...prev, labourName: '', labourId: '', quantity: '0', amount: '0', netPay: '0', otAmount: '0', perDaySalary: '0' }));
+                                return;
+                            } else if (summary.attendance.total === 0 && summary.attendance.totalDaysAll === 0) {
+                                showToast(`No attendance records found for ${formData.labourName} in this month.`, 'warning');
+                                setFormData(prev => ({ ...prev, quantity: '0', amount: '0', netPay: '0', otAmount: '0', perDaySalary: '0' }));
+                                return;
+                            }
+
                             setFormData(prev => ({
                                 ...prev,
                                 labourId: summary.labourId,
                                 quantity: summary.attendance.total.toString(),
                                 perDaySalary: summary.dailyRate.toString(),
                                 rate: summary.dailyWage.toString(),
-                                amount: summary.totalWages.toString(),
+                                amount: (parseFloat(summary.totalWages) + parseFloat(summary.otAmount || '0')).toFixed(2),
                                 advanceDeduction: summary.totalAdvance.toString(),
-                                netPay: summary.netPayable.toString()
+                                netPay: summary.netPayable.toString(),
+                                otAmount: (summary.otAmount || 0).toString()
                             }));
                         }
                     }
@@ -147,10 +164,14 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             fetchLabourSummary();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData.labourName, formData.date, category, labours]);
+    }, [formData.labourName, lookupMonth, lookupYear, category, labours]);
 
     useEffect(() => {
         fetchExpenses();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [category, listMonth, listYear]);
+
+    useEffect(() => {
         fetchVehicles();
         fetchLabours();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,6 +233,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             if (category === 'Labour Wages') {
                 if (name === 'workType' || name === 'labourType') {
                     // Reset name when work type or labour type changes to avoid mismatch
+                    updated.labourId = '';
                     updated.labourName = '';
                     updated.wageType = '';
                     updated.rate = '';
@@ -220,6 +242,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     updated.netPay = '';
                     updated.perDaySalary = '';
                     updated.advanceDeduction = '';
+                    updated.otAmount = '';
                 }
 
                 if (name === 'labourName') {
@@ -235,14 +258,15 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     }
                 }
 
-                const selDate = new Date(updated.date || prev.date);
-                const daysInMonth = new Date(selDate.getFullYear(), selDate.getMonth() + 1, 0).getDate();
+                // Exact Days in the selected Attendance Month
+                const daysInMonth = new Date(lookupYear, lookupMonth, 0).getDate();
                 const qty = parseFloat(name === 'quantity' ? value : updated.quantity || prev.quantity) || 0;
                 const rate = parseFloat(name === 'rate' ? value : updated.rate || prev.rate) || 0;
                 const advance = parseFloat(name === 'advanceDeduction' ? value : updated.advanceDeduction || prev.advanceDeduction) || 0;
 
                 let total = 0;
                 if (updated.wageType === 'Monthly Salary') {
+                    // Precise Daily Rate based on calendar days (28/29/30/31)
                     const daily = rate / (daysInMonth || 30);
                     updated.perDaySalary = daily.toFixed(2);
                     total = qty * daily;
@@ -251,8 +275,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     total = qty * rate;
                 }
 
-                updated.amount = total.toFixed(2);
-                updated.netPay = (total - advance).toFixed(2);
+                const ot = parseFloat(updated.otAmount || prev.otAmount || '0') || 0;
+                updated.amount = (total + ot).toFixed(2);
+                updated.netPay = (total + ot - advance).toFixed(2);
             }
             return updated;
         });
@@ -286,15 +311,28 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             const uploadedUrl = await uploadFile();
             if (uploadedUrl) billUrl = uploadedUrl;
         }
+
+        // Clean up empty ObjectIDs to prevent backend crash
+        const payload = {
+            ...formData,
+            billUrl,
+            salaryMonth: category === 'Labour Wages' ? lookupMonth : '',
+            salaryYear: category === 'Labour Wages' ? lookupYear : ''
+        };
+        if (!payload.labourId || payload.labourId === '') {
+            delete (payload as any).labourId;
+        }
+
         try {
-            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, { ...formData, billUrl });
+            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, payload);
             if (data.success) {
                 showToast('Record saved successfully!', 'success');
                 resetForm();
                 fetchExpenses();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
+            showToast(error.response?.data?.error || 'Error saving record', 'error');
         }
     };
 
@@ -305,15 +343,28 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             const uploadedUrl = await uploadFile();
             if (uploadedUrl) billUrl = uploadedUrl;
         }
+
+        // Clean up empty ObjectIDs to prevent backend crash
+        const payload = {
+            ...formData,
+            billUrl,
+            salaryMonth: category === 'Labour Wages' ? lookupMonth : '',
+            salaryYear: category === 'Labour Wages' ? lookupYear : ''
+        };
+        if (!payload.labourId || payload.labourId === '') {
+            delete (payload as any).labourId;
+        }
+
         try {
-            const { data } = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${selectedExpense._id}`, { ...formData, billUrl });
+            const { data } = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${selectedExpense._id}`, payload);
             if (data.success) {
                 showToast('Record updated successfully!', 'success');
                 resetForm();
                 fetchExpenses();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
+            showToast(error.response?.data?.error || 'Error updating record', 'error');
         }
     };
 
@@ -357,6 +408,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             netPay: '',
             siteAssigned: '',
             labourType: '',
+            otAmount: '',
+            salaryMonth: '',
+            salaryYear: '',
             site: '',
             explosiveType: '',
             unit: 'Nos',
@@ -373,6 +427,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             billNumber: '',
             nextServiceDate: '',
         });
+        setLookupMonth(listMonth);
+        setLookupYear(listYear);
         setSelectedFile(null);
         setFormView(false);
         setEditMode(false);
@@ -389,6 +445,12 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             const parts = vType.split(' (');
             vType = parts[0];
             vNum = parts[1].replace(')', '');
+        }
+
+        if (expense.category === 'Labour Wages') {
+            const d = new Date(expense.date);
+            setLookupMonth(d.getMonth() + 1);
+            setLookupYear(d.getFullYear());
         }
 
         setFormData({
@@ -417,6 +479,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             netPay: expense.netPay?.toString() || '',
             siteAssigned: expense.siteAssigned || '',
             labourType: expense.labourType || '',
+            otAmount: expense.otAmount?.toString() || '',
+            salaryMonth: expense.salaryMonth?.toString() || '',
+            salaryYear: expense.salaryYear?.toString() || '',
             site: expense.site || '',
             explosiveType: expense.explosiveType || '',
             unit: expense.unit || 'Nos',
@@ -447,8 +512,37 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         <div className="panel mt-6">
             {!formView ? (
                 <>
-                    <div className="mb-5 flex items-center justify-between">
-                        <h5 className="text-lg font-semibold dark:text-white-light">{title}</h5>
+                    <div className="mb-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <h5 className="text-lg font-semibold dark:text-white-light">{title}</h5>
+                            {category === 'Labour Wages' && (
+                                <div className="flex flex-col gap-1 bg-primary/5 p-1.5 px-3 rounded-xl border border-primary/20">
+                                    <span className="text-[9px] uppercase font-black text-primary/60 tracking-tighter">Filter by Work Month (வேலை மாதம்):</span>
+                                    <div className="flex items-center gap-2">
+                                        <select
+                                            className="form-select text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer p-0 h-auto"
+                                            value={listMonth}
+                                            onChange={(e) => setListMonth(parseInt(e.target.value))}
+                                        >
+                                            {[
+                                                { id: 1, label: 'Jan' }, { id: 2, label: 'Feb' }, { id: 3, label: 'Mar' },
+                                                { id: 4, label: 'Apr' }, { id: 5, label: 'May' }, { id: 6, label: 'Jun' },
+                                                { id: 7, label: 'Jul' }, { id: 8, label: 'Aug' }, { id: 9, label: 'Sep' },
+                                                { id: 10, label: 'Oct' }, { id: 11, label: 'Nov' }, { id: 12, label: 'Dec' }
+                                            ].map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                                        </select>
+                                        <div className="w-[1px] h-3 bg-primary/20"></div>
+                                        <select
+                                            className="form-select text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer p-0 h-auto"
+                                            value={listYear}
+                                            onChange={(e) => setListYear(parseInt(e.target.value))}
+                                        >
+                                            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         <button type="button" className="btn btn-primary gap-2" onClick={() => { resetForm(); setFormView(true); setEditMode(false); }}>
                             <IconPlus /> Add Record
                         </button>
@@ -494,9 +588,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Labour</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Work Type</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Wage Type</th>
-                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Days/Hrs</th>
-                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Total</th>
-                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Net Pay</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Days / OT Hrs</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4 text-success">Net Payable</th>
                                         </>
                                     ) : category === 'Office & Misc' ? (
                                         <>
@@ -566,12 +659,26 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 </>
                                             ) : category === 'Labour Wages' ? (
                                                 <>
-                                                    <td className="py-2">{expense.labourName || '-'}</td>
+                                                    <td className="py-2">
+                                                        <div className="font-bold flex items-center gap-2">
+                                                            {expense.labourName || '-'}
+                                                            {expense.salaryMonth && (
+                                                                <span className="badge badge-outline-primary py-0.5 px-2 text-[10px] font-black uppercase ring-1 ring-primary/20">
+                                                                    Work: {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][expense.salaryMonth - 1]} {expense.salaryYear}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
                                                     <td className="py-2"><span className="badge badge-outline-info">{expense.workType || 'General'}</span></td>
                                                     <td className="py-2">{expense.wageType || '-'}</td>
-                                                    <td className="py-2">{expense.quantity || '-'}</td>
-                                                    <td className="py-2">₹{expense.amount?.toLocaleString() || '0'}</td>
-                                                    <td className="font-bold text-success py-2">₹{expense.netPay?.toLocaleString() || '0'}</td>
+                                                    <td className="py-2">
+                                                        <div className="font-bold">{expense.quantity || '-'} Days</div>
+                                                        {expense.otAmount > 0 && <div className="text-[10px] text-info font-black">OT: ₹{expense.otAmount}</div>}
+                                                    </td>
+                                                    <td className="font-bold text-success py-2">
+                                                        <div>₹{expense.netPay?.toLocaleString() || '0'}</div>
+                                                        {expense.advanceDeduction > 0 && <div className="text-[10px] text-danger opacity-60">Adv: ₹{expense.advanceDeduction}</div>}
+                                                    </td>
                                                 </>
                                             ) : category === 'Office & Misc' ? (
                                                 <>
@@ -586,7 +693,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                     <td className="py-2">{expense.description || '-'}</td>
                                                 </>
                                             )}
-                                            <td className="font-bold text-primary py-2 text-lg">₹{expense.amount.toLocaleString()}</td>
+                                            <td className="font-bold text-primary py-2 text-lg min-w-[120px]">₹{expense.amount.toLocaleString()}</td>
                                             <td className="py-2">
                                                 {expense.sourceModel !== 'Manual' ? (
                                                     <div className="flex flex-col">
@@ -650,33 +757,37 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                             </div>
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                                 <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Date (தேதி)</label>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">
+                                        {category === 'Labour Wages' ? 'Salary Paid Date (தேதி)' : 'Date (தேதி)'}
+                                    </label>
                                     <input type="date" name="date" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.date} onChange={handleChange} required />
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">
-                                        {category === 'Transport Charges' ? 'Transport Vehicle Type' : (category === 'Labour Wages' ? 'Link to Machine' : 'Category Type')}
-                                    </label>
-                                    <select name="vehicleType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.vehicleType} onChange={handleChange}>
-                                        <option value="">{category === 'Labour Wages' ? 'None / General' : 'Select Category'}</option>
-                                        {category === 'Transport Charges' ? (
-                                            <>
-                                                <option value="Lorry">Lorry</option>
-                                                <option value="Tipper">Tipper</option>
-                                                <option value="Tractor">Tractor</option>
-                                                <option value="Trailer">Trailer</option>
-                                                <option value="External Transport">External Transport</option>
-                                                {/* Dynamic types from master */}
-                                                {uniqueVehicleTypes.filter(t => !['Lorry', 'Tipper', 'Tractor', 'Trailer', 'External Transport'].includes(t)).map(t => (
-                                                    <option key={t} value={t}>{t}</option>
-                                                ))}
-                                            </>
-                                        ) : (
-                                            uniqueVehicleTypes.map((type: string) => <option key={type} value={type}>{type}</option>)
-                                        )}
-                                    </select>
-                                </div>
-                                {formData.vehicleType && filteredVehicles.length > 0 && (
+                                {category !== 'Labour Wages' && (
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">
+                                            {category === 'Transport Charges' ? 'Transport Vehicle Type' : 'Category Type'}
+                                        </label>
+                                        <select name="vehicleType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.vehicleType} onChange={handleChange}>
+                                            <option value="">Select Category</option>
+                                            {category === 'Transport Charges' ? (
+                                                <>
+                                                    <option value="Lorry">Lorry</option>
+                                                    <option value="Tipper">Tipper</option>
+                                                    <option value="Tractor">Tractor</option>
+                                                    <option value="Trailer">Trailer</option>
+                                                    <option value="External Transport">External Transport</option>
+                                                    {/* Dynamic types from master */}
+                                                    {uniqueVehicleTypes.filter(t => !['Lorry', 'Tipper', 'Tractor', 'Trailer', 'External Transport'].includes(t)).map(t => (
+                                                        <option key={t} value={t}>{t}</option>
+                                                    ))}
+                                                </>
+                                            ) : (
+                                                uniqueVehicleTypes.map((type: string) => <option key={type} value={type}>{type}</option>)
+                                            )}
+                                        </select>
+                                    </div>
+                                )}
+                                {category !== 'Labour Wages' && formData.vehicleType && filteredVehicles.length > 0 && (
                                     <div>
                                         <label className="text-[10px] font-black text-primary uppercase tracking-widest mb-2 block">Specific Number / ID (வண்டி எண்)</label>
                                         <select name="vehicleNumber" className="form-select border-2 font-bold rounded-xl h-12 border-primary animate-pulse-once" value={formData.vehicleNumber} onChange={handleChange}>
@@ -809,9 +920,39 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
                                 {category === 'Labour Wages' && (
                                     <>
+                                        <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 bg-primary/5 p-6 rounded-2xl border border-primary/10 shadow-sm mb-4">
+                                            <div>
+                                                <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 block">Attendance Month (வருகை மாதம்)</label>
+                                                <select
+                                                    className="form-select border-2 font-bold rounded-xl h-12 border-primary/30 focus:border-primary bg-white transition-all shadow-sm"
+                                                    value={lookupMonth}
+                                                    onChange={(e) => setLookupMonth(parseInt(e.target.value))}
+                                                >
+                                                    {[
+                                                        { id: 1, label: 'January (ஜனவரி)' }, { id: 2, label: 'February (பிப்ரவரி)' },
+                                                        { id: 3, label: 'March (மார்ச்)' }, { id: 4, label: 'April (ஏப்ரல்)' },
+                                                        { id: 5, label: 'May (மே)' }, { id: 6, label: 'June (ஜூன்)' },
+                                                        { id: 7, label: 'July (ஜூலை)' }, { id: 8, label: 'August (ஆகஸ்ட்)' },
+                                                        { id: 9, label: 'September (செப்டம்பர்)' }, { id: 10, label: 'October (அக்டோபர்)' },
+                                                        { id: 11, label: 'November (நவம்பர்)' }, { id: 12, label: 'December (டிசம்பர்)' }
+                                                    ].map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 block">Attendance Year (வருகை ஆண்டு)</label>
+                                                <select
+                                                    className="form-select border-2 font-bold rounded-xl h-12 border-primary/30 focus:border-primary bg-white transition-all shadow-sm"
+                                                    value={lookupYear}
+                                                    onChange={(e) => setLookupYear(parseInt(e.target.value))}
+                                                >
+                                                    {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary">Work Type (வேலை வகை)</label>
-                                            <select name="workType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/50 font-bold" value={formData.workType} onChange={handleChange}>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">Work Type (வேலை வகை)</label>
+                                            <select name="workType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.workType} onChange={handleChange}>
                                                 <option value="">All Work Types</option>
                                                 <option value="Machine Operator">Machine Operator</option>
                                                 <option value="Helper">Helper</option>
@@ -828,7 +969,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-secondary">Labour Type (தொழிலாளர் வகை)</label>
-                                            <select name="labourType" className="form-select border-2 font-bold rounded-xl h-12 border-secondary/50 font-bold" value={formData.labourType} onChange={handleChange}>
+                                            <select name="labourType" className="form-select border-2 font-bold rounded-xl h-12 border-secondary/20 font-bold" value={formData.labourType} onChange={handleChange}>
                                                 <option value="">All Types</option>
                                                 <option value="Direct">நேரடி (Direct)</option>
                                                 <option value="Vendor">கான்ட்ராக்டர் (Contractor)</option>
@@ -836,7 +977,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Name (தொழிலாளர் பெயர்)</label>
-                                            <select name="labourName" className="form-select border-2 font-bold rounded-xl h-12" value={formData.labourName} onChange={handleChange} required>
+                                            <select name="labourName" className="form-select border-2 font-bold rounded-xl h-12" value={formData.labourId} onChange={handleChange} required>
                                                 <option value="">Select Labour</option>
                                                 {labours
                                                     .filter(l => (!formData.workType || l.workType === formData.workType) &&
@@ -867,12 +1008,16 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             <input type="text" name="perDaySalary" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10" value={formData.perDaySalary} readOnly />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-danger font-bold">Advance Deduction</label>
+                                            <label className="text-[10px] font-black text-info uppercase tracking-widest mb-2 block font-black">Overtime Salary (OT)</label>
+                                            <input type="text" name="otAmount" className="form-input border-2 focus:border-info transition-all font-black rounded-xl h-12 bg-info/5 border-info/30" value={formData.otAmount} readOnly />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-danger uppercase tracking-widest mb-2 block font-bold font-secondary">Advance Deduction</label>
                                             <input type="number" name="advanceDeduction" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10 border-danger/20" value={formData.advanceDeduction} onChange={handleChange} readOnly />
                                         </div>
-                                        <div className="bg-success/5 p-3 rounded-lg border border-success/20 sm:col-span-2 lg:col-span-1">
-                                            <label className="text-[10px] font-black text-success uppercase tracking-widest mb-1 block">Net Payable</label>
-                                            <div className="text-xl font-bold text-success">₹ {parseFloat(formData.netPay || '0').toLocaleString()}</div>
+                                        <div className="bg-success/5 p-3 rounded-lg border border-success/20 sm:col-span-2 lg:col-span-1 border-2 border-success/40">
+                                            <label className="text-[10px] font-black text-success uppercase tracking-widest mb-1 block">Net Payable (ஆணைத்தொகை)</label>
+                                            <div className="text-xl font-bold text-success animate-pulse">₹ {parseFloat(formData.netPay || '0').toLocaleString()}</div>
                                         </div>
                                     </>
                                 )}

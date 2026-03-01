@@ -8,8 +8,10 @@ import IconTrashLines from '@/components/icon/icon-trash-lines';
 import axios from 'axios';
 import Link from 'next/link';
 import IconMenuWidgets from '@/components/icon/menu/icon-menu-widgets';
+import { useToast } from '@/components/stone-mine/toast-notification';
 
 const VehicleDetails = () => {
+    const { showToast } = useToast();
     const [assets, setAssets] = useState<any[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
     const [selectedVendor, setSelectedVendor] = useState<any>(null);
@@ -101,10 +103,11 @@ const VehicleDetails = () => {
     const handleAdd = async (e: any) => {
         e.preventDefault();
         try {
-            const payload = { ...newItem, type: 'Vehicle' };
-            if (payload.ownershipType === 'Own') {
-                payload.contractor = '';
-            }
+            const payload = {
+                ...newItem,
+                type: 'Vehicle',
+                contractor: newItem.contractor && newItem.contractor.trim() !== '' ? newItem.contractor : null
+            };
 
             const endpoint = editItem
                 ? `${process.env.NEXT_PUBLIC_API_URL}/master/vehicles/${editItem._id}`
@@ -114,14 +117,14 @@ const VehicleDetails = () => {
 
             const { data: json } = await axios[method](endpoint, payload);
             if (json.success) {
-                alert(editItem ? 'Updated successfully!' : 'Added successfully!');
+                showToast(editItem ? 'Vehicle updated successfully!' : 'Vehicle registered successfully!', 'success');
                 resetForm();
                 fetchData();
             }
         } catch (error: any) {
             console.error(error);
-            const message = error.response?.data?.message || 'Error saving data';
-            alert(message);
+            const message = error.response?.data?.message || 'Error saving vehicle data';
+            showToast(message, 'error');
         }
     };
 
@@ -163,7 +166,7 @@ const VehicleDetails = () => {
             permitExpiryDate: item.permitExpiryDate ? new Date(item.permitExpiryDate).toISOString().split('T')[0] : '',
             mileageDetails: item.mileageDetails || '',
             ownershipType: item.ownershipType || 'Own',
-            contractor: item.contractor?._id || item.contractor || ''
+            contractor: item.contractor?._id || (typeof item.contractor === 'string' ? item.contractor : '')
         });
         setFormView(true);
     };

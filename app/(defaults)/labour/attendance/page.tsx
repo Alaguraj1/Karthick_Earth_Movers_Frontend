@@ -35,8 +35,10 @@ const AttendancePage = () => {
                 const { data: attJson } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/attendance?date=${selectedDate}`);
                 if (attJson.success && attJson.data.length > 0) {
                     attJson.data.forEach((record: any) => {
-                        if (initial[record.labour._id]) {
-                            initial[record.labour._id] = {
+                        // Extract labour ID from populated object or ID string
+                        const labourId = record.labour?._id || record.labour;
+                        if (labourId && initial[labourId]) {
+                            initial[labourId] = {
                                 status: record.status,
                                 overtimeHours: record.overtimeHours || 0
                             };
@@ -126,6 +128,8 @@ const AttendancePage = () => {
                     position: 'top-end',
                     toast: true
                 });
+                // Re-fetch to ensure local state matches server
+                await fetchLaboursAndAttendance();
             }
         } catch (error) {
             console.error(error);
