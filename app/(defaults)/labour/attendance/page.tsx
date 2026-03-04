@@ -59,6 +59,12 @@ const AttendancePage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDate]);
 
+    const isJoined = (labour: any) => {
+        if (!labour.joiningDate) return true;
+        const joinDate = new Date(labour.joiningDate).toISOString().split('T')[0];
+        return selectedDate >= joinDate;
+    };
+
     const handleStatusChange = (labourId: string, status: string) => {
         setAttendanceData((prev: any) => ({
             ...prev,
@@ -76,7 +82,9 @@ const AttendancePage = () => {
     const handleBulkMarkPresent = () => {
         const updated = { ...attendanceData };
         filteredLabours.forEach(l => {
-            updated[l._id] = { ...updated[l._id], status: 'Present' };
+            if (isJoined(l)) {
+                updated[l._id] = { ...updated[l._id], status: 'Present' };
+            }
         });
         setAttendanceData(updated);
     };
@@ -84,7 +92,9 @@ const AttendancePage = () => {
     const handleBulkMarkAbsent = () => {
         const updated = { ...attendanceData };
         filteredLabours.forEach(l => {
-            updated[l._id] = { ...updated[l._id], status: 'Absent' };
+            if (isJoined(l)) {
+                updated[l._id] = { ...updated[l._id], status: 'Absent' };
+            }
         });
         setAttendanceData(updated);
     };
@@ -93,7 +103,10 @@ const AttendancePage = () => {
         setSaving(true);
         try {
             const dataToSave = Object.keys(attendanceData)
-                .filter(id => attendanceData[id].status !== null && attendanceData[id].status !== '')
+                .filter(id => {
+                    const labour = labours.find(l => l._id === id);
+                    return attendanceData[id].status !== null && attendanceData[id].status !== '' && labour && isJoined(labour);
+                })
                 .map(id => ({
                     labour: id,
                     ...attendanceData[id]
@@ -125,7 +138,7 @@ const AttendancePage = () => {
                     text: 'Attendance saved successfully!',
                     timer: 2000,
                     showConfirmButton: false,
-                    position: 'top-end',
+                    position: 'top',
                     toast: true
                 });
                 // Re-fetch to ensure local state matches server
@@ -238,58 +251,66 @@ const AttendancePage = () => {
                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">OT Hrs</span>
                             <input
                                 type="number"
-                                className="w-14 h-9 text-center font-black text-sm border-2 rounded-xl border-gray-200 dark:border-gray-600 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all bg-white dark:bg-gray-700 dark:text-white"
+                                className={`w-14 h-9 text-center font-black text-sm border-2 rounded-xl border-gray-200 dark:border-gray-600 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all bg-white dark:bg-gray-700 dark:text-white ${!isJoined(labour) ? 'opacity-30 cursor-not-allowed' : ''}`}
                                 min="0" max="12"
                                 value={attendanceData[labour._id]?.overtimeHours || 0}
                                 onChange={(e) => handleOvertimeChange(labour._id, parseInt(e.target.value) || 0)}
+                                disabled={!isJoined(labour)}
                             />
                         </div>
                     </div>
 
                     {/* Status Buttons */}
-                    <div className="grid grid-cols-3 gap-2">
-                        <button
-                            onClick={() => handleStatusChange(labour._id, 'Present')}
-                            className={`group relative flex flex-col items-center justify-center py-2.5 rounded-xl transition-all duration-300 border-2 ${status === 'Present'
-                                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-500/30 scale-[1.02]'
-                                : 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-300'
-                                }`}
-                        >
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 ${status === 'Present' ? 'bg-white/20' : 'bg-emerald-100 dark:bg-emerald-900/50'
-                                }`}>
-                                <IconChecks className="w-3.5 h-3.5" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest">Present</span>
-                        </button>
+                    {isJoined(labour) ? (
+                        <div className="grid grid-cols-3 gap-2">
+                            <button
+                                onClick={() => handleStatusChange(labour._id, 'Present')}
+                                className={`group relative flex flex-col items-center justify-center py-2.5 rounded-xl transition-all duration-300 border-2 ${status === 'Present'
+                                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-500/30 scale-[1.02]'
+                                    : 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-300'
+                                    }`}
+                            >
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 ${status === 'Present' ? 'bg-white/20' : 'bg-emerald-100 dark:bg-emerald-900/50'
+                                    }`}>
+                                    <IconChecks className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-[9px] font-black uppercase tracking-widest">Present</span>
+                            </button>
 
-                        <button
-                            onClick={() => handleStatusChange(labour._id, 'Half Day')}
-                            className={`group relative flex flex-col items-center justify-center py-2.5 rounded-xl transition-all duration-300 border-2 ${status === 'Half Day'
-                                ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white border-amber-500 shadow-lg shadow-amber-500/30 scale-[1.02]'
-                                : 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:border-amber-300'
-                                }`}
-                        >
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 ${status === 'Half Day' ? 'bg-white/20' : 'bg-amber-100 dark:bg-amber-900/50'
-                                }`}>
-                                <span className="text-xs font-black">½</span>
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest">Half Day</span>
-                        </button>
+                            <button
+                                onClick={() => handleStatusChange(labour._id, 'Half Day')}
+                                className={`group relative flex flex-col items-center justify-center py-2.5 rounded-xl transition-all duration-300 border-2 ${status === 'Half Day'
+                                    ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white border-amber-500 shadow-lg shadow-amber-500/30 scale-[1.02]'
+                                    : 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:border-amber-300'
+                                    }`}
+                            >
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 ${status === 'Half Day' ? 'bg-white/20' : 'bg-amber-100 dark:bg-amber-900/50'
+                                    }`}>
+                                    <span className="text-xs font-black">½</span>
+                                </div>
+                                <span className="text-[9px] font-black uppercase tracking-widest">Half Day</span>
+                            </button>
 
-                        <button
-                            onClick={() => handleStatusChange(labour._id, 'Absent')}
-                            className={`group relative flex flex-col items-center justify-center py-2.5 rounded-xl transition-all duration-300 border-2 ${status === 'Absent'
-                                ? 'bg-gradient-to-br from-red-500 to-red-600 text-white border-red-500 shadow-lg shadow-red-500/30 scale-[1.02]'
-                                : 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-300'
-                                }`}
-                        >
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 ${status === 'Absent' ? 'bg-white/20' : 'bg-red-100 dark:bg-red-900/50'
-                                }`}>
-                                <IconX className="w-3.5 h-3.5" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest">Absent</span>
-                        </button>
-                    </div>
+                            <button
+                                onClick={() => handleStatusChange(labour._id, 'Absent')}
+                                className={`group relative flex flex-col items-center justify-center py-2.5 rounded-xl transition-all duration-300 border-2 ${status === 'Absent'
+                                    ? 'bg-gradient-to-br from-red-500 to-red-600 text-white border-red-500 shadow-lg shadow-red-500/30 scale-[1.02]'
+                                    : 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-300'
+                                    }`}
+                            >
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 ${status === 'Absent' ? 'bg-white/20' : 'bg-red-100 dark:bg-red-900/50'
+                                    }`}>
+                                    <IconX className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-[9px] font-black uppercase tracking-widest">Absent</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="bg-gray-100 dark:bg-gray-700/50 py-3 px-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-center">
+                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block mb-1">Worker Not Joining Yet</span>
+                            <span className="text-xs font-bold text-gray-500">Starts on: {new Date(labour.joiningDate).toLocaleDateString()}</span>
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -321,30 +342,37 @@ const AttendancePage = () => {
                     {labour.wage > 0 && <span className="text-xs font-bold text-emerald-600">₹{labour.wage}/{labour.wageType === 'Monthly' ? 'mo' : 'day'}</span>}
                 </td>
                 <td className="px-3 py-3">
-                    <div className="flex items-center gap-1.5">
-                        {['Present', 'Half Day', 'Absent'].map((s) => (
-                            <button
-                                key={s}
-                                onClick={() => handleStatusChange(labour._id, s)}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-200 border ${status === s
-                                    ? s === 'Present' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
-                                        : s === 'Half Day' ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20'
-                                            : 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/20'
-                                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
-                                    }`}
-                            >
-                                {s === 'Present' ? '✓' : s === 'Half Day' ? '½' : '✗'} {s}
-                            </button>
-                        ))}
-                    </div>
+                    {isJoined(labour) ? (
+                        <div className="flex items-center gap-1.5">
+                            {['Present', 'Half Day', 'Absent'].map((s) => (
+                                <button
+                                    key={s}
+                                    onClick={() => handleStatusChange(labour._id, s)}
+                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-200 border ${status === s
+                                        ? s === 'Present' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                                            : s === 'Half Day' ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20'
+                                                : 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/20'
+                                        : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
+                                        }`}
+                                >
+                                    {s === 'Present' ? '✓' : s === 'Half Day' ? '½' : '✗'} {s}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-[10px] font-black text-gray-400 bg-gray-50 dark:bg-gray-800 rounded px-3 py-1.5 border border-dashed border-gray-200 dark:border-gray-700 h-9 flex items-center">
+                            Not Joined (Starts: {new Date(labour.joiningDate).toLocaleDateString()})
+                        </div>
+                    )}
                 </td>
                 <td className="px-3 py-3">
                     <input
                         type="number"
-                        className="w-16 h-8 text-center font-bold text-xs border-2 rounded-lg border-gray-200 dark:border-gray-600 focus:border-primary bg-white dark:bg-gray-700 dark:text-white"
+                        className={`w-16 h-8 text-center font-bold text-xs border-2 rounded-lg border-gray-200 dark:border-gray-600 focus:border-primary bg-white dark:bg-gray-700 dark:text-white ${!isJoined(labour) ? 'opacity-30 cursor-not-allowed' : ''}`}
                         min="0" max="12"
                         value={attendanceData[labour._id]?.overtimeHours || 0}
                         onChange={(e) => handleOvertimeChange(labour._id, parseInt(e.target.value) || 0)}
+                        disabled={!isJoined(labour)}
                     />
                 </td>
             </tr>

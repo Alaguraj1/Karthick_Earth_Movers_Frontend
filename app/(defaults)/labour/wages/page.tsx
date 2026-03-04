@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const WagesCalculationPage = () => {
     const [summaries, setSummaries] = useState<any[]>([]);
@@ -31,13 +32,37 @@ const WagesCalculationPage = () => {
 
     const handleSettle = async (summary: any) => {
         if (summary.attendance.total === 0) {
-            alert('This worker is already fully paid for this month!');
+            Swal.fire({
+                icon: 'info',
+                title: 'Already Paid',
+                text: 'This worker is already fully paid for this month!',
+            });
             return;
         }
-        const mode = window.prompt("Enter Payment Mode (Cash/Bank Transfer/UPI):", "Cash");
+
+        const { value: mode } = await Swal.fire({
+            title: 'Select Payment Mode',
+            input: 'select',
+            inputOptions: {
+                'Cash': 'Cash',
+                'Bank Transfer': 'Bank Transfer',
+                'UPI': 'UPI'
+            },
+            inputPlaceholder: 'Select a payment mode',
+            showCancelButton: true,
+        });
+
         if (!mode) return;
 
-        if (confirm(`Confirm payment of ₹${summary.netPayable} to ${summary.name}? This will record it as an Expense.`)) {
+        const result = await Swal.fire({
+            title: 'Confirm Payment',
+            text: `Confirm payment of ₹${summary.netPayable} to ${summary.name}? This will record it as an Expense.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, confirm payment',
+        });
+
+        if (result.isConfirmed) {
             try {
                 await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, {
                     category: 'Labour Wages',
@@ -63,24 +88,57 @@ const WagesCalculationPage = () => {
                     labourId: summary.labourId
                 });
 
-                alert("Payment Success! Recorded in Expenses.");
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Payment Success!',
+                    text: 'Recorded in Expenses.',
+                });
                 fetchWagesSummary();
             } catch (error) {
                 console.error(error);
-                alert("Error recording payment.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error recording payment.',
+                });
             }
         }
     };
 
     const handleVendorSettle = async (summary: any) => {
         if (summary.attendance.total === 0) {
-            alert('This contractor is already fully paid for this month!');
+            Swal.fire({
+                icon: 'info',
+                title: 'Already Paid',
+                text: 'This contractor is already fully paid for this month!',
+            });
             return;
         }
-        const mode = window.prompt("Enter Payment Mode (Cash/Bank Transfer/UPI/Cheque):", "Cash");
+
+        const { value: mode } = await Swal.fire({
+            title: 'Select Payment Mode',
+            input: 'select',
+            inputOptions: {
+                'Cash': 'Cash',
+                'Bank Transfer': 'Bank Transfer',
+                'UPI': 'UPI',
+                'Cheque': 'Cheque'
+            },
+            inputPlaceholder: 'Select a payment mode',
+            showCancelButton: true,
+        });
+
         if (!mode) return;
 
-        if (confirm(`Confirm direct payout of ₹${summary.netPayable} to Contractor ${summary.contractorName}? This will record a Vendor Payment.`)) {
+        const result = await Swal.fire({
+            title: 'Confirm Payout',
+            text: `Confirm direct payout of ₹${summary.netPayable} to Contractor ${summary.contractorName}? This will record a Vendor Payment.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, confirm payout',
+        });
+
+        if (result.isConfirmed) {
             try {
                 await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/vendors/payments`, {
                     date: new Date(),
@@ -100,11 +158,19 @@ const WagesCalculationPage = () => {
                     contractorId: summary.contractorId
                 });
 
-                alert("Vendor Payment Success! Recorded in Vendor Payments.");
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Vendor Payment Success!',
+                    text: 'Recorded in Vendor Payments.',
+                });
                 fetchWagesSummary();
             } catch (error) {
                 console.error(error);
-                alert("Error recording vendor payment.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error recording vendor payment.',
+                });
             }
         }
     };

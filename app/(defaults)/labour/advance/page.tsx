@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import IconPlus from '@/components/icon/icon-plus';
 import IconSave from '@/components/icon/icon-save';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const AdvancePage = () => {
     const [labours, setLabours] = useState<any[]>([]);
@@ -47,7 +48,15 @@ const AdvancePage = () => {
         try {
             const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/advance`, formData);
             if (data.success) {
-                alert('Advance payment recorded!');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Recorded!',
+                    text: 'Advance payment recorded successfully',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    position: 'top',
+                    toast: true,
+                });
                 setFormData({
                     labour: '',
                     date: new Date().toISOString().split('T')[0],
@@ -59,7 +68,11 @@ const AdvancePage = () => {
             }
         } catch (error) {
             console.error(error);
-            alert('Error recording advance');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error recording advance',
+            });
         } finally {
             setSaving(false);
         }

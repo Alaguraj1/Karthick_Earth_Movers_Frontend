@@ -8,6 +8,7 @@ import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconEye from '@/components/icon/icon-eye';
 import Link from 'next/link';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const LabourListPage = () => {
     const [data, setData] = useState<any[]>([]);
@@ -106,12 +107,24 @@ const LabourListPage = () => {
 
             const { data: json } = await axios[method](endpoint, payload);
             if (json.success) {
-                alert(editItem ? 'Updated successfully!' : 'Added successfully!');
+                Swal.fire({
+                    icon: 'success',
+                    title: editItem ? 'Updated!' : 'Added!',
+                    text: editItem ? 'Labour profile updated successfully' : 'New labour profile added successfully',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    position: 'top',
+                    toast: true,
+                });
                 resetForm();
                 fetchData();
             }
         } catch (error: any) {
-            alert(error.response?.data?.error || 'Error saving data');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.response?.data?.error || 'Error saving data',
+            });
         }
     };
 
@@ -156,13 +169,40 @@ const LabourListPage = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this labour profile?')) return;
-        try {
-            const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/labour/${id}`);
-            if (json.success) fetchData();
-        } catch (error) {
-            console.error(error);
-        }
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You want to delete this labour profile?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/labour/${id}`);
+                    if (json.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: 'Labour profile has been deleted.',
+                            timer: 2000,
+                            showConfirmButton: false,
+                            position: 'top',
+                            toast: true,
+                        });
+                        fetchData();
+                    }
+                } catch (error) {
+                    console.error(error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to delete labour profile',
+                    });
+                }
+            }
+        });
     };
 
     const filteredLabours = data.filter(item => {
@@ -350,8 +390,8 @@ const LabourListPage = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             {activeTab === 'vendor' && (
-                                <Link 
-                                    href="/vendors/labour" 
+                                <Link
+                                    href="/vendors/labour"
                                     className="btn btn-outline-warning shadow-sm"
                                 >
                                     <span>⚙️</span> Manage Contractors

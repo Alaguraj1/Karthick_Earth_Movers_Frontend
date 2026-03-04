@@ -41,14 +41,15 @@ const VehicleDetails = () => {
         contractor: ''
     });
 
-    const categories = ['Lorry', 'Tipper', 'Tractor', 'Trailer', 'JCB', 'Hitachi', 'Other'];
+    const [categories, setCategories] = useState<any[]>([]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [vehicleRes, vendorRes] = await Promise.all([
+            const [vehicleRes, vendorRes, categoryRes] = await Promise.all([
                 axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/transport`)
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/transport`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicle-categories`)
             ]);
 
             if (vehicleRes.data.success) {
@@ -56,6 +57,9 @@ const VehicleDetails = () => {
             }
             if (vendorRes.data.success) {
                 setVendors(vendorRes.data.data);
+            }
+            if (categoryRes.data.success) {
+                setCategories(categoryRes.data.data);
             }
         } catch (error) {
             console.error(error);
@@ -288,7 +292,7 @@ const VehicleDetails = () => {
                                         required
                                     >
                                         <option value="">Select Category</option>
-                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                        {categories.map((cat: any) => <option key={cat._id} value={cat.name}>{cat.name}</option>)}
                                     </select>
                                 </div>
                                 <div>

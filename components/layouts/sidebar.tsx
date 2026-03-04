@@ -354,6 +354,9 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/masters/explosive-materials">Explosive Materials</Link>
                                                 </li>
+                                                <li>
+                                                    <Link href="/masters/vehicle-categories">Vehicle Categories</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>

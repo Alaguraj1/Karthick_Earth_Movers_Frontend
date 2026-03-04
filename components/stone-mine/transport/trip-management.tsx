@@ -25,8 +25,9 @@ const TripManagement = () => {
     const initialForm = {
         date: new Date().toISOString().split('T')[0],
         vehicleId: '',
-        vehicleType: 'Lorry',
+        vehicleType: 'All',
         driverId: '',
+        driverName: '',
         fromLocation: 'Quarry',
         toLocation: '',
         stoneTypeId: '',
@@ -42,26 +43,29 @@ const TripManagement = () => {
     const [labours, setLabours] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
     const [stoneTypes, setStoneTypes] = useState<any[]>([]);
+    const [vehicleCategories, setVehicleCategories] = useState<any[]>([]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [tripRes, vehicleRes, labourRes, customerRes, stoneRes] = await Promise.all([
+            const [tripRes, vehicleRes, labourRes, customerRes, stoneRes, categoryRes] = await Promise.all([
                 axios.get(`${API}/trips`),
                 axios.get(`${API}/master/vehicles`),
-                axios.get(`${API}/master/labours`),
+                axios.get(`${API}/labour`),
                 axios.get(`${API}/master/customers`),
                 axios.get(`${API}/master/stone-types`),
+                axios.get(`${API}/master/vehicle-categories`),
             ]);
 
             if (tripRes.data.success) setTrips(tripRes.data.data);
             if (vehicleRes.data.success) {
                 setVehicles(vehicleRes.data.data);
-                filterVehiclesBy(vehicleRes.data.data, 'Lorry');
+                setFilteredVehicles(vehicleRes.data.data); // Show all by default
             }
             if (labourRes.data.success) setLabours(labourRes.data.data);
             if (customerRes.data.success) setCustomers(customerRes.data.data);
             if (stoneRes.data.success) setStoneTypes(stoneRes.data.data);
+            if (categoryRes.data.success) setVehicleCategories(categoryRes.data.data);
         } catch (error) {
             console.error(error);
             showToast('Error fetching data', 'error');
@@ -71,6 +75,10 @@ const TripManagement = () => {
     };
 
     const filterVehiclesBy = (allVehicles: any[], type: string) => {
+        if (!type || type === 'All') {
+            setFilteredVehicles(allVehicles);
+            return;
+        }
         const filtered = allVehicles.filter((v: any) =>
             v.category?.toLowerCase() === type.toLowerCase() ||
             (type === 'Lorry' && !v.category) // Fallback for old data
@@ -93,14 +101,45 @@ const TripManagement = () => {
         }
 
         if (name === 'vehicleId') {
-            const selectedVehicle = vehicles.find(v => v._id === value);
-            if (selectedVehicle?.driverName) {
-                // If the vehicle has a driver name in master, try to find the matching labour ID
-                const worker = labours.find(l => l.name === selectedVehicle.driverName);
-                if (worker) {
-                    setFormData(prev => ({ ...prev, driverId: worker._id }));
+            const selectedVehicle = vehicles.find((v: any) => v._id === value);
+            if (selectedVehicle) {
+                // 1. Auto-set Vehicle Type (Category) from Master
+                if (selectedVehicle.category) {
+                    setFormData(prev => ({ ...prev, vehicleType: selectedVehicle.category }));
+                    filterVehiclesBy(vehicles, selectedVehicle.category);
+                }
+
+                // 2. Auto-set Driver Name from Master (case-insensitive)
+                if (selectedVehicle.driverName) {
+                    const vName = selectedVehicle.driverName;
+                    const vDriverName = vName.trim().toLowerCase();
+                    const worker = labours.find(l =>
+                        l.name?.trim().toLowerCase() === vDriverName
+                    );
+                    setFormData(prev => ({
+                        ...prev,
+                        driverName: vName,
+                        driverId: worker ? worker._id : ''
+                    }));
+                } else if (selectedVehicle.operatorName) {
+                    const vName = selectedVehicle.operatorName;
+                    const vOpName = vName.trim().toLowerCase();
+                    const worker = labours.find(l =>
+                        l.name?.trim().toLowerCase() === vOpName
+                    );
+                    setFormData(prev => ({
+                        ...prev,
+                        driverName: vName,
+                        driverId: worker ? worker._id : ''
+                    }));
                 }
             }
+        }
+
+        // Sync driverId if name matches labour list
+        if (name === 'driverName') {
+            const worker = labours.find(l => l.name.trim().toLowerCase() === value.trim().toLowerCase());
+            setFormData(prev => ({ ...prev, driverId: worker ? worker._id : '' }));
         }
     };
 
@@ -139,17 +178,18 @@ const TripManagement = () => {
         filterVehiclesBy(vehicles, vType);
 
         setFormData({
-            date: trip.date.split('T')[0],
-            vehicleId: trip.vehicleId?._id || trip.vehicleId,
-            vehicleType: vType,
-            driverId: trip.driverId?._id || trip.driverId,
-            fromLocation: trip.fromLocation,
-            toLocation: trip.toLocation,
-            stoneTypeId: trip.stoneTypeId?._id || trip.stoneTypeId,
-            customerId: trip.customerId?._id || trip.customerId,
-            loadQuantity: trip.loadQuantity,
-            loadUnit: trip.loadUnit,
-            tripRate: trip.tripRate,
+            date: trip.date ? new Date(trip.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            vehicleId: trip.vehicleId?._id || trip.vehicleId || '',
+            vehicleType: trip.vehicleType || trip.vehicleId?.category || 'All',
+            driverId: trip.driverId?._id || trip.driverId || '',
+            driverName: trip.driverName || trip.driverId?.name || '',
+            fromLocation: trip.fromLocation || 'Quarry',
+            toLocation: trip.toLocation || '',
+            stoneTypeId: trip.stoneTypeId?._id || trip.stoneTypeId || '',
+            customerId: trip.customerId?._id || trip.customerId || '',
+            loadQuantity: trip.loadQuantity || '',
+            loadUnit: trip.loadUnit || 'Tons',
+            tripRate: trip.tripRate || '',
             notes: trip.notes || ''
         });
         setEditId(trip._id);
@@ -174,7 +214,7 @@ const TripManagement = () => {
         setFormData(initialForm);
         setEditId(null);
         setShowForm(false);
-        filterVehiclesBy(vehicles, 'Lorry');
+        setFilteredVehicles(vehicles); // Reset to show all
     };
 
     return (
@@ -206,12 +246,10 @@ const TripManagement = () => {
                             <div>
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Vehicle Type</label>
                                 <select name="vehicleType" className="form-select" value={formData.vehicleType} onChange={handleChange} required>
-                                    <option value="Lorry">Lorry</option>
-                                    <option value="Tipper">Tipper</option>
-                                    <option value="Tractor">Tractor</option>
-                                    <option value="JCB">JCB</option>
-                                    <option value="Poclain">Poclain</option>
-                                    <option value="Other">Other</option>
+                                    <option value="All">All Vehicles</option>
+                                    {vehicleCategories.map((cat: any) => (
+                                        <option key={cat._id} value={cat.name}>{cat.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
@@ -226,13 +264,23 @@ const TripManagement = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Driver (Master)</label>
-                                <select name="driverId" className="form-select" value={formData.driverId} onChange={handleChange}>
-                                    <option value="">Select Driver</option>
-                                    {labours.filter(l => l.workType?.toLowerCase() === 'driver').map((l: any) => (
-                                        <option key={l._id} value={l._id}>{l.name}</option>
-                                    ))}
-                                </select>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block font-primary">Driver Name (சாரதி பெயர்)</label>
+                                <div className="relative">
+                                    <input 
+                                        name="driverName" 
+                                        list="trip-labor-list"
+                                        className="form-input font-bold" 
+                                        value={formData.driverName} 
+                                        onChange={handleChange} 
+                                        placeholder="Enter Driver Name..."
+                                        required
+                                    />
+                                    <datalist id="trip-labor-list">
+                                        {labours.map(l => (
+                                            <option key={l._id} value={l.name}>{l.workType || 'Worker'}</option>
+                                        ))}
+                                    </datalist>
+                                </div>
                             </div>
                         </div>
 
@@ -340,7 +388,7 @@ const TripManagement = () => {
                                                     <span className={`badge badge-outline-primary text-[10px] py-0.5 px-1.5`}>{trip.vehicleId?.category || trip.vehicleType || 'Vehicle'}</span>
                                                     <div className="font-bold text-primary">{trip.vehicleId?.vehicleNumber || trip.vehicleId?.registrationNumber || 'Unknown'}</div>
                                                 </div>
-                                                <div className="text-xs text-secondary font-medium italic mt-1">{trip.driverId?.name || 'No Driver'}</div>
+                                                <div className="text-xs text-secondary font-medium mt-1">{trip.driverName || trip.driverId?.name || 'No Driver'}</div>
                                             </td>
                                             <td>
                                                 <div className="flex flex-col">

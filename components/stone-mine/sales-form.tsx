@@ -24,14 +24,16 @@ const SalesForm = () => {
     const [sources, setSources] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
     const [vehicles, setVehicles] = useState<any[]>([]);
+    const [vehicleCategories, setVehicleCategories] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchMasterData = async () => {
             try {
-                const [srcRes, custRes, vehRes] = await Promise.all([
+                const [srcRes, custRes, vehRes, catRes] = await Promise.all([
                     axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/income-sources`),
                     axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/customers`),
-                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`)
+                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicle-categories`)
                 ]);
 
                 if (srcRes.data.success) {
@@ -40,6 +42,7 @@ const SalesForm = () => {
                 }
                 if (custRes.data.success) setCustomers(custRes.data.data);
                 if (vehRes.data.success) setVehicles(vehRes.data.data);
+                if (catRes.data.success) setVehicleCategories(catRes.data.data);
             } catch (error) {
                 console.error('Error fetching master data:', error);
             }
@@ -47,8 +50,10 @@ const SalesForm = () => {
         fetchMasterData();
     }, []);
 
-    const uniqueVehicleTypes = Array.from(new Set(vehicles.map((v) => v.name)));
-    const filteredVehicles = vehicles.filter((v) => v.name === formData.vehicleType);
+    const uniqueVehicleTypes = Array.from(new Set(vehicles.map((v) => v.category || 'Other').filter(Boolean)));
+    const filteredVehicles = !formData.vehicleType || formData.vehicleType === 'All'
+        ? vehicles
+        : vehicles.filter((v) => v.category === formData.vehicleType);
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
@@ -56,6 +61,12 @@ const SalesForm = () => {
             const updated = { ...prev, [name]: value };
             if (name === 'vehicleType') {
                 updated.vehicleNumber = '';
+            }
+            if (name === 'vehicleNumber') {
+                const selectedVehicle = vehicles.find(v => (v.vehicleNumber || v.name) === value);
+                if (selectedVehicle && selectedVehicle.category) {
+                    updated.vehicleType = selectedVehicle.category;
+                }
             }
             return updated;
         });
@@ -141,11 +152,9 @@ const SalesForm = () => {
                         <div>
                             <label className="text-xs font-bold text-white-dark uppercase mb-2 block">வாகனம் வகை (Vehicle Type)</label>
                             <select id="vehicleType" name="vehicleType" className="form-select" value={formData.vehicleType} onChange={handleChange}>
-                                <option value="">Select Type</option>
-                                {uniqueVehicleTypes.map((type: string) => (
-                                    <option key={type} value={type}>
-                                        {type}
-                                    </option>
+                                <option value="All">All Types</option>
+                                {vehicleCategories.map((cat: any) => (
+                                    <option key={cat._id} value={cat.name}>{cat.name}</option>
                                 ))}
                             </select>
                         </div>

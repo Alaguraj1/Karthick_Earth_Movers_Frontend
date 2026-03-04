@@ -27,8 +27,9 @@ const SalesEntryForm = () => {
         dueDate: '',
         notes: '',
         vehicleId: '',
-        vehicleType: 'Lorry',
+        vehicleType: 'All',
         driverId: '',
+        driverName: '', // Stored as specific name
         fromLocation: 'Quarry',
         toLocation: '',
     });
@@ -36,8 +37,13 @@ const SalesEntryForm = () => {
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [filteredVehicles, setFilteredVehicles] = useState<any[]>([]);
     const [labours, setLabours] = useState<any[]>([]);
+    const [vehicleCategories, setVehicleCategories] = useState<any[]>([]);
 
     const filterVehiclesBy = (allVehicles: any[], type: string) => {
+        if (!type || type === 'All') {
+            setFilteredVehicles(allVehicles);
+            return;
+        }
         const filtered = allVehicles.filter((v: any) =>
             v.category?.toLowerCase() === type.toLowerCase() ||
             (type === 'Lorry' && !v.category) // Fallback for old data
@@ -77,14 +83,19 @@ const SalesEntryForm = () => {
                 const res = await axios.get(`${API}/master/vehicles`);
                 if (res.data.success) {
                     setVehicles(res.data.data);
-                    filterVehiclesBy(res.data.data, 'Lorry');
+                    setFilteredVehicles(res.data.data); // Show all by default
                 }
             } catch (error) { console.error('Error fetching vehicles:', error); }
 
             try {
-                const res = await axios.get(`${API}/master/labours`);
+                const res = await axios.get(`${API}/labour`);
                 if (res.data.success) setLabours(res.data.data);
             } catch (error) { console.error('Error fetching labours:', error); }
+
+            try {
+                const res = await axios.get(`${API}/master/vehicle-categories`);
+                if (res.data.success) setVehicleCategories(res.data.data);
+            } catch (error) { console.error('Error fetching vehicle categories:', error); }
         };
         fetchMasterData();
         fetchSales();
@@ -100,18 +111,47 @@ const SalesEntryForm = () => {
                 updated.vehicleId = ''; // Reset vehicle ID when type changes
             }
 
-            // Auto-select driver based on vehicle's assigned driver name
             if (name === 'vehicleId') {
                 const selectedVehicle = vehicles.find((v: any) => v._id === value);
-                if (selectedVehicle?.driverName) {
-                    const vehicleDriverName = selectedVehicle.driverName.trim().toLowerCase();
-                    const worker = labours.find((l: any) =>
-                        l.name?.trim().toLowerCase() === vehicleDriverName
-                    );
-                    if (worker) {
-                        updated.driverId = worker._id;
+                if (selectedVehicle) {
+                    // 1. Auto-populate Vehicle Type (Category) from Master
+                    if (selectedVehicle.category) {
+                        updated.vehicleType = selectedVehicle.category;
+                    }
+
+                    // 2. Auto-populate Driver Name from Vehicle Master
+                    if (selectedVehicle.driverName) {
+                        updated.driverName = selectedVehicle.driverName;
+                        
+                        // Also try to find a matching labour ID for records
+                        const vDriverName = selectedVehicle.driverName.trim().toLowerCase();
+                        const worker = labours.find((l: any) =>
+                            l.name?.trim().toLowerCase() === vDriverName
+                        );
+                        if (worker) {
+                            updated.driverId = worker._id;
+                        } else {
+                            updated.driverId = '';
+                        }
+                    } else if (selectedVehicle.operatorName) {
+                        updated.driverName = selectedVehicle.operatorName;
+                        const vOpName = selectedVehicle.operatorName.trim().toLowerCase();
+                        const worker = labours.find((l: any) =>
+                            l.name?.trim().toLowerCase() === vOpName
+                        );
+                        if (worker) {
+                            updated.driverId = worker._id;
+                        } else {
+                            updated.driverId = '';
+                        }
                     }
                 }
+            }
+
+            // If manually typing driver name, try to find labour ID
+            if (name === 'driverName') {
+                const worker = labours.find(l => l.name.trim().toLowerCase() === value.trim().toLowerCase());
+                updated.driverId = worker ? worker._id : '';
             }
 
             return updated;
@@ -166,7 +206,7 @@ const SalesEntryForm = () => {
             dueDate: '',
             notes: '',
             vehicleId: '',
-            vehicleType: 'Lorry',
+            vehicleType: 'All',
             driverId: '',
             fromLocation: 'Quarry',
             toLocation: '',
@@ -184,7 +224,7 @@ const SalesEntryForm = () => {
             dueDate: '',
             notes: '',
             vehicleId: '',
-            vehicleType: 'Lorry',
+            vehicleType: 'All',
             driverId: '',
             fromLocation: 'Quarry',
             toLocation: '',
@@ -209,6 +249,7 @@ const SalesEntryForm = () => {
                     vehicleId: sale.vehicleId?._id || sale.vehicleId || '',
                     vehicleType: sale.vehicleId?.category || 'Lorry',
                     driverId: sale.driverId?._id || sale.driverId || '',
+                    driverName: sale.driverName || sale.driverId?.name || '',
                     fromLocation: sale.fromLocation || 'Quarry',
                     toLocation: sale.toLocation || '',
                 });
@@ -421,12 +462,10 @@ const SalesEntryForm = () => {
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Vehicle Type</label>
                                     <select name="vehicleType" className="form-select" value={formData.vehicleType} onChange={handleChange}>
-                                        <option value="Lorry">Lorry</option>
-                                        <option value="Tipper">Tipper</option>
-                                        <option value="Tractor">Tractor</option>
-                                        <option value="JCB">JCB</option>
-                                        <option value="Poclain">Poclain</option>
-                                        <option value="Other">Other</option>
+                                        <option value="All">All Vehicles</option>
+                                        {vehicleCategories.map((cat: any) => (
+                                            <option key={cat._id} value={cat.name}>{cat.name}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div>
@@ -440,12 +479,21 @@ const SalesEntryForm = () => {
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Driver Name</label>
-                                    <select name="driverId" className="form-select" value={formData.driverId} onChange={handleChange}>
-                                        <option value="">Select Driver</option>
-                                        {labours.filter(l => l.workType?.toLowerCase().includes('driver')).map(l => (
-                                            <option key={l._id} value={l._id}>{l.name}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative">
+                                        <input 
+                                            name="driverName" 
+                                            list="labor-list"
+                                            className="form-input font-bold" 
+                                            value={formData.driverName} 
+                                            onChange={handleChange} 
+                                            placeholder="Enter Driver Name..."
+                                        />
+                                        <datalist id="labor-list">
+                                            {labours.map(l => (
+                                                <option key={l._id} value={l.name}>{l.workType || 'Worker'}</option>
+                                            ))}
+                                        </datalist>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">From Location</label>
@@ -577,6 +625,7 @@ const SalesEntryForm = () => {
                                                     {sale.vehicleId ? (
                                                         <div className="flex flex-col">
                                                             <span className="text-[11px] font-bold text-primary">{sale.vehicleId.vehicleNumber || sale.vehicleId.registrationNumber}</span>
+                                                            <span className="text-[9px] text-white-dark italic font-semibold">{sale.driverName || (sale.driverId as any)?.name || '—'}</span>
                                                             <span className="text-[9px] text-white-dark italic">@{sale.toLocation || '—'}</span>
                                                         </div>
                                                     ) : (
