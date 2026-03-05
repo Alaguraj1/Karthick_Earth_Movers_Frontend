@@ -360,9 +360,13 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/masters/machine-categories">Machine Categories</Link>
                                                 </li>
+                                                <li>
+                                                    <Link href="/masters/expense-categories">Expense Categories</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>
+
                                     <li className="nav-item">
                                         <Link href="/workflow" className="group">
                                             <div className="flex items-center">

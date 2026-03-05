@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import IconSearch from '@/components/icon/icon-search';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconX from '@/components/icon/icon-x';
@@ -8,6 +9,8 @@ import axios from 'axios';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const InvoiceGeneration = () => {
+    const searchParams = useSearchParams();
+    const querySaleId = searchParams.get('id');
     const [sales, setSales] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSale, setSelectedSale] = useState<any>(null);
@@ -32,11 +35,6 @@ const InvoiceGeneration = () => {
         }
     };
 
-    useEffect(() => {
-        fetchSales();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const viewInvoice = async (id: string) => {
         try {
             const { data } = await axios.get(`${API}/sales/${id}`);
@@ -48,6 +46,14 @@ const InvoiceGeneration = () => {
             console.error(error);
         }
     };
+
+    useEffect(() => {
+        if (querySaleId) {
+            viewInvoice(querySaleId);
+        }
+        fetchSales();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [querySaleId]);
 
     const handlePrint = () => {
         const printContent = document.getElementById('invoice-print-area');

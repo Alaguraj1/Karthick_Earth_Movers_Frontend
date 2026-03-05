@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import IconSave from '@/components/icon/icon-save';
 import IconPlus from '@/components/icon/icon-plus';
 import IconEdit from '@/components/icon/icon-edit';
@@ -57,6 +58,10 @@ const SalesEntryForm = () => {
 
     const [recentSales, setRecentSales] = useState<any[]>([]);
     const [search, setSearch] = useState('');
+    const [filterVehicle, setFilterVehicle] = useState('');
+    const [filterCustomer, setFilterCustomer] = useState('');
+    const [filterStartDate, setFilterStartDate] = useState('');
+    const [filterEndDate, setFilterEndDate] = useState('');
 
     const fetchSales = async () => {
         try {
@@ -122,7 +127,7 @@ const SalesEntryForm = () => {
                     // 2. Auto-populate Driver Name from Vehicle Master
                     if (selectedVehicle.driverName) {
                         updated.driverName = selectedVehicle.driverName;
-                        
+
                         // Also try to find a matching labour ID for records
                         const vDriverName = selectedVehicle.driverName.trim().toLowerCase();
                         const worker = labours.find((l: any) =>
@@ -207,6 +212,7 @@ const SalesEntryForm = () => {
             notes: '',
             vehicleId: '',
             vehicleType: 'All',
+            driverName: '',
             driverId: '',
             fromLocation: 'Quarry',
             toLocation: '',
@@ -225,6 +231,7 @@ const SalesEntryForm = () => {
             notes: '',
             vehicleId: '',
             vehicleType: 'All',
+            driverName: '',
             driverId: '',
             fromLocation: 'Quarry',
             toLocation: '',
@@ -480,12 +487,12 @@ const SalesEntryForm = () => {
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Driver Name</label>
                                     <div className="relative">
-                                        <input 
-                                            name="driverName" 
+                                        <input
+                                            name="driverName"
                                             list="labor-list"
-                                            className="form-input font-bold" 
-                                            value={formData.driverName} 
-                                            onChange={handleChange} 
+                                            className="form-input font-bold"
+                                            value={formData.driverName}
+                                            onChange={handleChange}
                                             placeholder="Enter Driver Name..."
                                         />
                                         <datalist id="labor-list">
@@ -564,23 +571,56 @@ const SalesEntryForm = () => {
             {/* Sales Table — hidden when form is open */}
             {!showForm && (
                 <div className="panel">
-                    <div className="flex items-center justify-between flex-wrap gap-4 mb-5">
-                        <h5 className="text-lg font-bold dark:text-white-light whitespace-nowrap">விற்பனை பட்டியல் (Sales List)</h5>
-                        <div className="flex items-center gap-3 flex-1 justify-end min-w-[300px]">
-                            <div className="relative flex-1">
-                                <input
-                                    type="text"
-                                    placeholder="Search invoice, customer, or vehicle..."
-                                    className="form-input ltr:pr-10 rtl:pl-10 h-10"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
-                                <IconSearch className="w-5 h-5 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
-                            </div>
+                    <div className="flex flex-col gap-5 mb-5">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <h5 className="text-lg font-bold dark:text-white-light whitespace-nowrap">விற்பனை பட்டியல் (Sales List)</h5>
                             <button className="btn btn-primary shadow-lg shadow-primary/20 whitespace-nowrap" onClick={handleCreateNew}>
                                 <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
                                 Create New Sale
                             </button>
+                        </div>
+
+                        {/* Filter Panel */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end bg-primary/5 p-4 rounded-xl">
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Invoice #..."
+                                        className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                    />
+                                    <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Filter Vehicle (வண்டி எண்)</label>
+                                <select className="form-select h-10" value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)}>
+                                    <option value="">All Vehicles</option>
+                                    {Array.from(new Set(vehicles.map(v => v.vehicleNumber || v.registrationNumber))).map(num => (
+                                        <option key={num} value={num}>{num}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Filter Customer</label>
+                                <select className="form-select h-10" value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)}>
+                                    <option value="">All Customers</option>
+                                    {customers.map(c => (
+                                        <option key={c._id} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Start Date</label>
+                                <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">End Date</label>
+                                <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+                            </div>
                         </div>
                     </div>
                     <div className="table-responsive">
@@ -600,75 +640,90 @@ const SalesEntryForm = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {recentSales.filter(s =>
-                                    s.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
-                                    s.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
-                                    s.vehicleId?.vehicleNumber?.toLowerCase().includes(search.toLowerCase()) ||
-                                    s.vehicleId?.registrationNumber?.toLowerCase().includes(search.toLowerCase())
-                                ).length === 0 ? (
-                                    <tr><td colSpan={10} className="text-center py-6 text-white-dark">No sales records found</td></tr>
-                                ) : (
-                                    recentSales
-                                        .filter(s =>
+                                {(() => {
+                                    const filtered = recentSales.filter(s => {
+                                        const matchesSearch = !search ||
                                             s.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
                                             s.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
                                             s.vehicleId?.vehicleNumber?.toLowerCase().includes(search.toLowerCase()) ||
-                                            s.vehicleId?.registrationNumber?.toLowerCase().includes(search.toLowerCase())
-                                        )
-                                        .map((sale, idx) => (
-                                            <tr key={sale._id} className={editId === sale._id ? 'bg-primary/5' : ''}>
-                                                <td>{idx + 1}</td>
-                                                <td className="font-bold text-primary">{sale.invoiceNumber}</td>
-                                                <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
-                                                <td className="font-semibold">{sale.customer?.name || '—'}</td>
-                                                <td>
-                                                    {sale.vehicleId ? (
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[11px] font-bold text-primary">{sale.vehicleId.vehicleNumber || sale.vehicleId.registrationNumber}</span>
-                                                            <span className="text-[9px] text-white-dark italic font-semibold">{sale.driverName || (sale.driverId as any)?.name || '—'}</span>
-                                                            <span className="text-[9px] text-white-dark italic">@{sale.toLocation || '—'}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-white-dark text-xs">N/A</span>
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    <span className="badge bg-dark/10 text-dark dark:bg-dark-light/10 dark:text-white-dark">
-                                                        {sale.items?.length || 0} items
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span className={`badge ${sale.paymentType === 'Cash' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                                                        {sale.paymentType === 'Cash' ? '💵 Cash' : '📒 Credit'}
-                                                    </span>
-                                                </td>
-                                                <td className="!text-right font-bold">₹{sale.grandTotal?.toLocaleString()}</td>
-                                                <td className="!text-center">
-                                                    <span className={`badge ${sale.paymentStatus === 'Paid' ? 'bg-success/10 text-success' : sale.paymentStatus === 'Partial' ? 'bg-warning/10 text-warning' : 'bg-danger/10 text-danger'}`}>
-                                                        {sale.paymentStatus}
-                                                    </span>
-                                                </td>
-                                                <td className="!text-center">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <button
-                                                            className="btn btn-sm btn-outline-primary"
-                                                            onClick={() => handleEdit(sale._id)}
-                                                            title="Edit Sale"
-                                                        >
-                                                            <IconEdit className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-sm btn-outline-danger"
-                                                            onClick={() => setDeleteId(sale._id)}
-                                                            title="Delete Sale"
-                                                        >
-                                                            <IconTrash className="w-4 h-4" />
-                                                        </button>
+                                            s.vehicleId?.registrationNumber?.toLowerCase().includes(search.toLowerCase());
+
+                                        const matchesVehicle = !filterVehicle ||
+                                            s.vehicleId?.vehicleNumber === filterVehicle ||
+                                            s.vehicleId?.registrationNumber === filterVehicle;
+
+                                        const matchesCustomer = !filterCustomer ||
+                                            s.customer?.name === filterCustomer;
+
+                                        const saleDate = s.invoiceDate ? new Date(s.invoiceDate).toISOString().split('T')[0] : '';
+                                        const matchesStart = !filterStartDate || saleDate >= filterStartDate;
+                                        const matchesEnd = !filterEndDate || saleDate <= filterEndDate;
+
+                                        return matchesSearch && matchesVehicle && matchesCustomer && matchesStart && matchesEnd;
+                                    });
+
+                                    if (filtered.length === 0) {
+                                        return <tr><td colSpan={10} className="text-center py-6 text-white-dark">No sales records found</td></tr>;
+                                    }
+
+                                    return filtered.map((sale, idx) => (
+                                        <tr key={sale._id} className={editId === sale._id ? 'bg-primary/5' : ''}>
+                                            <td>{idx + 1}</td>
+                                            <td className="font-bold text-primary hover:underline">
+                                                <Link href={`/sales-billing/invoices?id=${sale._id}`} target="_blank">
+                                                    {sale.invoiceNumber}
+                                                </Link>
+                                            </td>
+                                            <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
+                                            <td className="font-semibold">{sale.customer?.name || '—'}</td>
+                                            <td>
+                                                {sale.vehicleId ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[11px] font-bold text-primary">{sale.vehicleId.vehicleNumber || sale.vehicleId.registrationNumber}</span>
+                                                        <span className="text-[9px] text-white-dark italic font-semibold">{sale.driverName || (sale.driverId as any)?.name || '—'}</span>
+                                                        <span className="text-[9px] text-white-dark italic">@{sale.toLocation || '—'}</span>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                )}
+                                                ) : (
+                                                    <span className="text-white-dark text-xs">N/A</span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <span className="badge bg-dark/10 text-dark dark:bg-dark-light/10 dark:text-white-dark">
+                                                    {sale.items?.length || 0} items
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span className={`badge ${sale.paymentType === 'Cash' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                                                    {sale.paymentType === 'Cash' ? '💵 Cash' : '📒 Credit'}
+                                                </span>
+                                            </td>
+                                            <td className="!text-right font-bold">₹{sale.grandTotal?.toLocaleString()}</td>
+                                            <td className="!text-center">
+                                                <span className={`badge ${sale.paymentStatus === 'Paid' ? 'bg-success/10 text-success' : sale.paymentStatus === 'Partial' ? 'bg-warning/10 text-warning' : 'bg-danger/10 text-danger'}`}>
+                                                    {sale.paymentStatus}
+                                                </span>
+                                            </td>
+                                            <td className="!text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button
+                                                        className="btn btn-sm btn-outline-primary"
+                                                        onClick={() => handleEdit(sale._id)}
+                                                        title="Edit Sale"
+                                                    >
+                                                        <IconEdit className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-sm btn-outline-danger"
+                                                        onClick={() => setDeleteId(sale._id)}
+                                                        title="Delete Sale"
+                                                    >
+                                                        <IconTrash className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ));
+                                })()}
                             </tbody>
                         </table>
                     </div>

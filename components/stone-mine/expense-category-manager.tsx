@@ -6,6 +6,7 @@ import IconX from '@/components/icon/icon-x';
 import IconSave from '@/components/icon/icon-save';
 import IconPlus from '@/components/icon/icon-plus';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
+import IconSearch from '@/components/icon/icon-search';
 import { Transition, Dialog, DialogPanel, TransitionChild } from '@headlessui/react';
 
 import axios from 'axios';
@@ -22,6 +23,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const [loading, setLoading] = useState(true);
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [labours, setLabours] = useState<any[]>([]);
+    const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
 
     // View State
     const [formView, setFormView] = useState(false);
@@ -35,6 +37,18 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const [listMonth, setListMonth] = useState(new Date().getMonth() + 1);
     const [listYear, setListYear] = useState(new Date().getFullYear());
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+    // Filter states
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterVehicle, setFilterVehicle] = useState('');
+    const [filterAssetType, setFilterAssetType] = useState('');
+    const [filterVendor, setFilterVendor] = useState('');
+    const [filterLabour, setFilterLabour] = useState('');
+    const [filterWorkType, setFilterWorkType] = useState('');
+    const [filterWageType, setFilterWageType] = useState('');
+    const [filterOfficeCategory, setFilterOfficeCategory] = useState('');
+    const [filterStartDate, setFilterStartDate] = useState('');
+    const [filterEndDate, setFilterEndDate] = useState('');
     const [formData, setFormData] = useState({
         category: category,
         amount: '',
@@ -124,6 +138,15 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         }
     };
 
+    const fetchExpenseCategories = async () => {
+        try {
+            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/expense-categories`);
+            if (data.success) setExpenseCategories(data.data);
+        } catch (error) {
+            console.error('Error fetching expense categories:', error);
+        }
+    };
+
     useEffect(() => {
         if (category === 'Labour Wages' && formData.labourName && labours.length > 0) {
             const fetchLabourSummary = async () => {
@@ -175,6 +198,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     useEffect(() => {
         fetchVehicles();
         fetchLabours();
+        fetchExpenseCategories();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [category]);
 
@@ -597,6 +621,193 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                             <IconPlus /> Add Record
                         </button>
                     </div>
+
+                    {/* Filter Panel (Specifically for Diesel/Fuel) */}
+                    {category === 'Diesel' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Vehicle/Machine</label>
+                                <select className="form-select h-10" value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)}>
+                                    <option value="">All Assets</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.vehicleOrMachine))).filter(Boolean).map(v => (
+                                        <option key={v} value={v}>{v}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Asset Type</label>
+                                <select className="form-select h-10" value={filterAssetType} onChange={(e) => setFilterAssetType(e.target.value)}>
+                                    <option value="">All Types</option>
+                                    <option value="Vehicle">Vehicles Only</option>
+                                    <option value="Machine">Machines Only</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
+                                <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
+                                <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+                    {/* Filter Panel (Specifically for Machine Maintenance) */}
+                    {category === 'Machine Maintenance' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Vehicle/Machine</label>
+                                <select className="form-select h-10" value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)}>
+                                    <option value="">All Assets</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.vehicleNumber || exp.vehicleOrMachine))).filter(Boolean).map(v => (
+                                        <option key={v} value={v}>{v}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Asset Type</label>
+                                <select className="form-select h-10" value={filterAssetType} onChange={(e) => setFilterAssetType(e.target.value)}>
+                                    <option value="">All Types</option>
+                                    <option value="Vehicle">Vehicles</option>
+                                    <option value="Machine">Machines</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Vendor</label>
+                                <select className="form-select h-10" value={filterVendor} onChange={(e) => setFilterVendor(e.target.value)}>
+                                    <option value="">All Vendors</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.vendorName))).filter(Boolean).map(vendor => (
+                                        <option key={vendor} value={vendor}>{vendor}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
+                                <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
+                                <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+                    {/* Filter Panel (Specifically for Labour Wages) */}
+                    {category === 'Labour Wages' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
+                            <div className="lg:col-span-1">
+                                <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Labour Name</label>
+                                <select className="form-select h-10" value={filterLabour} onChange={(e) => setFilterLabour(e.target.value)}>
+                                    <option value="">All Labours</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.labourName))).filter(Boolean).map(name => (
+                                        <option key={name} value={name}>{name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Work Type</label>
+                                <select className="form-select h-10" value={filterWorkType} onChange={(e) => setFilterWorkType(e.target.value)}>
+                                    <option value="">All Types</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.workType))).filter(Boolean).map(type => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Wage Type</label>
+                                <select className="form-select h-10" value={filterWageType} onChange={(e) => setFilterWageType(e.target.value)}>
+                                    <option value="">All Wages</option>
+                                    <option value="Daily">Daily</option>
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Contract">Contract</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
+                                <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
+                                <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+                    {/* Filter Panel (Specifically for Office & Misc) */}
+                    {category === 'Office & Misc' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
+                            <div className="lg:col-span-1">
+                                <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Expense Type</label>
+                                <select className="form-select h-10 font-bold" value={filterOfficeCategory} onChange={(e) => setFilterOfficeCategory(e.target.value)}>
+                                    <option value="">All Categories</option>
+                                    {expenseCategories.length > 0 ? (
+                                        expenseCategories.map((c: any) => <option key={c._id} value={c.name}>{c.name}</option>)
+                                    ) : (
+                                        ['Stationery', 'Electricity (EB Bill)', 'Water Bill', 'Internet / Phone Bill', 'Tea / Snacks / Food', 'Cleaning / Housekeeping', 'Courier / Post', 'Printing / Photocopy', 'Office Maintenance', 'Rent / Lease', 'Staff Salary', 'Professional Fees', 'Taxes / Licenses', 'Furniture / Equipment', 'Miscellaneous'].map(c => <option key={c} value={c}>{c}</option>)
+                                    )}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
+                                <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
+                                <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+
                     <div className="table-responsive min-h-[400px]">
                         <table>
                             <thead>
@@ -661,12 +872,60 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 </tr>
                             </thead>
                             <tbody className="font-bold">
-                                {loading ? (
-                                    <tr><td colSpan={7} className="text-center">Loading...</td></tr>
-                                ) : expenses.length === 0 ? (
-                                    <tr><td colSpan={7} className="text-center">No records found.</td></tr>
-                                ) : (
-                                    expenses.map((expense: any) => (
+                                {(() => {
+                                    const filtered = expenses.filter(exp => {
+                                        if (category !== 'Diesel' && category !== 'Machine Maintenance' && category !== 'Labour Wages' && category !== 'Office & Misc') return true;
+
+                                        const vNum = exp.vehicleNumber || exp.vehicleOrMachine || '';
+                                        const desc = exp.description || '';
+                                        const vendor = exp.vendorName || '';
+                                        const mType = exp.maintenanceType || '';
+                                        const lName = exp.labourName || '';
+                                        const wType = exp.workType || '';
+                                        const wageType = exp.wageType || '';
+                                        const paidTo = exp.paidTo || '';
+                                        const billNo = exp.billNumber || '';
+                                        const officeType = exp.officeExpenseType || '';
+
+                                        const matchesSearch = !searchTerm ||
+                                            vNum.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            mType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            lName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            paidTo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            officeType.toLowerCase().includes(searchTerm.toLowerCase());
+
+                                        const matchesVehicle = !filterVehicle || vNum === filterVehicle;
+                                        const matchesVendor = !filterVendor || vendor === filterVendor;
+                                        const matchesLabour = !filterLabour || lName === filterLabour;
+                                        const matchesWorkType = !filterWorkType || wType === filterWorkType;
+                                        const matchesWageType = !filterWageType || wageType === filterWageType;
+                                        const matchesOfficeCategory = !filterOfficeCategory || officeType === filterOfficeCategory;
+
+                                        // Try to find asset type if not directly in exp
+                                        const asset = vehicles.find(v => (v.vehicleNumber === vNum || v.registrationNumber === vNum));
+                                        const actualAssetType = exp.assetType || (asset ? asset.type : '');
+                                        const matchesAssetType = !filterAssetType || actualAssetType === filterAssetType;
+
+                                        const expDate = exp.date ? exp.date.split('T')[0] : '';
+                                        const matchesStart = !filterStartDate || expDate >= filterStartDate;
+                                        const matchesEnd = !filterEndDate || expDate <= filterEndDate;
+
+                                        return matchesSearch && matchesVehicle && matchesAssetType && matchesVendor &&
+                                            matchesLabour && matchesWorkType && matchesWageType && matchesOfficeCategory &&
+                                            matchesStart && matchesEnd;
+                                    });
+
+                                    if (loading) {
+                                        return <tr><td colSpan={10} className="text-center">Loading...</td></tr>;
+                                    }
+                                    if (filtered.length === 0) {
+                                        return <tr><td colSpan={10} className="text-center">No records found matching your filters.</td></tr>;
+                                    }
+
+                                    return filtered.map((expense: any) => (
                                         <tr key={expense._id} className="group hover:bg-primary/5 transition-all">
                                             <td className="py-2">{new Date(expense.date).toLocaleDateString()}</td>
                                             {category === 'Diesel' ? (
@@ -781,8 +1040,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
-                                )}
+                                    ));
+                                })()}
                             </tbody>
                         </table>
                     </div>
@@ -819,7 +1078,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     </label>
                                     <input type="date" name="date" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.date} onChange={handleChange} required />
                                 </div>
-                                {category !== 'Labour Wages' && (
+                                {['Diesel', 'Transport Charges', 'Machine Maintenance'].includes(category) && (
                                     <>
                                         {category === 'Machine Maintenance' && (
                                             <div>
@@ -985,7 +1244,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">From Location (எங்கிருந்து)</label>
-                                            <input type="text" name="fromLocation" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.fromLocation} onChange={handleChange} placeholder="e.g. Salem Yard" />
+                                            <input type="text" name="fromLocation" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.fromLocation} onChange={handleChange} placeholder="e.g. Quarry" />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">To Location (எங்கு)</label>
@@ -1158,16 +1417,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Expense Category (செலவு வகை)</label>
                                             <select name="officeExpenseType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.officeExpenseType} onChange={handleChange} required>
                                                 <option value="">Select Category</option>
-                                                <option value="Stationery">Stationery</option>
-                                                <option value="Electricity (EB Bill)">Electricity (EB Bill)</option>
-                                                <option value="Water Bill">Water Bill</option>
-                                                <option value="Internet Bill">Internet Bill</option>
-                                                <option value="Tea / Snacks">Tea / Snacks</option>
-                                                <option value="Cleaning">Cleaning</option>
-                                                <option value="Courier">Courier</option>
-                                                <option value="Printing">Printing</option>
-                                                <option value="Office Maintenance">Office Maintenance</option>
-                                                <option value="Miscellaneous">Miscellaneous</option>
+                                                {expenseCategories.length > 0 ? (
+                                                    expenseCategories.map((c: any) => <option key={c._id} value={c.name}>{c.name}</option>)
+                                                ) : (
+                                                    ['Stationery', 'Electricity (EB Bill)', 'Water Bill', 'Internet / Phone Bill', 'Tea / Snacks / Food', 'Cleaning / Housekeeping', 'Courier / Post', 'Printing / Photocopy', 'Office Maintenance', 'Rent / Lease', 'Staff Salary', 'Professional Fees', 'Taxes / Licenses', 'Furniture / Equipment', 'Miscellaneous'].map(c => <option key={c} value={c}>{c}</option>)
+                                                )}
                                             </select>
                                         </div>
                                         <div>

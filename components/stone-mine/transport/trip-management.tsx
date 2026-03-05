@@ -22,6 +22,14 @@ const TripManagement = () => {
     const [editId, setEditId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
+    // Filter states
+    const [search, setSearch] = useState('');
+    const [filterVehicle, setFilterVehicle] = useState('');
+    const [filterCustomer, setFilterCustomer] = useState('');
+    const [filterDriver, setFilterDriver] = useState('');
+    const [filterStartDate, setFilterStartDate] = useState('');
+    const [filterEndDate, setFilterEndDate] = useState('');
+
     const initialForm = {
         date: new Date().toISOString().split('T')[0],
         vehicleId: '',
@@ -266,12 +274,12 @@ const TripManagement = () => {
                             <div>
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block font-primary">Driver Name (சாரதி பெயர்)</label>
                                 <div className="relative">
-                                    <input 
-                                        name="driverName" 
+                                    <input
+                                        name="driverName"
                                         list="trip-labor-list"
-                                        className="form-input font-bold" 
-                                        value={formData.driverName} 
-                                        onChange={handleChange} 
+                                        className="form-input font-bold"
+                                        value={formData.driverName}
+                                        onChange={handleChange}
                                         placeholder="Enter Driver Name..."
                                         required
                                     />
@@ -352,11 +360,61 @@ const TripManagement = () => {
 
             {!showForm && (
                 <div className="panel">
-                    <div className="flex items-center justify-between mb-5">
-                        <h5 className="font-bold text-lg dark:text-white-light">Journey Logs</h5>
-                        <div className="relative w-full max-w-xs">
-                            <input type="text" placeholder="Search by number or driver..." className="form-input ltr:pr-11 rtl:pl-11" />
-                            <IconSearch className="w-5 h-5 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                    <div className="flex flex-col gap-5 mb-5">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <h5 className="font-bold text-lg dark:text-white-light">Journey Logs (பயணப் பதிவுகள்)</h5>
+                        </div>
+
+                        {/* Filter Panel */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end bg-primary/5 p-4 rounded-xl">
+                            <div className="lg:col-span-1">
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Search</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                    />
+                                    <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Vehicle</label>
+                                <select className="form-select h-10" value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)}>
+                                    <option value="">All Vehicles</option>
+                                    {Array.from(new Set(vehicles.map(v => v.vehicleNumber || v.registrationNumber))).map(num => (
+                                        <option key={num} value={num as string}>{num as string}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Customer</label>
+                                <select className="form-select h-10" value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)}>
+                                    <option value="">All Customers</option>
+                                    {customers.map(c => (
+                                        <option key={c._id} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Driver</label>
+                                <select className="form-select h-10" value={filterDriver} onChange={(e) => setFilterDriver(e.target.value)}>
+                                    <option value="">All Drivers</option>
+                                    {Array.from(new Set(trips.map(t => t.driverName || (t.driverId as any)?.name))).filter(Boolean).map(name => (
+                                        <option key={name as string} value={name as string}>{name as string}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
+                                <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
+                                <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+                            </div>
                         </div>
                     </div>
 
@@ -375,12 +433,38 @@ const TripManagement = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {loading ? (
-                                    <tr><td colSpan={7} className="text-center py-8">Loading...</td></tr>
-                                ) : trips.length === 0 ? (
-                                    <tr><td colSpan={7} className="text-center py-8">No records recorded yet.</td></tr>
-                                ) : (
-                                    trips.map((trip) => (
+                                {(() => {
+                                    const filtered = trips.filter(t => {
+                                        const vNum = t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || '';
+                                        const dName = t.driverName || t.driverId?.name || '';
+                                        const cName = t.customerId?.name || 'INTERNAL';
+
+                                        const matchesSearch = !search ||
+                                            vNum.toLowerCase().includes(search.toLowerCase()) ||
+                                            dName.toLowerCase().includes(search.toLowerCase()) ||
+                                            cName.toLowerCase().includes(search.toLowerCase()) ||
+                                            t.fromLocation?.toLowerCase().includes(search.toLowerCase()) ||
+                                            t.toLocation?.toLowerCase().includes(search.toLowerCase());
+
+                                        const matchesVehicle = !filterVehicle || vNum === filterVehicle;
+                                        const matchesCustomer = !filterCustomer || cName === filterCustomer;
+                                        const matchesDriver = !filterDriver || dName === filterDriver;
+
+                                        const tripDate = t.date ? new Date(t.date).toISOString().split('T')[0] : '';
+                                        const matchesStart = !filterStartDate || tripDate >= filterStartDate;
+                                        const matchesEnd = !filterEndDate || tripDate <= filterEndDate;
+
+                                        return matchesSearch && matchesVehicle && matchesCustomer && matchesDriver && matchesStart && matchesEnd;
+                                    });
+
+                                    if (loading) {
+                                        return <tr><td colSpan={8} className="text-center py-8">Loading...</td></tr>;
+                                    }
+                                    if (filtered.length === 0) {
+                                        return <tr><td colSpan={8} className="text-center py-8">No records found matching your filters.</td></tr>;
+                                    }
+
+                                    return filtered.map((trip) => (
                                         <tr key={trip._id}>
                                             <td>{new Date(trip.date).toLocaleDateString('en-GB')}</td>
                                             <td>
@@ -434,8 +518,8 @@ const TripManagement = () => {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
-                                )}
+                                    ));
+                                })()}
                             </tbody>
                         </table>
                     </div>
