@@ -40,6 +40,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         amount: '',
         date: new Date().toISOString().split('T')[0],
         description: '',
+        assetType: '', // Machine or Vehicle
         vehicleOrMachine: '',
         vehicleType: '',
         vehicleNumber: '',
@@ -179,39 +180,79 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const uniqueVehicleTypes = Array.from(new Set(vehicles
         .filter(v => {
+            // Maintenance should ONLY show Own assets (சொந்த சொத்துக்கள் மட்டும்)
+            if (category === 'Machine Maintenance') {
+                const isOwn = v.ownershipType === 'Own' || !v.ownershipType;
+                if (!isOwn) return false;
+
+                if (formData.assetType === 'Machine') return v.type === 'Machine';
+                if (formData.assetType === 'Vehicle') return v.type === 'Vehicle';
+                return true;
+            }
+
             if (category === 'Transport Charges') return v.type === 'Vehicle';
-            // Allow both Machines and Vehicles for Maintenance
-            if (category === 'Machine Maintenance') return true;
             return true;
         })
         .map((v) => v.category || v.name)
     ));
 
-    const filteredVehicles = vehicles.filter((v) => (v.category || v.name) === formData.vehicleType);
+    const filteredVehicles = vehicles.filter((v) => {
+        const matchesType = (v.category || v.name) === formData.vehicleType;
+        const matchesAssetType = formData.assetType ? v.type === formData.assetType : true;
+
+        if (category === 'Machine Maintenance') {
+            const isOwn = v.ownershipType === 'Own' || !v.ownershipType;
+            return matchesType && matchesAssetType && isOwn;
+        }
+
+        return matchesType && matchesAssetType;
+    });
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
         setFormData((prev) => {
             const updated = { ...prev, [name]: value };
 
-            // If vehicleType changes, reset vehicleNumber
+            if (name === 'assetType') {
+                updated.vehicleType = '';
+                updated.vehicleNumber = '';
+                updated.vehicleOrMachine = '';
+                updated.driverName = '';
+            }
+
+            // If vehicleType (Category/Name) changes, reset vehicleNumber
             if (name === 'vehicleType') {
                 updated.vehicleNumber = '';
                 updated.vehicleOrMachine = value; // Default to type name if no number selected yet
+                updated.driverName = '';
+
+                // For machines, we might just have one entry or use the name directly
+                if (category === 'Machine Maintenance' && prev.assetType === 'Machine') {
+                    const machine = vehicles.find(v => v.type === 'Machine' && (v.category === value || v.name === value));
+                    if (machine) {
+                        updated.vehicleNumber = machine.vehicleNumber || machine.registrationNumber || '';
+                        updated.vehicleOrMachine = value + (updated.vehicleNumber ? ` (${updated.vehicleNumber})` : '');
+                    }
+                }
 
                 // Auto-select if ONLY ONE matching vehicle in master
-                const matches = vehicles.filter((v) => (v.category || v.name) === value);
+                const matches = vehicles.filter((v) => (v.category || v.name) === value && (prev.assetType ? v.type === prev.assetType : true));
                 if (matches.length === 1) {
                     const onlyMatch = matches[0];
                     const num = onlyMatch.vehicleNumber || onlyMatch.registrationNumber || '';
                     updated.vehicleNumber = num;
+                    updated.driverName = onlyMatch.driverName || '';
                     updated.vehicleOrMachine = value + (num ? ` (${num})` : '');
                 }
             }
 
-            // If vehicleNumber changes, update full vehicleOrMachine string
+            // If vehicleNumber changes, update full vehicleOrMachine string and fetch driver
             if (name === 'vehicleNumber') {
-                updated.vehicleOrMachine = prev.vehicleType + (value ? ` (${value})` : '');
+                const selected = vehicles.find(v => (v.vehicleNumber === value || v.registrationNumber === value) && (prev.assetType ? v.type === prev.assetType : true));
+                if (selected) {
+                    updated.driverName = selected.driverName || '';
+                }
+                updated.vehicleOrMachine = (updated.vehicleType || prev.vehicleType) + (value ? ` (${value})` : '');
             }
 
             // Categories that need Qty x Rate calculation
@@ -387,6 +428,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             amount: '',
             date: new Date().toISOString().split('T')[0],
             description: '',
+            assetType: '',
             vehicleOrMachine: '',
             vehicleType: '',
             vehicleNumber: '',
@@ -453,11 +495,19 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             setLookupYear(d.getFullYear());
         }
 
+        // Determine assetType if category is Machine Maintenance
+        let aType = '';
+        if (expense.category === 'Machine Maintenance') {
+            const asset = vehicles.find(v => (v.vehicleNumber === vNum || v.registrationNumber === vNum));
+            aType = asset ? asset.type : '';
+        }
+
         setFormData({
             category: expense.category,
             amount: expense.amount.toString(),
             date: expense.date.split('T')[0],
             description: expense.description || '',
+            assetType: aType,
             vehicleOrMachine: expense.vehicleOrMachine || '',
             vehicleType: vType,
             vehicleNumber: vNum,
@@ -578,6 +628,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     ) : category === 'Machine Maintenance' ? (
                                         <>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Machine</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Vendor / Bill</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Type</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Parts</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Labour</th>
@@ -651,7 +702,13 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 </>
                                             ) : category === 'Machine Maintenance' ? (
                                                 <>
-                                                    <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
+                                                    <td className="py-2">
+                                                        <div className="font-bold">{expense.vehicleOrMachine || '-'}</div>
+                                                    </td>
+                                                    <td className="py-2 text-xs">
+                                                        <div className="font-medium text-primary">{expense.vendorName || '-'}</div>
+                                                        {expense.billNumber && <div className="text-[10px] text-white-dark">Bill: {expense.billNumber}</div>}
+                                                    </td>
                                                     <td className="py-2"><span className="badge badge-outline-info">{expense.maintenanceType || '-'}</span></td>
                                                     <td className="py-2">₹{expense.sparePartsCost || '0'}</td>
                                                     <td className="py-2">₹{expense.labourCharge || '0'}</td>
@@ -763,34 +820,50 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     <input type="date" name="date" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.date} onChange={handleChange} required />
                                 </div>
                                 {category !== 'Labour Wages' && (
-                                    <div>
-                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">
-                                            {category === 'Transport Charges' ? 'Transport Vehicle Type' : 'Category Type'}
-                                        </label>
-                                        <select name="vehicleType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.vehicleType} onChange={handleChange}>
-                                            <option value="">Select Category</option>
-                                            {category === 'Transport Charges' ? (
-                                                <>
-                                                    <option value="Lorry">Lorry</option>
-                                                    <option value="Tipper">Tipper</option>
-                                                    <option value="Tractor">Tractor</option>
-                                                    <option value="Trailer">Trailer</option>
-                                                    <option value="External Transport">External Transport</option>
-                                                    {/* Dynamic types from master */}
-                                                    {uniqueVehicleTypes.filter(t => !['Lorry', 'Tipper', 'Tractor', 'Trailer', 'External Transport'].includes(t)).map(t => (
-                                                        <option key={t} value={t}>{t}</option>
-                                                    ))}
-                                                </>
-                                            ) : (
-                                                uniqueVehicleTypes.map((type: string) => <option key={type} value={type}>{type}</option>)
-                                            )}
-                                        </select>
-                                    </div>
+                                    <>
+                                        {category === 'Machine Maintenance' && (
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">Asset Type (வாகன வகை)</label>
+                                                <select name="assetType" className="form-select border-2 font-bold rounded-xl h-12 border-primary transition-all" value={formData.assetType} onChange={handleChange} required>
+                                                    <option value="">Select Asset Type</option>
+                                                    <option value="Machine">Machine (இயந்திரம்)</option>
+                                                    <option value="Vehicle">Vehicle (வாகனம்)</option>
+                                                </select>
+                                            </div>
+                                        )}
+                                        {(category !== 'Machine Maintenance' || formData.assetType) && (
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">
+                                                    {category === 'Transport Charges' ? 'Transport Vehicle Type' : (category === 'Machine Maintenance' && formData.assetType === 'Machine') ? 'Select Machine Name' : 'Category Type'}
+                                                </label>
+                                                <select name="vehicleType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.vehicleType} onChange={handleChange} required>
+                                                    <option value="">Select Category</option>
+                                                    {category === 'Transport Charges' ? (
+                                                        <>
+                                                            <option value="Lorry">Lorry</option>
+                                                            <option value="Tipper">Tipper</option>
+                                                            <option value="Tractor">Tractor</option>
+                                                            <option value="Trailer">Trailer</option>
+                                                            <option value="External Transport">External Transport</option>
+                                                            {/* Dynamic types from master */}
+                                                            {uniqueVehicleTypes.filter(t => !['Lorry', 'Tipper', 'Tractor', 'Trailer', 'External Transport'].includes(t)).map(t => (
+                                                                <option key={t} value={t}>{t}</option>
+                                                            ))}
+                                                        </>
+                                                    ) : (
+                                                        uniqueVehicleTypes.map((type: string) => <option key={type} value={type}>{type}</option>)
+                                                    )}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                                 {category !== 'Labour Wages' && formData.vehicleType && filteredVehicles.length > 0 && (
                                     <div>
-                                        <label className="text-[10px] font-black text-primary uppercase tracking-widest mb-2 block">Specific Number / ID (வண்டி எண்)</label>
-                                        <select name="vehicleNumber" className="form-select border-2 font-bold rounded-xl h-12 border-primary animate-pulse-once" value={formData.vehicleNumber} onChange={handleChange}>
+                                        <label className="text-[10px] font-black text-primary uppercase tracking-widest mb-2 block">
+                                            {category === 'Machine Maintenance' && formData.assetType === 'Machine' ? 'Machine Number / ID' : 'Specific Number / ID (வண்டி எண்)'}
+                                        </label>
+                                        <select name="vehicleNumber" className="form-select border-2 font-bold rounded-xl h-12 border-primary animate-pulse-once" value={formData.vehicleNumber} onChange={handleChange} required>
                                             <option value="">Select No / ID</option>
                                             {filteredVehicles.map((v: any) => (
                                                 <option key={v._id} value={v.vehicleNumber || v.registrationNumber}>
@@ -798,6 +871,21 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 </option>
                                             ))}
                                         </select>
+                                    </div>
+                                )}
+                                {category !== 'Labour Wages' && formData.vehicleNumber && (
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary text-secondary">
+                                            {formData.assetType === 'Machine' ? 'Operator Name' : 'Driver Name'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="driverName"
+                                            className="form-input border-2 font-bold rounded-xl h-12 border-secondary/20"
+                                            value={formData.driverName}
+                                            onChange={handleChange}
+                                            placeholder="Enter name..."
+                                        />
                                     </div>
                                 )}
                             </div>
@@ -1025,6 +1113,14 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 {category === 'Machine Maintenance' && (
                                     <>
                                         <div>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">Vendor / Workshop Name (பட்டறை பெயர்)</label>
+                                            <input type="text" name="vendorName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20" value={formData.vendorName} onChange={handleChange} placeholder="e.g. ABC Service Centre" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Bill / Invoice Number</label>
+                                            <input type="text" name="billNumber" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.billNumber} onChange={handleChange} placeholder="e.g. INV-1234" />
+                                        </div>
+                                        <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Maintenance Type</label>
                                             <select name="maintenanceType" className="form-select border-2 font-bold rounded-xl h-12" value={formData.maintenanceType} onChange={handleChange} required>
                                                 <option value="">Select Type</option>
@@ -1038,19 +1134,19 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Spare Parts Cost</label>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Spare Parts Cost (₹)</label>
                                             <input type="number" name="sparePartsCost" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.sparePartsCost} onChange={handleChange} min="0" />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Charge</label>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Charge (₹)</label>
                                             <input type="number" name="labourCharge" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.labourCharge} onChange={handleChange} min="0" />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Meter Reading (Hrs)</label>
-                                            <input type="text" name="meterReading" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.meterReading} onChange={handleChange} />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Current Meter Reading (Hrs)</label>
+                                            <input type="text" name="meterReading" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.meterReading} onChange={handleChange} placeholder="e.g. 4500.5" />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary">Next Service Due (அடுத்த சர்வீஸ்)</label>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">Planned Next Service (அடுத்த சர்வீஸ்)</label>
                                             <input type="date" name="nextServiceDate" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20" value={formData.nextServiceDate} onChange={handleChange} />
                                         </div>
                                     </>

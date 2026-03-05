@@ -39,6 +39,8 @@ const MachineDetails = () => {
 
     const categories = ['JCB', 'Hitachi', 'Loader', 'Generator', 'Compressor', 'Driller', 'Tractor', 'Stone Crusher', 'Other'];
 
+    const [machineCategories, setMachineCategories] = useState<any[]>([]);
+
     const fetchAssets = async () => {
         setLoading(true);
         try {
@@ -53,8 +55,20 @@ const MachineDetails = () => {
         }
     };
 
+    const fetchCategories = async () => {
+        try {
+            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/machine-categories`);
+            if (data.success) {
+                setMachineCategories(data.data);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchAssets();
+        fetchCategories();
     }, []);
 
     const handleAdd = async (e: any) => {
@@ -212,7 +226,9 @@ const MachineDetails = () => {
                                         required
                                     >
                                         <option value="">Select Category</option>
-                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                        {machineCategories.map((cat: any) => <option key={cat._id} value={cat.name}>{cat.name}</option>)}
+                                        {/* Fallback to hardcoded if no master data found */}
+                                        {machineCategories.length === 0 && categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                     </select>
                                 </div>
                                 <div className="md:col-span-2">
@@ -315,8 +331,8 @@ const MachineDetails = () => {
                                 </button>
                             </div>
                             {activeTab === 'contract' && (
-                                <Link 
-                                    href="/vendors/transport" 
+                                <Link
+                                    href="/vendors/transport"
                                     className="btn btn-outline-warning shadow-[0_10px_20px_rgba(230,165,11,0.3)] rounded-xl py-3 px-8 font-black uppercase tracking-widest text-xs flex items-center gap-2"
                                 >
                                     <span>⚙️</span> Transport Vendors
