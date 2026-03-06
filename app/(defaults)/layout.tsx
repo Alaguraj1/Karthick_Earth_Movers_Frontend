@@ -5,7 +5,6 @@ import Header from '@/components/layouts/header';
 import MainContainer from '@/components/layouts/main-container';
 import Overlay from '@/components/layouts/overlay';
 import ScrollToTop from '@/components/layouts/scroll-to-top';
-import Setting from '@/components/layouts/setting';
 import Sidebar from '@/components/layouts/sidebar';
 import Portals from '@/components/portals';
 import { ToastProvider } from '@/components/stone-mine/toast-notification';
@@ -18,9 +17,7 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                 <Overlay />
                 <ScrollToTop />
 
-                {/* BEGIN APP SETTING LAUNCHER */}
-                <Setting />
-                {/* END APP SETTING LAUNCHER */}
+                {/* APP SETTING LAUNCHER REMOVED */}
 
                 <MainContainer>
                     {/* BEGIN SIDEBAR */}
