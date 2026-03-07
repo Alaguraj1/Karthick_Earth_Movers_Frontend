@@ -363,6 +363,9 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/masters/expense-categories">Expense Categories</Link>
                                                 </li>
+                                                <li>
+                                                    <Link href="/masters/roles">User Roles</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>

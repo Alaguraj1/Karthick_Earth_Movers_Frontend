@@ -14,7 +14,7 @@ interface User {
     name: string;
     username: string;
     email?: string;
-    role: 'Owner' | 'Accountant' | 'Supervisor';
+    role: string;
     status: 'active' | 'inactive';
     createdAt: string;
 }
@@ -35,6 +35,7 @@ const UserManagement = () => {
     const [form, setForm] = useState<any>(defaultForm);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
+    const [roleList, setRoleList] = useState<any[]>([]);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -48,8 +49,18 @@ const UserManagement = () => {
         }
     };
 
+    const fetchRoles = async () => {
+        try {
+            const { data } = await api.get('/master/roles');
+            setRoleList(data.data || []);
+        } catch (error) {
+            console.error('Failed to load roles', error);
+        }
+    };
+
     useEffect(() => {
         fetchUsers();
+        fetchRoles();
     }, []);
 
     const openCreate = () => {
@@ -156,6 +167,8 @@ const UserManagement = () => {
         owner: 'badge bg-primary',
         accountant: 'badge bg-success',
         supervisor: 'badge bg-info',
+        operator: 'badge bg-warning',
+        manager: 'badge bg-secondary',
     };
 
     if (!isOwner && !loading) {
@@ -203,15 +216,15 @@ const UserManagement = () => {
                 </div>
 
                 {/* Role Access Info */}
-                <div className="mb-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {[
-                        { role: 'Owner', color: 'border-primary bg-primary/10', desc: 'Full control — manage users, all data, reports' },
-                        { role: 'Accountant', color: 'border-success bg-success/10', desc: 'Financial access — expenses, billing, reports' },
-                        { role: 'Supervisor', color: 'border-info bg-info/10', desc: 'Limited access — labour, attendance, sales entry' },
-                    ].map(r => (
-                        <div key={r.role} className={`rounded-lg border-l-4 p-3 ${r.color}`}>
-                            <div className="font-semibold">{r.role}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{r.desc}</div>
+                <div className="mb-5 grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div className="rounded-lg border-l-4 border-primary bg-primary/10 p-3">
+                        <div className="font-semibold text-primary">Owner</div>
+                        <div className="text-[10px] mt-1 text-white-dark uppercase font-bold tracking-widest">Master Access</div>
+                    </div>
+                    {roleList.filter(r => r.name.toLowerCase() !== 'owner').map(r => (
+                        <div key={r._id} className="rounded-lg border-l-4 border-info bg-info/10 p-3">
+                            <div className="font-semibold text-info">{r.name}</div>
+                            <div className="text-[10px] mt-1 text-white-dark uppercase font-bold tracking-widest truncate">{r.description || 'Custom Role'}</div>
                         </div>
                     ))}
                 </div>
@@ -355,14 +368,16 @@ const UserManagement = () => {
                             <div>
                                 <label>Role <span className="text-danger">*</span></label>
                                 <select
-                                    className="form-select mt-1"
+                                    className="form-select mt-1 font-bold"
                                     value={form.role}
                                     onChange={e => setForm({ ...form, role: e.target.value })}
                                     required
                                 >
-                                    <option value="Owner">Owner</option>
-                                    <option value="Accountant">Accountant</option>
-                                    <option value="Supervisor">Supervisor</option>
+                                    <option value="">Select a Role</option>
+                                    <option value="Owner">Owner (Master)</option>
+                                    {roleList.filter(r => r.name.toLowerCase() !== 'owner').map(r => (
+                                        <option key={r._id} value={r.name}>{r.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             {editMode && (
