@@ -1,5 +1,7 @@
 'use client';
 import React, { useEffect, useState, Fragment } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconX from '@/components/icon/icon-x';
@@ -18,6 +20,9 @@ interface ExpenseCategoryManagerProps {
 }
 
 const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps) => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const { showToast } = useToast();
     const [expenses, setExpenses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -1034,9 +1039,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                     ) : (
                                                         <span className="text-[10px] text-white-dark italic">System Entry</span>
                                                     )}
-                                                    <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
+                                                    {isOwner && (<button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
                                                         <IconTrashLines className="h-4 w-4" />
-                                                    </button>
+                                                    </button>)}
                                                 </div>
                                             </td>
                                         </tr>

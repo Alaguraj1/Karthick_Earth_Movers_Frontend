@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import axios from 'axios';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
@@ -12,6 +14,9 @@ import Link from 'next/link';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const VendorPaymentManagement = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const { showToast } = useToast();
     const [payments, setPayments] = useState<any[]>([]);
     const [allVendors, setAllVendors] = useState<any[]>([]);
@@ -330,9 +335,9 @@ const VendorPaymentManagement = () => {
                                         <td className="!text-center text-xs opacity-70">{p.paymentMode}</td>
                                         <td className="text-xs truncate max-w-[100px]">{p.referenceNumber || '-'}</td>
                                         <td className="text-center">
-                                            <button onClick={() => setDeleteId(p._id)} className="btn btn-sm btn-outline-danger p-1">
+                                            {isOwner && (<button onClick={() => setDeleteId(p._id)} className="btn btn-sm btn-outline-danger p-1">
                                                 <IconTrashLines className="w-4 h-4" />
-                                            </button>
+                                            </button>)}
                                         </td>
                                     </tr>
                                 ))

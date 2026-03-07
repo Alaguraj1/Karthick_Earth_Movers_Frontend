@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import axios from 'axios';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
@@ -14,6 +16,9 @@ import IconCashBanknotes from '@/components/icon/icon-cash-banknotes';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const DriverPaymentManagement = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const { showToast } = useToast();
     const [payments, setPayments] = useState<any[]>([]);
     const [drivers, setDrivers] = useState<any[]>([]);
@@ -375,9 +380,9 @@ const DriverPaymentManagement = () => {
                                                     <button onClick={() => handleEdit(pay)} className="btn btn-sm btn-outline-primary p-1">
                                                         <IconEdit className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => setDeleteId(pay._id)} className="btn btn-sm btn-outline-danger p-1">
+                                                    {isOwner && (<button onClick={() => setDeleteId(pay._id)} className="btn btn-sm btn-outline-danger p-1">
                                                         <IconTrashLines className="w-4 h-4" />
-                                                    </button>
+                                                    </button>)}
                                                 </div>
                                             </td>
                                         </tr>

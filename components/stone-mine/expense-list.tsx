@@ -1,9 +1,14 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 
 const ExpenseList = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -71,9 +76,9 @@ const ExpenseList = () => {
                                             <button type="button" className="btn btn-sm btn-outline-primary">
                                                 <IconEdit className="h-4 w-4" />
                                             </button>
-                                            <button type="button" className="btn btn-sm btn-outline-danger">
+                                            {isOwner && (<button type="button" className="btn btn-sm btn-outline-danger">
                                                 <IconTrashLines className="h-4 w-4" />
-                                            </button>
+                                            </button>)}
                                         </div>
                                     </td>
                                 </tr>

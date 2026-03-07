@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import Link from 'next/link';
 import axios from 'axios';
 import { useToast } from '@/components/stone-mine/toast-notification';
@@ -13,6 +15,9 @@ import IconEdit from '@/components/icon/icon-edit';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const ExplosiveSupplierManagement = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const { showToast } = useToast();
     const [suppliers, setSuppliers] = useState<any[]>([]);
     const [masterMaterials, setMasterMaterials] = useState<any[]>([]);
@@ -435,9 +440,9 @@ const ExplosiveSupplierManagement = () => {
                                                     <button onClick={() => handleEdit(s)} className="p-2.5 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm">
                                                         <IconEdit className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => setDeleteId(s._id)} className="p-2.5 rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all shadow-sm">
+                                                    {isOwner && (<button onClick={() => setDeleteId(s._id)} className="p-2.5 rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all shadow-sm">
                                                         <IconTrashLines className="w-4 h-4" />
-                                                    </button>
+                                                    </button>)}
                                                 </div>
                                             </td>
                                         </tr>

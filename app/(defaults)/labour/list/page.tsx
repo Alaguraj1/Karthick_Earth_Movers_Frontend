@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import IconPlus from '@/components/icon/icon-plus';
 import IconSave from '@/components/icon/icon-save';
 import IconEdit from '@/components/icon/icon-edit';
@@ -11,6 +13,9 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const LabourListPage = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const [data, setData] = useState<any[]>([]);
     const [contractors, setContractors] = useState<any[]>([]);
     const [selectedContractor, setSelectedContractor] = useState<any>(null);
@@ -451,9 +456,9 @@ const LabourListPage = () => {
                                                     <button type="button" className="hover:text-primary" onClick={() => handleEdit(item)}>
                                                         <IconEdit className="h-5 w-5" />
                                                     </button>
-                                                    <button type="button" className="hover:text-danger" onClick={() => handleDelete(item._id)}>
+                                                    {isOwner && (<button type="button" className="hover:text-danger" onClick={() => handleDelete(item._id)}>
                                                         <IconTrashLines className="h-5 w-5" />
-                                                    </button>
+                                                    </button>)}
                                                 </div>
                                             </td>
                                         </tr>

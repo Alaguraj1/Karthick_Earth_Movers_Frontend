@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import axios from 'axios';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
@@ -15,6 +17,9 @@ import Link from 'next/link';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const TransportVendorManagement = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const { showToast } = useToast();
     const [vendors, setVendors] = useState<any[]>([]);
     const [balances, setBalances] = useState<any>({});
@@ -476,9 +481,9 @@ const TransportVendorManagement = () => {
                                                     <button onClick={() => handleEdit(v)} className="p-2 bg-info/10 text-info hover:bg-info hover:text-white rounded-xl transition-all shadow-sm shadow-info/10">
                                                         <IconEdit className="w-5 h-5" />
                                                     </button>
-                                                    <button onClick={() => setDeleteId(v._id)} className="p-2 bg-danger/10 text-danger hover:bg-danger hover:text-white rounded-xl transition-all shadow-sm shadow-danger/10">
+                                                    {isOwner && (<button onClick={() => setDeleteId(v._id)} className="p-2 bg-danger/10 text-danger hover:bg-danger hover:text-white rounded-xl transition-all shadow-sm shadow-danger/10">
                                                         <IconTrashLines className="w-5 h-5" />
-                                                    </button>
+                                                    </button>)}
                                                 </div>
                                             </td>
                                         </tr>

@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import axios from 'axios';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
@@ -13,6 +15,9 @@ import IconSave from '@/components/icon/icon-save';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const TripManagement = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const { showToast } = useToast();
     const [trips, setTrips] = useState<any[]>([]);
     const [vehicles, setVehicles] = useState<any[]>([]);
@@ -510,9 +515,9 @@ const TripManagement = () => {
                                                             <button onClick={() => handleEdit(trip)} className="btn btn-sm btn-outline-primary p-1">
                                                                 <IconEdit className="w-4 h-4" />
                                                             </button>
-                                                            <button onClick={() => setDeleteId(trip._id)} className="btn btn-sm btn-outline-danger p-1">
+                                                            {isOwner && (<button onClick={() => setDeleteId(trip._id)} className="btn btn-sm btn-outline-danger p-1">
                                                                 <IconTrashLines className="w-4 h-4" />
-                                                            </button>
+                                                            </button>)}
                                                         </>
                                                     )}
                                                 </div>

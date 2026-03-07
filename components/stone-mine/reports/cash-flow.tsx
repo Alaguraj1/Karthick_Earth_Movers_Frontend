@@ -55,7 +55,7 @@ const CashFlow = () => {
 
     const exportToPDF = () => {
         if (!reportData) return;
-        const doc = new jsPDF();
+        const doc = new jsPDF() as any;
         doc.text('Karthick Earth Movers - Cash Flow Statement', 14, 15);
         doc.text(`Period: ${filters.startDate} to ${filters.endDate}`, 14, 22);
 

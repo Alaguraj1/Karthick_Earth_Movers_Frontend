@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import axios from 'axios';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
@@ -14,6 +16,9 @@ import Link from 'next/link';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const LabourContractorManagement = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const { showToast } = useToast();
     const [contractors, setContractors] = useState<any[]>([]);
     const [balances, setBalances] = useState<any>({});
@@ -452,7 +457,7 @@ const LabourContractorManagement = () => {
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button onClick={() => handleEdit(c)} className="btn btn-sm btn-outline-primary p-1"><IconEdit className="w-4 h-4" /></button>
-                                                    <button onClick={() => setDeleteId(c._id)} className="btn btn-sm btn-outline-danger p-1"><IconTrashLines className="w-4 h-4" /></button>
+                                                    {isOwner && (<button onClick={() => setDeleteId(c._id)} className="btn btn-sm btn-outline-danger p-1"><IconTrashLines className="w-4 h-4" /></button>)}
                                                 </div>
                                             </td>
                                         </tr>

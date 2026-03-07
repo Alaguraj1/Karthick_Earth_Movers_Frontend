@@ -60,7 +60,7 @@ const ProfitLoss = () => {
 
     const exportToPDF = () => {
         if (!reportData) return;
-        const doc = new jsPDF();
+        const doc = new jsPDF() as any;
         doc.text('Karthick Earth Movers - Profit & Loss Account', 14, 15);
 
         const body = [

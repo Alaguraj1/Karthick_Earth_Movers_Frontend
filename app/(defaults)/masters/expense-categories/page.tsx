@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import IconPlus from '@/components/icon/icon-plus';
 import IconSave from '@/components/icon/icon-save';
 import IconEdit from '@/components/icon/icon-edit';
@@ -9,6 +11,9 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const ExpenseCategoriesMaster = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const activeTab = 'expense-categories';
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -228,9 +233,9 @@ const ExpenseCategoriesMaster = () => {
                                                     <button type="button" className="p-2 rounded-lg text-primary hover:bg-primary hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>
                                                         <IconEdit className="h-4.5 w-4.5" />
                                                     </button>
-                                                    <button type="button" className="p-2 rounded-lg text-danger hover:bg-danger hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20" onClick={() => handleDelete(item._id)}>
+                                                    {isOwner && (<button type="button" className="p-2 rounded-lg text-danger hover:bg-danger hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20" onClick={() => handleDelete(item._id)}>
                                                         <IconTrashLines className="h-4.5 w-4.5" />
-                                                    </button>
+                                                    </button>)}
                                                 </div>
                                             </td>
                                         </tr>

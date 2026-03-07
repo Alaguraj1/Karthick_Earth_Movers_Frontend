@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import IconPlus from '@/components/icon/icon-plus';
 import IconEdit from '@/components/icon/icon-edit';
 import IconSave from '@/components/icon/icon-save';
@@ -10,6 +12,9 @@ import Link from 'next/link';
 import IconSettings from '@/components/icon/icon-settings';
 
 const MachineDetails = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const [assets, setAssets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [formView, setFormView] = useState(false);
@@ -378,9 +383,9 @@ const MachineDetails = () => {
                                                 <button onClick={() => handleEdit(asset)} className="p-2 bg-white/50 dark:bg-white/10 rounded-lg hover:text-info transition-colors shadow-sm">
                                                     <IconEdit className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => handleDelete(asset._id)} className="p-2 bg-white/50 dark:bg-white/10 rounded-lg hover:text-danger transition-colors shadow-sm">
+                                                {isOwner && (<button onClick={() => handleDelete(asset._id)} className="p-2 bg-white/50 dark:bg-white/10 rounded-lg hover:text-danger transition-colors shadow-sm">
                                                     <IconTrashLines className="w-4 h-4" />
-                                                </button>
+                                                </button>)}
                                             </div>
                                         </div>
 
