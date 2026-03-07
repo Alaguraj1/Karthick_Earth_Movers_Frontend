@@ -20,6 +20,7 @@ const TripManagement = () => {
 
     const { showToast } = useToast();
     const [trips, setTrips] = useState<any[]>([]);
+    const [sales, setSales] = useState<any[]>([]);
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [filteredVehicles, setFilteredVehicles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -31,7 +32,7 @@ const TripManagement = () => {
     const [search, setSearch] = useState('');
     const [filterVehicle, setFilterVehicle] = useState('');
     const [filterCustomer, setFilterCustomer] = useState('');
-    const [filterDriver, setFilterDriver] = useState('');
+    const [filterSaleLink, setFilterSaleLink] = useState('');
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
 
@@ -45,13 +46,17 @@ const TripManagement = () => {
         toLocation: '',
         stoneTypeId: '',
         customerId: '',
+        saleId: '',
         loadQuantity: '',
         loadUnit: 'Tons',
-        tripRate: '',
         notes: ''
     };
 
     const [formData, setFormData] = useState(initialForm);
+    // Selected sale object (for derived fields)
+    const [selectedSale, setSelectedSale] = useState<any>(null);
+    // Calculated remaining qty for the selected sale
+    const [remainingQty, setRemainingQty] = useState<number | null>(null);
 
     const [labours, setLabours] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
@@ -61,13 +66,14 @@ const TripManagement = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [tripRes, vehicleRes, labourRes, customerRes, stoneRes, categoryRes] = await Promise.all([
+            const [tripRes, vehicleRes, labourRes, customerRes, stoneRes, categoryRes, salesRes] = await Promise.all([
                 axios.get(`${API}/trips`),
                 axios.get(`${API}/master/vehicles`),
                 axios.get(`${API}/labour`),
                 axios.get(`${API}/master/customers`),
                 axios.get(`${API}/master/stone-types`),
                 axios.get(`${API}/master/vehicle-categories`),
+                axios.get(`${API}/sales`),
             ]);
 
             if (tripRes.data.success) setTrips(tripRes.data.data);
@@ -79,6 +85,7 @@ const TripManagement = () => {
             if (customerRes.data.success) setCustomers(customerRes.data.data);
             if (stoneRes.data.success) setStoneTypes(stoneRes.data.data);
             if (categoryRes.data.success) setVehicleCategories(categoryRes.data.data);
+            if (salesRes && salesRes.data.success) setSales(salesRes.data.data);
         } catch (error) {
             console.error(error);
             showToast('Error fetching data', 'error');
@@ -110,48 +117,69 @@ const TripManagement = () => {
 
         if (name === 'vehicleType') {
             filterVehiclesBy(vehicles, value);
-            setFormData(prev => ({ ...prev, vehicleNumber: '' })); // Reset vehicle number when type changes
         }
 
         if (name === 'vehicleId') {
             const selectedVehicle = vehicles.find((v: any) => v._id === value);
             if (selectedVehicle) {
-                // 1. Auto-set Vehicle Type (Category) from Master
                 if (selectedVehicle.category) {
-                    setFormData(prev => ({ ...prev, vehicleType: selectedVehicle.category }));
+                    setFormData(prev => ({ ...prev, vehicleType: selectedVehicle.category, vehicleId: value }));
                     filterVehiclesBy(vehicles, selectedVehicle.category);
                 }
-
-                // 2. Auto-set Driver Name from Master (case-insensitive)
                 if (selectedVehicle.driverName) {
                     const vName = selectedVehicle.driverName;
-                    const vDriverName = vName.trim().toLowerCase();
-                    const worker = labours.find(l =>
-                        l.name?.trim().toLowerCase() === vDriverName
-                    );
-                    setFormData(prev => ({
-                        ...prev,
-                        driverName: vName,
-                        driverId: worker ? worker._id : ''
-                    }));
+                    const worker = labours.find((l: any) => l.name?.trim().toLowerCase() === vName.trim().toLowerCase());
+                    setFormData(prev => ({ ...prev, driverName: vName, driverId: worker ? worker._id : '' }));
                 } else if (selectedVehicle.operatorName) {
                     const vName = selectedVehicle.operatorName;
-                    const vOpName = vName.trim().toLowerCase();
-                    const worker = labours.find(l =>
-                        l.name?.trim().toLowerCase() === vOpName
-                    );
-                    setFormData(prev => ({
-                        ...prev,
-                        driverName: vName,
-                        driverId: worker ? worker._id : ''
-                    }));
+                    const worker = labours.find((l: any) => l.name?.trim().toLowerCase() === vName.trim().toLowerCase());
+                    setFormData(prev => ({ ...prev, driverName: vName, driverId: worker ? worker._id : '' }));
                 }
             }
         }
 
-        // Sync driverId if name matches labour list
+        // When customer changes → reset sale selection
+        if (name === 'customerId') {
+            setFormData(prev => ({ ...prev, customerId: value, saleId: '', stoneTypeId: '', fromLocation: 'Quarry', toLocation: '' }));
+            setSelectedSale(null);
+            setRemainingQty(null);
+            return;
+        }
+
+        // When sale is selected → auto-fill location & filter materials
+        if (name === 'saleId') {
+            if (!value) {
+                setSelectedSale(null);
+                setRemainingQty(null);
+                setFormData(prev => ({ ...prev, saleId: '', fromLocation: 'Quarry', toLocation: '', stoneTypeId: '' }));
+                return;
+            }
+            const sale = sales.find((s: any) => s._id === value);
+            if (sale) {
+                setSelectedSale(sale);
+                // Calc trips already done for this sale
+                const linkedTrips = trips.filter((t: any) => {
+                    const tSaleId = t.saleId?._id || t.saleId;
+                    return tSaleId === value;
+                });
+                const deliveredQty = linkedTrips.reduce((sum: number, t: any) => sum + (parseFloat(t.loadQuantity) || 0), 0);
+                const totalSaleQty = (sale.items || []).reduce((s: number, it: any) => s + (it.quantity || 0), 0);
+                const remaining = totalSaleQty - deliveredQty;
+                setRemainingQty(remaining);
+                setFormData(prev => ({
+                    ...prev,
+                    saleId: value,
+                    customerId: sale.customer?._id || sale.customer || prev.customerId,
+                    fromLocation: sale.fromLocation || 'Quarry',
+                    toLocation: sale.toLocation || '',
+                    stoneTypeId: '', // reset material so user picks filtered one
+                }));
+            }
+            return;
+        }
+
         if (name === 'driverName') {
-            const worker = labours.find(l => l.name.trim().toLowerCase() === value.trim().toLowerCase());
+            const worker = labours.find((l: any) => l.name.trim().toLowerCase() === value.trim().toLowerCase());
             setFormData(prev => ({ ...prev, driverId: worker ? worker._id : '' }));
         }
     };
@@ -170,12 +198,27 @@ const TripManagement = () => {
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
+
+        // Quantity validation: check against remaining sale qty
+        if (formData.saleId && remainingQty !== null) {
+            const thisQty = parseFloat(formData.loadQuantity) || 0;
+            if (thisQty > remainingQty) {
+                showToast(`❌ Quantity exceeded! Only ${remainingQty.toFixed(2)} ${formData.loadUnit} remaining for this sale.`, 'error');
+                return;
+            }
+            if (remainingQty <= 0) {
+                showToast('❌ This sale has already reached its total quantity. No more trips can be added.', 'error');
+                return;
+            }
+        }
+
         try {
+            const payload = { ...formData };
             if (editId) {
-                await axios.put(`${API}/trips/${editId}`, formData);
+                await axios.put(`${API}/trips/${editId}`, payload);
                 showToast('Record updated successfully!', 'success');
             } else {
-                await axios.post(`${API}/trips`, formData);
+                await axios.post(`${API}/trips`, payload);
                 showToast('Record recorded successfully!', 'success');
             }
             resetForm();
@@ -189,7 +232,14 @@ const TripManagement = () => {
     const handleEdit = (trip: any) => {
         const vType = trip.vehicleType || 'Lorry';
         filterVehiclesBy(vehicles, vType);
-
+        const saleObj = sales.find((s: any) => s._id === (trip.saleId?._id || trip.saleId));
+        setSelectedSale(saleObj || null);
+        if (saleObj) {
+            const linkedTrips = trips.filter((t: any) => (t.saleId?._id || t.saleId) === saleObj._id && t._id !== trip._id);
+            const deliveredQty = linkedTrips.reduce((sum: number, t: any) => sum + (parseFloat(t.loadQuantity) || 0), 0);
+            const totalSaleQty = (saleObj.items || []).reduce((s: number, it: any) => s + (it.quantity || 0), 0);
+            setRemainingQty(totalSaleQty - deliveredQty);
+        }
         setFormData({
             date: trip.date ? new Date(trip.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             vehicleId: trip.vehicleId?._id || trip.vehicleId || '',
@@ -200,9 +250,9 @@ const TripManagement = () => {
             toLocation: trip.toLocation || '',
             stoneTypeId: trip.stoneTypeId?._id || trip.stoneTypeId || '',
             customerId: trip.customerId?._id || trip.customerId || '',
+            saleId: trip.saleId?._id || trip.saleId || '',
             loadQuantity: trip.loadQuantity || '',
             loadUnit: trip.loadUnit || 'Tons',
-            tripRate: trip.tripRate || '',
             notes: trip.notes || ''
         });
         setEditId(trip._id);
@@ -225,10 +275,32 @@ const TripManagement = () => {
 
     const resetForm = () => {
         setFormData(initialForm);
+        setSelectedSale(null);
+        setRemainingQty(null);
         setEditId(null);
         setShowForm(false);
-        setFilteredVehicles(vehicles); // Reset to show all
+        setFilteredVehicles(vehicles);
     };
+
+    // Sales for the selected customer that have remaining quantity
+    const customerSales = formData.customerId
+        ? sales.filter((s: any) => {
+            const cId = s.customer?._id || s.customer;
+            return cId === formData.customerId && s.status !== 'cancelled';
+        })
+        : [];
+
+    // Materials available in selected sale
+    const saleMaterials: any[] = selectedSale
+        ? (selectedSale.items || []).reduce((acc: any[], item: any) => {
+            const stId = item.stoneType?._id || item.stoneType;
+            if (stId && !acc.find((a: any) => a._id === stId)) {
+                const stObj = stoneTypes.find((s: any) => s._id === stId);
+                if (stObj) acc.push(stObj);
+            }
+            return acc;
+        }, [])
+        : stoneTypes;
 
     return (
         <div className="space-y-6">
@@ -297,41 +369,116 @@ const TripManagement = () => {
                             </div>
                         </div>
 
+                        {/* Customer → Sale → Smart Fields */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary">Customer (Link to Sale)</label>
-                                <select name="customerId" className="form-select border-primary/50" value={formData.customerId} onChange={handleChange}>
-                                    <option value="">None (Internal Trip)</option>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary">Customer (வாடிக்கையாளர்) *</label>
+                                <select name="customerId" className="form-select border-primary" value={formData.customerId} onChange={handleChange}>
+                                    <option value="">-- Select Customer --</option>
                                     {customers.map((c: any) => (
                                         <option key={c._id} value={c._id}>{c.name}</option>
                                     ))}
                                 </select>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="text-sm font-bold text-white-dark uppercase mb-2 block">From Location</label>
-                                    <input type="text" name="fromLocation" className="form-input font-bold text-primary" value={formData.fromLocation} onChange={handleChange} required />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-bold text-white-dark uppercase mb-2 block">To Location</label>
-                                    <input type="text" name="toLocation" className="form-input" value={formData.toLocation} onChange={handleChange} required placeholder="Destination address" />
-                                </div>
+                            <div>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-info">
+                                    Sale Invoice (விற்பனை பட்டியல்)
+                                    {formData.customerId && customerSales.length === 0 && (
+                                        <span className="ml-2 text-danger font-normal text-[10px] normal-case">No open sales for this customer</span>
+                                    )}
+                                </label>
+                                <select
+                                    name="saleId"
+                                    className="form-select border-info"
+                                    value={formData.saleId}
+                                    onChange={handleChange}
+                                    disabled={!formData.customerId}
+                                >
+                                    <option value="">-- None (Internal Trip) --</option>
+                                    {customerSales.map((s: any) => {
+                                        const totalQty = (s.items || []).reduce((sum: number, it: any) => sum + (it.quantity || 0), 0);
+                                        const linked = trips.filter((t: any) => (t.saleId?._id || t.saleId) === s._id);
+                                        const delivered = linked.reduce((sum: number, t: any) => sum + (parseFloat(t.loadQuantity) || 0), 0);
+                                        const rem = totalQty - delivered;
+                                        return (
+                                            <option key={s._id} value={s._id} disabled={rem <= 0}>
+                                                {s.invoiceNumber} — {rem <= 0 ? '✅ Completed' : `${rem.toFixed(1)} remaining`}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                        {/* Auto-filled Location (read-only when sale selected) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Material Type</label>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">
+                                    From Location
+                                    {selectedSale && <span className="ml-2 text-[10px] text-success normal-case font-normal">Auto-filled from sale</span>}
+                                </label>
+                                <input
+                                    type="text" name="fromLocation"
+                                    className={`form-input font-bold ${selectedSale ? 'bg-success/5 text-success cursor-not-allowed' : 'text-primary'}`}
+                                    value={formData.fromLocation}
+                                    onChange={handleChange}
+                                    readOnly={!!selectedSale}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">
+                                    To Location
+                                    {selectedSale && <span className="ml-2 text-[10px] text-success normal-case font-normal">Auto-filled from sale</span>}
+                                </label>
+                                <input
+                                    type="text" name="toLocation"
+                                    className={`form-input ${selectedSale ? 'bg-success/5 text-success cursor-not-allowed' : ''}`}
+                                    value={formData.toLocation}
+                                    onChange={handleChange}
+                                    readOnly={!!selectedSale}
+                                    placeholder="Destination address"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Material / Quantity / Unit */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">
+                                    Material Type
+                                    {selectedSale && <span className="ml-2 text-[10px] text-info normal-case font-normal">Filtered by sale</span>}
+                                </label>
                                 <select name="stoneTypeId" className="form-select" value={formData.stoneTypeId} onChange={handleChange} required>
                                     <option value="">Select Material</option>
-                                    {stoneTypes.map((s: any) => (
+                                    {saleMaterials.map((s: any) => (
                                         <option key={s._id} value={s._id}>{s.name} ({s.unit})</option>
                                     ))}
                                 </select>
                             </div>
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Quantity</label>
-                                <input type="number" name="loadQuantity" className="form-input" value={formData.loadQuantity} onChange={handleChange} required step="0.01" />
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">
+                                    Quantity (This Trip)
+                                    {remainingQty !== null && (
+                                        <span className={`ml-2 text-[10px] normal-case font-normal ${remainingQty <= 0 ? 'text-danger' : remainingQty < 5 ? 'text-warning' : 'text-success'
+                                            }`}>
+                                            Remaining: {remainingQty.toFixed(2)} {formData.loadUnit}
+                                        </span>
+                                    )}
+                                </label>
+                                <input
+                                    type="number" name="loadQuantity"
+                                    className={`form-input ${remainingQty !== null && parseFloat(formData.loadQuantity) > remainingQty
+                                        ? 'border-danger text-danger'
+                                        : ''
+                                        }`}
+                                    value={formData.loadQuantity}
+                                    onChange={handleChange}
+                                    required step="0.01"
+                                    max={remainingQty !== null ? remainingQty : undefined}
+                                    placeholder="Enter qty for this trip"
+                                />
                             </div>
                             <div>
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Unit</label>
@@ -340,10 +487,6 @@ const TripManagement = () => {
                                     <option value="Units">Units</option>
                                     <option value="Loads">Loads</option>
                                 </select>
-                            </div>
-                            <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-success">Trip Rate / Freight (₹)</label>
-                                <input type="number" name="tripRate" className="form-input border-success text-success font-bold" value={formData.tripRate} onChange={handleChange} required placeholder="Income from trip" />
                             </div>
                         </div>
 
@@ -371,13 +514,14 @@ const TripManagement = () => {
                         </div>
 
                         {/* Filter Panel */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end bg-primary/5 p-4 rounded-xl">
-                            <div className="lg:col-span-1">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end bg-primary/5 p-4 rounded-xl">
+                            {/* Search */}
+                            <div className="col-span-2 sm:col-span-1">
                                 <label className="text-[10px] font-bold uppercase mb-1 block">Search</label>
                                 <div className="relative">
                                     <input
                                         type="text"
-                                        placeholder="Search..."
+                                        placeholder="Vehicle, driver, route..."
                                         className="form-input ltr:pr-10 rtl:pl-10 h-10"
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
@@ -385,37 +529,41 @@ const TripManagement = () => {
                                     <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
                                 </div>
                             </div>
+                            {/* Vehicle */}
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">Vehicle</label>
                                 <select className="form-select h-10" value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)}>
                                     <option value="">All Vehicles</option>
-                                    {Array.from(new Set(vehicles.map(v => v.vehicleNumber || v.registrationNumber))).map(num => (
-                                        <option key={num} value={num as string}>{num as string}</option>
+                                    {Array.from(new Set(vehicles.map((v: any) => v.vehicleNumber || v.registrationNumber))).map(num => (
+                                        <option key={num as string} value={num as string}>{num as string}</option>
                                     ))}
                                 </select>
                             </div>
+                            {/* Customer */}
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">Customer</label>
                                 <select className="form-select h-10" value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)}>
                                     <option value="">All Customers</option>
-                                    {customers.map(c => (
+                                    {customers.map((c: any) => (
                                         <option key={c._id} value={c.name}>{c.name}</option>
                                     ))}
                                 </select>
                             </div>
+                            {/* Sale Link */}
                             <div>
-                                <label className="text-[10px] font-bold uppercase mb-1 block">Driver</label>
-                                <select className="form-select h-10" value={filterDriver} onChange={(e) => setFilterDriver(e.target.value)}>
-                                    <option value="">All Drivers</option>
-                                    {Array.from(new Set(trips.map(t => t.driverName || (t.driverId as any)?.name))).filter(Boolean).map(name => (
-                                        <option key={name as string} value={name as string}>{name as string}</option>
-                                    ))}
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Sale Link</label>
+                                <select className="form-select h-10" value={filterSaleLink} onChange={(e) => setFilterSaleLink(e.target.value)}>
+                                    <option value="">All Trips</option>
+                                    <option value="linked">🔗 Linked to Sale</option>
+                                    <option value="internal">🚧 Internal Trip</option>
                                 </select>
                             </div>
+                            {/* From Date */}
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
                                 <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
                             </div>
+                            {/* To Date */}
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
                                 <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
@@ -429,44 +577,49 @@ const TripManagement = () => {
                                 <tr>
                                     <th>Date</th>
                                     <th>Vehicle / Driver</th>
-                                    <th>Route</th>
+                                    <th>Route & Customer</th>
                                     <th>Material</th>
-                                    <th className="!text-right">Income (A)</th>
-                                    <th className="!text-right text-danger">Exp. (B)</th>
-                                    <th className="!text-right text-success bg-success/5 font-black">Profit (A-B)</th>
+                                    <th className="!text-right text-danger">Expenses</th>
+                                    <th className="!text-center text-info">Linked Sale</th>
                                     <th className="!text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {(() => {
-                                    const filtered = trips.filter(t => {
+                                    const filtered = trips.filter((t: any) => {
                                         const vNum = t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || '';
                                         const dName = t.driverName || t.driverId?.name || '';
-                                        const cName = t.customerId?.name || 'INTERNAL';
+                                        const cName = t.customerId?.name || '';
+                                        const invoiceNum = t.saleId?.invoiceNumber || '';
+                                        const material = t.stoneTypeId?.name || '';
 
                                         const matchesSearch = !search ||
                                             vNum.toLowerCase().includes(search.toLowerCase()) ||
                                             dName.toLowerCase().includes(search.toLowerCase()) ||
                                             cName.toLowerCase().includes(search.toLowerCase()) ||
+                                            invoiceNum.toLowerCase().includes(search.toLowerCase()) ||
+                                            material.toLowerCase().includes(search.toLowerCase()) ||
                                             t.fromLocation?.toLowerCase().includes(search.toLowerCase()) ||
                                             t.toLocation?.toLowerCase().includes(search.toLowerCase());
 
                                         const matchesVehicle = !filterVehicle || vNum === filterVehicle;
                                         const matchesCustomer = !filterCustomer || cName === filterCustomer;
-                                        const matchesDriver = !filterDriver || dName === filterDriver;
+                                        const matchesSaleLink = !filterSaleLink ||
+                                            (filterSaleLink === 'linked' && !!t.saleId) ||
+                                            (filterSaleLink === 'internal' && !t.saleId);
 
                                         const tripDate = t.date ? new Date(t.date).toISOString().split('T')[0] : '';
                                         const matchesStart = !filterStartDate || tripDate >= filterStartDate;
                                         const matchesEnd = !filterEndDate || tripDate <= filterEndDate;
 
-                                        return matchesSearch && matchesVehicle && matchesCustomer && matchesDriver && matchesStart && matchesEnd;
+                                        return matchesSearch && matchesVehicle && matchesCustomer && matchesSaleLink && matchesStart && matchesEnd;
                                     });
 
                                     if (loading) {
-                                        return <tr><td colSpan={8} className="text-center py-8">Loading...</td></tr>;
+                                        return <tr><td colSpan={7} className="text-center py-8">Loading...</td></tr>;
                                     }
                                     if (filtered.length === 0) {
-                                        return <tr><td colSpan={8} className="text-center py-8">No records found matching your filters.</td></tr>;
+                                        return <tr><td colSpan={7} className="text-center py-8">No records found matching your filters.</td></tr>;
                                     }
 
                                     return filtered.map((trip) => (
@@ -493,33 +646,22 @@ const TripManagement = () => {
                                                 <span className="badge badge-outline-dark">{trip.stoneTypeId?.name || 'Material'}</span>
                                                 <div className="text-[10px] mt-1 font-bold">{trip.loadQuantity} {trip.loadUnit}</div>
                                             </td>
-                                            <td className="!text-right font-black text-primary font-mono whitespace-nowrap">₹{trip.tripRate?.toLocaleString()}</td>
+                                            <td className="!text-right text-danger font-bold">₹{((trip.driverAmount || 0) + (trip.driverBata || 0) + (trip.otherExpenses || 0)).toLocaleString()}</td>
                                             <td className="!text-center">
-                                                {trip.isConvertedToSale ? (
-                                                    <span className="badge badge-outline-success bg-success/5 border-dashed">Invoiced</span>
-                                                ) : trip.customerId ? (
-                                                    <button
-                                                        onClick={() => handleConvertToSale(trip._id)}
-                                                        className="btn btn-xs btn-primary shadow-none text-[10px] py-1 px-2"
-                                                    >
-                                                        Convert to Sale
-                                                    </button>
+                                                {trip.saleId ? (
+                                                    <span className="badge badge-outline-success font-black border-dashed">{trip.saleId.invoiceNumber}</span>
                                                 ) : (
                                                     <span className="text-[10px] text-white-dark italic">Internal Trip</span>
                                                 )}
                                             </td>
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    {!trip.isConvertedToSale && (
-                                                        <>
-                                                            <button onClick={() => handleEdit(trip)} className="btn btn-sm btn-outline-primary p-1">
-                                                                <IconEdit className="w-4 h-4" />
-                                                            </button>
-                                                            {isOwner && (<button onClick={() => setDeleteId(trip._id)} className="btn btn-sm btn-outline-danger p-1">
-                                                                <IconTrashLines className="w-4 h-4" />
-                                                            </button>)}
-                                                        </>
-                                                    )}
+                                                    <button onClick={() => handleEdit(trip)} className="btn btn-sm btn-outline-primary p-1">
+                                                        <IconEdit className="w-4 h-4" />
+                                                    </button>
+                                                    {isOwner && (<button onClick={() => setDeleteId(trip._id)} className="btn btn-sm btn-outline-danger p-1">
+                                                        <IconTrashLines className="w-4 h-4" />
+                                                    </button>)}
                                                 </div>
                                             </td>
                                         </tr>

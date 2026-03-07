@@ -24,8 +24,8 @@ const defaultForm = { name: '', username: '', email: '', password: '', role: 'Su
 const UserManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
     const userRole = currentUser?.role?.toLowerCase() || '';
-    const canManageUsers = userRole === 'owner' || userRole === 'accountant';
     const isOwner = userRole === 'owner';
+    const canManageUsers = isOwner; // Only owner can manage users now
 
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -157,6 +157,19 @@ const UserManagement = () => {
         accountant: 'badge bg-success',
         supervisor: 'badge bg-info',
     };
+
+    if (!isOwner && !loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] panel p-10">
+                <div className="text-danger mb-4">
+                    <IconLockDots className="w-16 h-16 mx-auto" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white-light mb-2">Access Denied</h2>
+                <p className="text-gray-500 mb-6">You do not have permission to access User Management. Only owners can view or manage users.</p>
+                <a href="/" className="btn btn-primary">Go to Dashboard</a>
+            </div>
+        );
+    }
 
     return (
         <div>

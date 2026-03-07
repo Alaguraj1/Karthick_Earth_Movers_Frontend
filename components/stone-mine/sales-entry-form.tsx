@@ -7,6 +7,7 @@ import IconEdit from '@/components/icon/icon-edit';
 import IconTrash from '@/components/icon/icon-trash';
 import IconX from '@/components/icon/icon-x';
 import IconSearch from '@/components/icon/icon-search';
+import IconEye from '@/components/icon/icon-eye';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import axios from 'axios';
@@ -27,41 +28,19 @@ const SalesEntryForm = () => {
         gstPercentage: 0,
         dueDate: '',
         notes: '',
-        vehicleId: '',
-        vehicleType: 'All',
-        driverId: '',
-        driverName: '', // Stored as specific name
         fromLocation: 'Quarry',
         toLocation: '',
     });
 
-    const [vehicles, setVehicles] = useState<any[]>([]);
-    const [filteredVehicles, setFilteredVehicles] = useState<any[]>([]);
-    const [labours, setLabours] = useState<any[]>([]);
-    const [vehicleCategories, setVehicleCategories] = useState<any[]>([]);
-
-    const filterVehiclesBy = (allVehicles: any[], type: string) => {
-        if (!type || type === 'All') {
-            setFilteredVehicles(allVehicles);
-            return;
-        }
-        const filtered = allVehicles.filter((v: any) =>
-            v.category?.toLowerCase() === type.toLowerCase() ||
-            (type === 'Lorry' && !v.category) // Fallback for old data
-        );
-        setFilteredVehicles(filtered);
-    };
-
     const [items, setItems] = useState<any[]>([
         { item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }
     ]);
-
     const [recentSales, setRecentSales] = useState<any[]>([]);
     const [search, setSearch] = useState('');
-    const [filterVehicle, setFilterVehicle] = useState('');
     const [filterCustomer, setFilterCustomer] = useState('');
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
+    const [filterDelivery, setFilterDelivery] = useState('');
 
     const fetchSales = async () => {
         try {
@@ -83,24 +62,6 @@ const SalesEntryForm = () => {
                 const res = await axios.get(`${API}/master/stone-types`);
                 if (res.data.success) setStoneTypes(res.data.data);
             } catch (error) { console.error('Error fetching stone types:', error); }
-
-            try {
-                const res = await axios.get(`${API}/master/vehicles`);
-                if (res.data.success) {
-                    setVehicles(res.data.data);
-                    setFilteredVehicles(res.data.data); // Show all by default
-                }
-            } catch (error) { console.error('Error fetching vehicles:', error); }
-
-            try {
-                const res = await axios.get(`${API}/labour`);
-                if (res.data.success) setLabours(res.data.data);
-            } catch (error) { console.error('Error fetching labours:', error); }
-
-            try {
-                const res = await axios.get(`${API}/master/vehicle-categories`);
-                if (res.data.success) setVehicleCategories(res.data.data);
-            } catch (error) { console.error('Error fetching vehicle categories:', error); }
         };
         fetchMasterData();
         fetchSales();
@@ -108,59 +69,19 @@ const SalesEntryForm = () => {
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
-        setFormData(prev => {
-            const updated = { ...prev, [name]: value };
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
-            if (name === 'vehicleType') {
-                filterVehiclesBy(vehicles, value);
-                updated.vehicleId = ''; // Reset vehicle ID when type changes
-            }
-
-            if (name === 'vehicleId') {
-                const selectedVehicle = vehicles.find((v: any) => v._id === value);
-                if (selectedVehicle) {
-                    // 1. Auto-populate Vehicle Type (Category) from Master
-                    if (selectedVehicle.category) {
-                        updated.vehicleType = selectedVehicle.category;
-                    }
-
-                    // 2. Auto-populate Driver Name from Vehicle Master
-                    if (selectedVehicle.driverName) {
-                        updated.driverName = selectedVehicle.driverName;
-
-                        // Also try to find a matching labour ID for records
-                        const vDriverName = selectedVehicle.driverName.trim().toLowerCase();
-                        const worker = labours.find((l: any) =>
-                            l.name?.trim().toLowerCase() === vDriverName
-                        );
-                        if (worker) {
-                            updated.driverId = worker._id;
-                        } else {
-                            updated.driverId = '';
-                        }
-                    } else if (selectedVehicle.operatorName) {
-                        updated.driverName = selectedVehicle.operatorName;
-                        const vOpName = selectedVehicle.operatorName.trim().toLowerCase();
-                        const worker = labours.find((l: any) =>
-                            l.name?.trim().toLowerCase() === vOpName
-                        );
-                        if (worker) {
-                            updated.driverId = worker._id;
-                        } else {
-                            updated.driverId = '';
-                        }
-                    }
-                }
-            }
-
-            // If manually typing driver name, try to find labour ID
-            if (name === 'driverName') {
-                const worker = labours.find(l => l.name.trim().toLowerCase() === value.trim().toLowerCase());
-                updated.driverId = worker ? worker._id : '';
-            }
-
-            return updated;
-        });
+    const handleToggleDeliveryStatus = async (sale: any) => {
+        const newStatus = sale.deliveryStatus === 'completed' ? 'open' : 'completed';
+        try {
+            await axios.patch(`${API}/sales/${sale._id}/delivery-status`, { deliveryStatus: newStatus });
+            showToast(`Sale marked as ${newStatus === 'completed' ? '✅ Completed' : '🔄 Reopened'}`, 'success');
+            fetchSales();
+        } catch (error) {
+            console.error(error);
+            showToast('Error updating delivery status', 'error');
+        }
     };
 
     const handleItemChange = (index: number, e: any) => {
@@ -210,10 +131,6 @@ const SalesEntryForm = () => {
             gstPercentage: 0,
             dueDate: '',
             notes: '',
-            vehicleId: '',
-            vehicleType: 'All',
-            driverName: '',
-            driverId: '',
             fromLocation: 'Quarry',
             toLocation: '',
         });
@@ -229,10 +146,6 @@ const SalesEntryForm = () => {
             gstPercentage: 0,
             dueDate: '',
             notes: '',
-            vehicleId: '',
-            vehicleType: 'All',
-            driverName: '',
-            driverId: '',
             fromLocation: 'Quarry',
             toLocation: '',
         });
@@ -253,10 +166,6 @@ const SalesEntryForm = () => {
                     gstPercentage: sale.gstPercentage || 0,
                     dueDate: sale.dueDate ? new Date(sale.dueDate).toISOString().split('T')[0] : '',
                     notes: sale.notes || '',
-                    vehicleId: sale.vehicleId?._id || sale.vehicleId || '',
-                    vehicleType: sale.vehicleId?.category || 'Lorry',
-                    driverId: sale.driverId?._id || sale.driverId || '',
-                    driverName: sale.driverName || sale.driverId?.name || '',
                     fromLocation: sale.fromLocation || 'Quarry',
                     toLocation: sale.toLocation || '',
                 });
@@ -459,49 +368,13 @@ const SalesEntryForm = () => {
                             </div>
                         </div>
 
-                        {/* Section 3: Vehicle & Loading Details */}
+                        {/* Section 3: Location Details */}
                         <div className="space-y-5">
                             <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2">
                                 <IconEdit className="w-4 h-4" />
-                                Vehicle & Loading Details (வண்டி விவரங்கள்)
+                                Location Details (இட விவரங்கள்)
                             </div>
-                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-                                <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Vehicle Type</label>
-                                    <select name="vehicleType" className="form-select" value={formData.vehicleType} onChange={handleChange}>
-                                        <option value="All">All Vehicles</option>
-                                        {vehicleCategories.map((cat: any) => (
-                                            <option key={cat._id} value={cat.name}>{cat.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block font-primary">Vehicle Number</label>
-                                    <select name="vehicleId" className="form-select border-primary/50" value={formData.vehicleId} onChange={handleChange}>
-                                        <option value="">Select Vehicle (optional)</option>
-                                        {filteredVehicles.map(v => (
-                                            <option key={v._id} value={v._id}>{v.vehicleNumber || v.registrationNumber} ({v.name})</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Driver Name</label>
-                                    <div className="relative">
-                                        <input
-                                            name="driverName"
-                                            list="labor-list"
-                                            className="form-input font-bold"
-                                            value={formData.driverName}
-                                            onChange={handleChange}
-                                            placeholder="Enter Driver Name..."
-                                        />
-                                        <datalist id="labor-list">
-                                            {labours.map(l => (
-                                                <option key={l._id} value={l.name}>{l.workType || 'Worker'}</option>
-                                            ))}
-                                        </datalist>
-                                    </div>
-                                </div>
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">From Location</label>
                                     <input type="text" name="fromLocation" className="form-input font-bold text-primary" value={formData.fromLocation} onChange={handleChange} placeholder="Quarry" />
@@ -581,7 +454,7 @@ const SalesEntryForm = () => {
                         </div>
 
                         {/* Filter Panel */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end bg-primary/5 p-4 rounded-xl">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-primary/5 p-4 rounded-xl">
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
                                 <div className="relative">
@@ -594,15 +467,6 @@ const SalesEntryForm = () => {
                                     />
                                     <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
                                 </div>
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold uppercase mb-1 block">Filter Vehicle (வண்டி எண்)</label>
-                                <select className="form-select h-10" value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)}>
-                                    <option value="">All Vehicles</option>
-                                    {Array.from(new Set(vehicles.map(v => v.vehicleNumber || v.registrationNumber))).map(num => (
-                                        <option key={num} value={num}>{num}</option>
-                                    ))}
-                                </select>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">Filter Customer</label>
@@ -621,6 +485,14 @@ const SalesEntryForm = () => {
                                 <label className="text-[10px] font-bold uppercase mb-1 block">End Date</label>
                                 <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
                             </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Delivery Status</label>
+                                <select className="form-select h-10" value={filterDelivery} onChange={(e) => setFilterDelivery(e.target.value)}>
+                                    <option value="">All</option>
+                                    <option value="open">🔄 Open</option>
+                                    <option value="completed">✅ Completed</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div className="table-responsive">
@@ -631,11 +503,12 @@ const SalesEntryForm = () => {
                                     <th>Invoice #</th>
                                     <th>Date</th>
                                     <th>Customer</th>
-                                    <th>Vehicle</th>
+                                    <th>Location</th>
                                     <th>Items</th>
                                     <th>Type</th>
                                     <th className="!text-right">Total</th>
-                                    <th className="!text-center">Status</th>
+                                    <th className="!text-center">Payment</th>
+                                    <th className="!text-center">Delivery</th>
                                     <th className="!text-center">Actions</th>
                                 </tr>
                             </thead>
@@ -644,13 +517,7 @@ const SalesEntryForm = () => {
                                     const filtered = recentSales.filter(s => {
                                         const matchesSearch = !search ||
                                             s.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
-                                            s.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
-                                            s.vehicleId?.vehicleNumber?.toLowerCase().includes(search.toLowerCase()) ||
-                                            s.vehicleId?.registrationNumber?.toLowerCase().includes(search.toLowerCase());
-
-                                        const matchesVehicle = !filterVehicle ||
-                                            s.vehicleId?.vehicleNumber === filterVehicle ||
-                                            s.vehicleId?.registrationNumber === filterVehicle;
+                                            s.customer?.name?.toLowerCase().includes(search.toLowerCase());
 
                                         const matchesCustomer = !filterCustomer ||
                                             s.customer?.name === filterCustomer;
@@ -659,7 +526,9 @@ const SalesEntryForm = () => {
                                         const matchesStart = !filterStartDate || saleDate >= filterStartDate;
                                         const matchesEnd = !filterEndDate || saleDate <= filterEndDate;
 
-                                        return matchesSearch && matchesVehicle && matchesCustomer && matchesStart && matchesEnd;
+                                        const matchesDelivery = !filterDelivery || (s.deliveryStatus || 'open') === filterDelivery;
+
+                                        return matchesSearch && matchesCustomer && matchesStart && matchesEnd && matchesDelivery;
                                     });
 
                                     if (filtered.length === 0) {
@@ -677,12 +546,8 @@ const SalesEntryForm = () => {
                                             <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
                                             <td className="font-semibold">{sale.customer?.name || '—'}</td>
                                             <td>
-                                                {sale.vehicleId ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[11px] font-bold text-primary">{sale.vehicleId.vehicleNumber || sale.vehicleId.registrationNumber}</span>
-                                                        <span className="text-[9px] text-white-dark italic font-semibold">{sale.driverName || (sale.driverId as any)?.name || '—'}</span>
-                                                        <span className="text-[9px] text-white-dark italic">@{sale.toLocation || '—'}</span>
-                                                    </div>
+                                                {sale.toLocation ? (
+                                                    <span className="text-[11px] font-bold text-primary">{sale.toLocation}</span>
                                                 ) : (
                                                     <span className="text-white-dark text-xs">N/A</span>
                                                 )}
@@ -699,9 +564,24 @@ const SalesEntryForm = () => {
                                             </td>
                                             <td className="!text-right font-bold">₹{sale.grandTotal?.toLocaleString()}</td>
                                             <td className="!text-center">
-                                                <span className={`badge ${sale.paymentStatus === 'Paid' ? 'bg-success/10 text-success' : sale.paymentStatus === 'Partial' ? 'bg-warning/10 text-warning' : 'bg-danger/10 text-danger'}`}>
+                                                <span className={`badge ${sale.paymentStatus === 'Paid' ? 'bg-success/10 text-success'
+                                                    : sale.paymentStatus === 'Partial' ? 'bg-warning/10 text-warning'
+                                                        : 'bg-danger/10 text-danger'
+                                                    }`}>
                                                     {sale.paymentStatus}
                                                 </span>
+                                            </td>
+                                            <td className="!text-center">
+                                                <button
+                                                    title={sale.deliveryStatus === 'completed' ? 'Click to Re-open' : 'Click to Mark Complete'}
+                                                    onClick={() => handleToggleDeliveryStatus(sale)}
+                                                    className={`badge cursor-pointer border-0 ${sale.deliveryStatus === 'completed'
+                                                        ? 'bg-teal-500/10 text-teal-500 hover:bg-danger/10 hover:text-danger'
+                                                        : 'bg-orange-400/10 text-orange-400 hover:bg-teal-500/10 hover:text-teal-500'
+                                                        } transition-colors`}
+                                                >
+                                                    {sale.deliveryStatus === 'completed' ? '✅ Delivered' : '🔄 Open'}
+                                                </button>
                                             </td>
                                             <td className="!text-center">
                                                 <div className="flex items-center justify-center gap-2">
@@ -712,6 +592,13 @@ const SalesEntryForm = () => {
                                                     >
                                                         <IconEdit className="w-4 h-4" />
                                                     </button>
+                                                    <Link
+                                                        href={`/sales-billing/sales-entry/details?id=${sale._id}`}
+                                                        className="btn btn-sm btn-outline-info"
+                                                        title="View Sales Details"
+                                                    >
+                                                        <IconEye className="w-4 h-4" />
+                                                    </Link>
                                                     <button
                                                         className="btn btn-sm btn-outline-danger"
                                                         onClick={() => setDeleteId(sale._id)}
