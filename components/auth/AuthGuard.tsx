@@ -10,7 +10,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const dispatch = useDispatch();
-    const { isAuthenticated } = useSelector((state: IRootState) => state.auth);
+    const { isAuthenticated, user } = useSelector((state: IRootState) => state.auth);
     const [isChecking, setIsChecking] = useState(true);
 
     const isAuthRoute = pathname.startsWith('/auth');
@@ -33,16 +33,32 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        if (isAuthenticated && isAuthRoute) {
-            // Already logged in — send to dashboard
-            router.replace('/');
-            setIsChecking(false);
-            return;
+        if (isAuthenticated) {
+            const userRole = user?.role?.toLowerCase();
+            const isAdmin = userRole === 'admin' || userRole === 'owner';
+
+            if (isAuthRoute) {
+                // Already logged in — send to their default page
+                if (isAdmin) {
+                    router.replace('/');
+                } else {
+                    router.replace('/expenses/diesel');
+                }
+                setIsChecking(false);
+                return;
+            }
+
+            // If a non-admin tries to go to the dashboard (/), redirect them
+            if (pathname === '/' && !isAdmin) {
+                router.replace('/expenses/diesel');
+                setIsChecking(false);
+                return;
+            }
         }
 
         // Everything is fine — show the page
         setIsChecking(false);
-    }, [isAuthenticated, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [isAuthenticated, user, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Show loading spinner only on first check
     if (isChecking) {

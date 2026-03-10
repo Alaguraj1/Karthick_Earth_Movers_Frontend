@@ -36,7 +36,13 @@ const ComponentsAuthLoginForm = () => {
                     padding: '10px 20px',
                 });
 
-                router.push('/');
+                // Redirect based on role: Admin/Owner to Dashboard, others to Diesel Expenses
+                const userRole = data.user?.role?.toLowerCase();
+                if (userRole === 'admin' || userRole === 'owner') {
+                    router.push('/');
+                } else {
+                    router.push('/expenses/diesel');
+                }
             }
         } catch (error: any) {
             console.error(error);

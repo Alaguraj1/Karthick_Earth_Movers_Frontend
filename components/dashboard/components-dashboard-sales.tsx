@@ -55,7 +55,7 @@ const ComponentsDashboardSales = () => {
         last12Months.push({
             month: d.getMonth() + 1,
             year: d.getFullYear(),
-            label: months[d.getMonth()]
+            label: months[d.getMonth()] || 'N/A'
         });
     }
 
@@ -64,14 +64,14 @@ const ComponentsDashboardSales = () => {
             name: 'Income',
             data: last12Months.map(m => {
                 const found = data?.revenueChart?.revenueData?.find((rd: any) => rd._id.month === m.month && rd._id.year === m.year);
-                return found ? found.total : 0;
+                return found?.total ?? 0;
             })
         },
         {
             name: 'Expenses',
             data: last12Months.map(m => {
                 const found = data?.revenueChart?.expenseData?.find((ed: any) => ed._id.month === m.month && ed._id.year === m.year);
-                return found ? found.total : 0;
+                return found?.total ?? 0;
             })
         }
     ];
@@ -107,7 +107,8 @@ const ComponentsDashboardSales = () => {
                 tickAmount: 7,
                 labels: {
                     formatter: (value: number) => {
-                        if (typeof value !== 'number') return '0';
+                        if (value === null || value === undefined) return '0';
+                        if (typeof value !== 'number') return String(value);
                         if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
                         return value.toString();
                     },
@@ -148,13 +149,13 @@ const ComponentsDashboardSales = () => {
     //Sales By Category
     const salesData = data?.salesByCategory || [];
     const salesByCategory: any = {
-        series: salesData.length > 0 ? salesData.map((d: any) => d.total) : [1],
+        series: salesData.length > 0 ? salesData.map((d: any) => d.total ?? 0) : [0],
         options: {
             chart: { type: 'donut', height: 460, fontFamily: 'Nunito, sans-serif' },
             dataLabels: { enabled: false },
             stroke: { show: true, width: 15, colors: isDark ? '#0e1726' : '#fff' },
             colors: ['#e2a03f', '#5c1ac3', '#e7515a', '#2196f3', '#00ab55'],
-            labels: salesData.length > 0 ? salesData.map((d: any) => d._id) : ['No Data'],
+            labels: salesData.length > 0 ? salesData.map((d: any) => d._id || 'Unknown') : ['No Data'],
             legend: {
                 position: 'bottom',
                 horizontalAlign: 'center',
@@ -176,7 +177,11 @@ const ComponentsDashboardSales = () => {
                                 fontSize: '20px',
                                 color: isDark ? '#bfc9d4' : undefined,
                                 offsetY: 16,
-                                formatter: (val: any) => { return '₹' + (parseFloat(val) / 1000).toFixed(1) + 'K'; },
+                                formatter: (val: any) => {
+                                    const num = parseFloat(val);
+                                    if (isNaN(num)) return '₹0K';
+                                    return '₹' + (num / 1000).toFixed(1) + 'K';
+                                },
                             },
                             total: {
                                 show: true,
@@ -184,7 +189,7 @@ const ComponentsDashboardSales = () => {
                                 color: '#888ea8',
                                 fontSize: '16px',
                                 formatter: (w: any) => {
-                                    const total = w.globals.seriesTotals.reduce((a: any, b: any) => a + b, 0);
+                                    const total = w.globals.seriesTotals.reduce((a: any, b: any) => a + (b || 0), 0);
                                     return '₹' + (total / 1000).toFixed(1) + 'K';
                                 },
                             },
@@ -208,7 +213,7 @@ const ComponentsDashboardSales = () => {
             yaxis: { min: 0, show: false },
             grid: { padding: { top: 125, right: 0, bottom: 0, left: 0 } },
             fill: { opacity: 1, type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 1, inverseColors: false, opacityFrom: 0.3, opacityTo: 0.05, stops: [100, 100] } },
-            tooltip: { x: { show: false }, y: { formatter: (val: any) => val !== undefined ? val : 0 } },
+            tooltip: { x: { show: false }, y: { formatter: (val: any) => val !== undefined && val !== null ? val : 0 } },
         },
     };
 
@@ -273,7 +278,7 @@ const ComponentsDashboardSales = () => {
                             <div className="flex items-center gap-4 px-2 mb-4">
                                 <div>
                                     <p className="text-[10px] font-black uppercase text-white-dark tracking-widest mb-1">Month Profit</p>
-                                    <p className="text-2xl font-black text-primary italic">₹{data?.summary?.netProfit?.toLocaleString()}</p>
+                                    <p className="text-2xl font-black text-primary italic">₹{(data?.summary?.netProfit || 0).toLocaleString()}</p>
                                 </div>
                                 <div className="h-10 w-[2px] bg-primary/10"></div>
                                 <div>
@@ -313,7 +318,7 @@ const ComponentsDashboardSales = () => {
                                     <div className="flex-1 ltr:ml-4 rtl:mr-4">
                                         <div className="mb-1 flex font-black uppercase tracking-widest text-[10px] text-white-dark">
                                             <h6>Market Income</h6>
-                                            <p className="ltr:ml-auto rtl:mr-auto text-primary">₹{data?.summary?.monthIncome?.toLocaleString()}</p>
+                                            <p className="ltr:ml-auto rtl:mr-auto text-primary">₹{(data?.summary?.monthIncome || 0).toLocaleString()}</p>
                                         </div>
                                         <div className="h-1.5 rounded-full bg-primary/5">
                                             <div className="h-full rounded-full bg-primary shadow-[0_0_10px_rgba(67,97,238,0.3)]" style={{ width: '100%' }}></div>
@@ -327,10 +332,10 @@ const ComponentsDashboardSales = () => {
                                     <div className="flex-1 ltr:ml-4 rtl:mr-4">
                                         <div className="mb-1 flex font-black uppercase tracking-widest text-[10px] text-white-dark">
                                             <h6>Operational Cost</h6>
-                                            <p className="ltr:ml-auto rtl:mr-auto text-danger">₹{data?.summary?.monthExpense?.toLocaleString()}</p>
+                                            <p className="ltr:ml-auto rtl:mr-auto text-danger">₹{(data?.summary?.monthExpense || 0).toLocaleString()}</p>
                                         </div>
                                         <div className="h-1.5 w-full rounded-full bg-danger/5">
-                                            <div className="h-full rounded-full bg-danger shadow-[0_0_10px_rgba(231,81,90,0.3)]" style={{ width: `${Math.min((data?.summary?.monthExpense / data?.summary?.monthIncome) * 100, 100)}%` }}></div>
+                                            <div className="h-full rounded-full bg-danger shadow-[0_0_10px_rgba(231,81,90,0.3)]" style={{ width: `${data?.summary?.monthIncome > 0 ? Math.min((data?.summary?.monthExpense / data?.summary?.monthIncome) * 100, 100) : 0}%` }}></div>
                                         </div>
                                     </div>
                                 </div>
@@ -341,10 +346,10 @@ const ComponentsDashboardSales = () => {
                                     <div className="flex-1 ltr:ml-4 rtl:mr-4">
                                         <div className="mb-1 flex font-black uppercase tracking-widest text-[10px] text-white-dark">
                                             <h6>Net Surplus</h6>
-                                            <p className="ltr:ml-auto rtl:mr-auto text-success">₹{data?.summary?.netProfit?.toLocaleString()}</p>
+                                            <p className="ltr:ml-auto rtl:mr-auto text-success">₹{(data?.summary?.netProfit || 0).toLocaleString()}</p>
                                         </div>
                                         <div className="h-1.5 w-full rounded-full bg-success/5">
-                                            <div className="h-full rounded-full bg-success shadow-[0_0_10px_rgba(0,171,85,0.3)]" style={{ width: `${Math.max((data?.summary?.netProfit / data?.summary?.monthIncome) * 100, 0)}%` }}></div>
+                                            <div className="h-full rounded-full bg-success shadow-[0_0_10px_rgba(0,171,85,0.3)]" style={{ width: `${data?.summary?.monthIncome > 0 ? Math.max((data?.summary?.netProfit / data?.summary?.monthIncome) * 100, 0) : 0}%` }}></div>
                                         </div>
                                     </div>
                                 </div>
@@ -401,7 +406,7 @@ const ComponentsDashboardSales = () => {
                                                         <span className="uppercase tracking-tight text-white-dark group-hover:text-primary transition-colors">{sale.customer?.name}</span>
                                                     </div>
                                                 </td>
-                                                <td className="text-primary italic">₹{sale.grandTotal?.toLocaleString()}</td>
+                                                <td className="text-primary italic">₹{(sale.grandTotal || 0).toLocaleString()}</td>
                                                 <td>
                                                     <span className={`text-[10px] font-black uppercase tracking-widest ${sale.paymentType === 'Cash' ? 'text-success' : 'text-warning'}`}>
                                                         {sale.paymentType}

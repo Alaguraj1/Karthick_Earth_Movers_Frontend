@@ -43,6 +43,8 @@ const Sidebar = () => {
     const [errorSubMenu, setErrorSubMenu] = useState(false);
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
     const semidark = useSelector((state: IRootState) => state.themeConfig.semidark);
+    const userRole = useSelector((state: IRootState) => state.auth.user?.role?.toLowerCase());
+    const isAdmin = userRole === 'admin' || userRole === 'owner';
     const toggleMenu = (value: string) => {
         setCurrentMenu((oldValue) => {
             return oldValue === value ? '' : value;
@@ -91,7 +93,7 @@ const Sidebar = () => {
             >
                 <div className="h-full bg-white dark:bg-black">
                     <div className="flex items-center justify-between px-4 py-3">
-                        <Link href="/" className="main-logo flex shrink-0 items-center">
+                        <Link href={isAdmin ? "/" : "/expenses/diesel"} className="main-logo flex shrink-0 items-center">
                             <img className="ml-[5px] w-24 flex-none rounded-lg" src="/assets/images/logo.png" alt="logo" />
                             {/* <span className="align-middle text-xl font-black ltr:ml-2 rtl:mr-2 dark:text-white-light lg:inline uppercase tracking-tighter">Karthick Earth Movers</span> */}
                         </Link>
@@ -113,14 +115,17 @@ const Sidebar = () => {
 
                             <li className="nav-item">
                                 <ul>
-                                    <li className="nav-item">
-                                        <Link href="/" className="group">
-                                            <div className="flex items-center">
-                                                <IconMenuDashboard className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Dashboard</span>
-                                            </div>
-                                        </Link>
-                                    </li>
+                                    {(useSelector((state: IRootState) => state.auth.user?.role?.toLowerCase()) === 'owner' ||
+                                        useSelector((state: IRootState) => state.auth.user?.role?.toLowerCase()) === 'admin') && (
+                                            <li className="nav-item">
+                                                <Link href="/" className="group">
+                                                    <div className="flex items-center">
+                                                        <IconMenuDashboard className="shrink-0 group-hover:!text-primary" />
+                                                        <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Dashboard</span>
+                                                    </div>
+                                                </Link>
+                                            </li>
+                                        )}
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'expense-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('expense-mgmt')}>
                                             <div className="flex items-center">

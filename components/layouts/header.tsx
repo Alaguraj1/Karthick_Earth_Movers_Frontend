@@ -39,6 +39,8 @@ const Header = () => {
     const dispatch = useDispatch();
     const router = useRouter();
     const { t, i18n } = getTranslation();
+    const user = useSelector((state: IRootState) => state.auth.user);
+    const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'owner';
 
     useEffect(() => {
         const selector = document.querySelector('ul.horizontal-menu a[href="' + window.location.pathname + '"]');
@@ -150,7 +152,7 @@ const Header = () => {
             <div className="shadow-sm">
                 <div className="relative flex w-full items-center bg-white px-5 py-2.5 dark:bg-black">
                     <div className="horizontal-logo flex items-center justify-between ltr:mr-2 rtl:ml-2 lg:hidden">
-                        <Link href="/" className="main-logo flex shrink-0 items-center">
+                        <Link href={isAdmin ? "/" : "/expenses/diesel"} className="main-logo flex shrink-0 items-center">
                             <img className="inline w-10 rounded-lg ltr:-ml-1 rtl:-mr-1" src="/assets/images/logo.png" alt="logo" />
                             <span className="hidden align-middle text-xl font-black transition-all duration-300 ltr:ml-2 rtl:mr-2 dark:text-white-light md:inline uppercase tracking-tighter">Karthick Earth Movers</span>
                         </Link>
@@ -216,31 +218,33 @@ const Header = () => {
 
                 {/* horizontal menu */}
                 <ul className="horizontal-menu hidden border-t border-[#ebedf2] bg-white px-6 py-1.5 font-semibold text-black rtl:space-x-reverse dark:border-[#191e3a] dark:bg-black dark:text-white-dark lg:space-x-1.5 xl:space-x-8">
-                    <li className="menu nav-item relative">
-                        <button type="button" className="nav-link">
-                            <div className="flex items-center">
-                                <IconMenuDashboard className="shrink-0" />
-                                <span className="px-1">{t('dashboard')}</span>
-                            </div>
-                            <div className="right_arrow">
-                                <IconCaretDown />
-                            </div>
-                        </button>
-                        <ul className="sub-menu">
-                            <li>
-                                <Link href="/">{t('sales')}</Link>
-                            </li>
-                            <li>
-                                <Link href="/analytics">{t('analytics')}</Link>
-                            </li>
-                            <li>
-                                <Link href="/finance">{t('finance')}</Link>
-                            </li>
-                            <li>
-                                <Link href="/crypto">{t('crypto')}</Link>
-                            </li>
-                        </ul>
-                    </li>
+                    {isAdmin && (
+                        <li className="menu nav-item relative">
+                            <button type="button" className="nav-link">
+                                <div className="flex items-center">
+                                    <IconMenuDashboard className="shrink-0" />
+                                    <span className="px-1">{t('dashboard')}</span>
+                                </div>
+                                <div className="right_arrow">
+                                    <IconCaretDown />
+                                </div>
+                            </button>
+                            <ul className="sub-menu">
+                                <li>
+                                    <Link href="/">{t('sales')}</Link>
+                                </li>
+                                <li>
+                                    <Link href="/analytics">{t('analytics')}</Link>
+                                </li>
+                                <li>
+                                    <Link href="/finance">{t('finance')}</Link>
+                                </li>
+                                <li>
+                                    <Link href="/crypto">{t('crypto')}</Link>
+                                </li>
+                            </ul>
+                        </li>
+                    )}
                     <li className="menu nav-item relative">
                         <button type="button" className="nav-link">
                             <div className="flex items-center">
