@@ -309,7 +309,7 @@ const VehicleDetails = () => {
                                         value={newItem.name}
                                         onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                                         required
-                                        placeholder="e.g. Ashok Leyland"
+                                        placeholder="Enter Vehicle Name"
                                     />
                                 </div>
                                 <div>
@@ -470,7 +470,7 @@ const VehicleDetails = () => {
                                         <div className="p-6">
                                             <div className="flex justify-between items-start mb-1">
                                                 <h6 className="text-xl font-black text-black dark:text-white-light line-clamp-1">{asset.name}</h6>
-                                                <span className="text-[10px] font-black italic text-info uppercase">{asset.mileageDetails || '- MPG'}</span>
+                                                <span className="text-[10px] font-black italic text-info uppercase">{asset.mileageDetails || '- KMPL'}</span>
                                             </div>
                                             <span className="text-xs font-black bg-primary/10 text-primary px-3 py-1 rounded-lg uppercase tracking-widest mb-4 inline-block">
                                                 {asset.vehicleNumber || 'No Plate'}

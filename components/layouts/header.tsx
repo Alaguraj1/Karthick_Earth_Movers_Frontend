@@ -171,12 +171,18 @@ const Header = () => {
                                 offset={[0, 8]}
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="relative group block"
-                                button={<img className="h-9 w-9 rounded-full object-cover saturate-50 group-hover:saturate-100" src="/assets/images/user-profile.jpeg" alt="userProfile" />}
+                                button={
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white">
+                                        <IconUser className="h-5 w-5" />
+                                    </div>
+                                }
                             >
                                 <ul className="w-[230px] !py-0 font-semibold text-dark dark:text-white-dark dark:text-white-light/90">
                                     <li>
                                         <div className="flex items-center px-4 py-4">
-                                            <img className="h-10 w-10 rounded-md object-cover" src="/assets/images/user-profile.jpeg" alt="userProfile" />
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-light text-primary">
+                                                <IconUser className="h-6 w-6" />
+                                            </div>
                                             <div className="truncate ltr:pl-4 rtl:pr-4">
                                                 <h4 className="text-base capitalize">
                                                     {useSelector((state: IRootState) => state.auth.user?.name) || 'User'}
