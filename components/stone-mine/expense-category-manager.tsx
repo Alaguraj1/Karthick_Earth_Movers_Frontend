@@ -31,6 +31,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const [contractors, setContractors] = useState<any[]>([]);
     const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
     const [workTypes, setWorkTypes] = useState<any[]>([]);
+    const [maintenanceTypes, setMaintenanceTypes] = useState<any[]>([]);
     const [selectedContractorSummary, setSelectedContractorSummary] = useState<any>(null);
 
     // View State
@@ -45,6 +46,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const [listMonth, setListMonth] = useState(new Date().getMonth() + 1);
     const [listYear, setListYear] = useState(new Date().getFullYear());
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedInputFile, setSelectedInputFile] = useState<File | null>(null);
+    const [selectedOutputFile, setSelectedOutputFile] = useState<File | null>(null);
 
     // Filter states
     const [searchTerm, setSearchTerm] = useState('');
@@ -71,6 +74,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         paymentMode: 'Cash',
         meterReading: '',
         billUrl: '',
+        inputBillUrl: '',
+        outputBillUrl: '',
         // Maintenance specialized fields
         maintenanceType: '',
         sparePartsCost: '',
@@ -173,6 +178,15 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         }
     };
 
+    const fetchMaintenanceTypes = async () => {
+        try {
+            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/maintenance-types`);
+            if (data.success) setMaintenanceTypes(data.data);
+        } catch (error) {
+            console.error('Error fetching maintenance types:', error);
+        }
+    };
+
     useEffect(() => {
         if (category === 'Labour Wages' && formData.labourName && (labours.length > 0 || contractors.length > 0)) {
             const fetchLabourSummary = async () => {
@@ -253,6 +267,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         fetchContractors();
         fetchExpenseCategories();
         fetchWorkTypes();
+        fetchMaintenanceTypes();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [category]);
 
@@ -434,10 +449,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         }
     };
 
-    const uploadFile = async () => {
-        if (!selectedFile) return null;
+    const uploadSpecificFile = async (file: File) => {
         const uploadData = new FormData();
-        uploadData.append('bill', selectedFile);
+        uploadData.append('bill', file);
         try {
             const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/upload`, uploadData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -449,18 +463,35 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         }
     };
 
+    const uploadFile = async () => {
+        if (!selectedFile) return null;
+        return uploadSpecificFile(selectedFile);
+    };
+
     const handleAdd = async (e: any) => {
         e.preventDefault();
         let billUrl = formData.billUrl;
         if (selectedFile) {
-            const uploadedUrl = await uploadFile();
+            const uploadedUrl = await uploadSpecificFile(selectedFile);
             if (uploadedUrl) billUrl = uploadedUrl;
+        }
+        let inputBillUrl = formData.inputBillUrl;
+        if (selectedInputFile) {
+            const uploadedUrl = await uploadSpecificFile(selectedInputFile);
+            if (uploadedUrl) inputBillUrl = uploadedUrl;
+        }
+        let outputBillUrl = formData.outputBillUrl;
+        if (selectedOutputFile) {
+            const uploadedUrl = await uploadSpecificFile(selectedOutputFile);
+            if (uploadedUrl) outputBillUrl = uploadedUrl;
         }
 
         // Clean up empty ObjectIDs to prevent backend crash
         const payload = {
             ...formData,
             billUrl,
+            inputBillUrl,
+            outputBillUrl,
             salaryMonth: category === 'Labour Wages' ? lookupMonth : '',
             salaryYear: category === 'Labour Wages' ? lookupYear : ''
         };
@@ -485,14 +516,26 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         e.preventDefault();
         let billUrl = formData.billUrl;
         if (selectedFile) {
-            const uploadedUrl = await uploadFile();
+            const uploadedUrl = await uploadSpecificFile(selectedFile);
             if (uploadedUrl) billUrl = uploadedUrl;
+        }
+        let inputBillUrl = formData.inputBillUrl;
+        if (selectedInputFile) {
+            const uploadedUrl = await uploadSpecificFile(selectedInputFile);
+            if (uploadedUrl) inputBillUrl = uploadedUrl;
+        }
+        let outputBillUrl = formData.outputBillUrl;
+        if (selectedOutputFile) {
+            const uploadedUrl = await uploadSpecificFile(selectedOutputFile);
+            if (uploadedUrl) outputBillUrl = uploadedUrl;
         }
 
         // Clean up empty ObjectIDs to prevent backend crash
         const payload = {
             ...formData,
             billUrl,
+            inputBillUrl,
+            outputBillUrl,
             salaryMonth: category === 'Labour Wages' ? lookupMonth : '',
             salaryYear: category === 'Labour Wages' ? lookupYear : ''
         };
@@ -541,6 +584,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             paymentMode: 'Cash',
             meterReading: '',
             billUrl: '',
+            inputBillUrl: '',
+            outputBillUrl: '',
             maintenanceType: '',
             sparePartsCost: '',
             labourCharge: '',
@@ -576,6 +621,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         setLookupMonth(listMonth);
         setLookupYear(listYear);
         setSelectedFile(null);
+        setSelectedInputFile(null);
+        setSelectedOutputFile(null);
         setFormView(false);
         setEditMode(false);
         setSelectedContractorSummary(null); // Reset contractor summary
@@ -621,6 +668,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             paymentMode: expense.paymentMode || 'Cash',
             meterReading: expense.meterReading || '',
             billUrl: expense.billUrl || '',
+            inputBillUrl: expense.inputBillUrl || '',
+            outputBillUrl: expense.outputBillUrl || '',
             maintenanceType: expense.maintenanceType || '',
             sparePartsCost: expense.sparePartsCost?.toString() || '',
             labourCharge: expense.labourCharge?.toString() || '',
@@ -654,6 +703,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             nextServiceDate: expense.nextServiceDate ? expense.nextServiceDate.split('T')[0] : '',
         });
         setSelectedFile(null);
+        setSelectedInputFile(null);
+        setSelectedOutputFile(null);
         setEditMode(true);
         setFormView(true);
     };
@@ -1101,13 +1152,23 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                     <span className="text-xs text-white-dark italic">Manual</span>
                                                 )}
                                             </td>
-                                            <td className="text-center py-2">
+                                            <td className="text-center py-2 flex flex-col items-center gap-1 justify-center">
                                                 {expense.billUrl && (
-                                                    <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${expense.billUrl}`} target="_blank" className="text-primary hover:underline block mb-1">
+                                                    <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${expense.billUrl}`} target="_blank" className="text-primary hover:underline text-[10px]">
                                                         View Bill
                                                     </a>
                                                 )}
-                                                <div className="flex justify-center items-center gap-2">
+                                                {expense.inputBillUrl && (
+                                                    <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${expense.inputBillUrl}`} target="_blank" className="text-info hover:underline text-[10px] font-bold">
+                                                        Input Bill
+                                                    </a>
+                                                )}
+                                                {expense.outputBillUrl && (
+                                                    <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${expense.outputBillUrl}`} target="_blank" className="text-success hover:underline text-[10px] font-bold">
+                                                        Output Bill
+                                                    </a>
+                                                )}
+                                                <div className="flex justify-center items-center gap-2 mt-1">
                                                     {expense.sourceModel === 'Manual' ? (
                                                         <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditModal(expense)}>
                                                             <IconEdit className="h-4 w-4" />
@@ -1470,13 +1531,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Maintenance Type</label>
                                             <select name="maintenanceType" className="form-select border-2 font-bold rounded-xl h-12" value={formData.maintenanceType} onChange={handleChange} required>
                                                 <option value="">Select Type</option>
-                                                <option value="Service (General Service)">Service (General Service)</option>
-                                                <option value="Oil Change">Oil Change</option>
-                                                <option value="Spare Part Replacement">Spare Part Replacement</option>
-                                                <option value="Breakdown Repair">Breakdown Repair</option>
-                                                <option value="Tyre Change">Tyre Change</option>
-                                                <option value="Welding / Fabrication">Welding / Fabrication</option>
-                                                <option value="Others">Others</option>
+                                                {maintenanceTypes.map((type: any) => (
+                                                    <option key={type._id} value={type.name}>{type.name}</option>
+                                                ))}
                                             </select>
                                         </div>
                                         <div>
@@ -1622,22 +1679,59 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         />
                                     </div>
                                 </div>
-                                <div className="lg:col-span-1">
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Bill Attachment</label>
-                                    <div className="flex items-center gap-2">
-                                        <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={handleFileChange} accept=".jpg,.jpeg,.png,.pdf" />
-                                        {formData.billUrl && (
-                                            <a
-                                                href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${formData.billUrl}`}
-                                                target="_blank"
-                                                className="btn btn-outline-info p-2"
-                                                title="View Bill"
-                                            >
-                                                <IconEdit className="w-4 h-4" />
-                                            </a>
-                                        )}
+                                {category === 'Machine Maintenance' ? (
+                                    <>
+                                        <div className="lg:col-span-1">
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Input Bill Attachment</label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={(e) => setSelectedInputFile(e.target.files ? e.target.files[0] : null)} accept=".jpg,.jpeg,.png,.pdf" />
+                                                {formData.inputBillUrl && (
+                                                    <a
+                                                        href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${formData.inputBillUrl}`}
+                                                        target="_blank"
+                                                        className="btn btn-outline-info p-2"
+                                                        title="View Input Bill"
+                                                    >
+                                                        <IconEdit className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="lg:col-span-1">
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Output Bill Attachment</label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={(e) => setSelectedOutputFile(e.target.files ? e.target.files[0] : null)} accept=".jpg,.jpeg,.png,.pdf" />
+                                                {formData.outputBillUrl && (
+                                                    <a
+                                                        href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${formData.outputBillUrl}`}
+                                                        target="_blank"
+                                                        className="btn btn-outline-info p-2"
+                                                        title="View Output Bill"
+                                                    >
+                                                        <IconEdit className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="lg:col-span-1">
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Bill Attachment</label>
+                                        <div className="flex items-center gap-2">
+                                            <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={handleFileChange} accept=".jpg,.jpeg,.png,.pdf" />
+                                            {formData.billUrl && (
+                                                <a
+                                                    href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${formData.billUrl}`}
+                                                    target="_blank"
+                                                    className="btn btn-outline-info p-2"
+                                                    title="View Bill"
+                                                >
+                                                    <IconEdit className="w-4 h-4" />
+                                                </a>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
