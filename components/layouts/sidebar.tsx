@@ -115,17 +115,16 @@ const Sidebar = () => {
 
                             <li className="nav-item">
                                 <ul>
-                                    {(useSelector((state: IRootState) => state.auth.user?.role?.toLowerCase()) === 'owner' ||
-                                        useSelector((state: IRootState) => state.auth.user?.role?.toLowerCase()) === 'admin') && (
-                                            <li className="nav-item">
-                                                <Link href="/" className="group">
-                                                    <div className="flex items-center">
-                                                        <IconMenuDashboard className="shrink-0 group-hover:!text-primary" />
-                                                        <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Dashboard</span>
-                                                    </div>
-                                                </Link>
-                                            </li>
-                                        )}
+                                    {isAdmin && (
+                                        <li className="nav-item">
+                                            <Link href="/" className="group">
+                                                <div className="flex items-center">
+                                                    <IconMenuDashboard className="shrink-0 group-hover:!text-primary" />
+                                                    <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Dashboard</span>
+                                                </div>
+                                            </Link>
+                                        </li>
+                                    )}
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'expense-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('expense-mgmt')}>
                                             <div className="flex items-center">

@@ -11,6 +11,10 @@ import axios from 'axios';
 import Link from 'next/link';
 import IconMenuWidgets from '@/components/icon/menu/icon-menu-widgets';
 import { useToast } from '@/components/stone-mine/toast-notification';
+import IconEye from '@/components/icon/icon-eye';
+import IconFile from '@/components/icon/icon-file';
+import IconDownload from '@/components/icon/icon-download';
+import * as XLSX from 'xlsx';
 
 const VehicleDetails = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -22,8 +26,11 @@ const VehicleDetails = () => {
     const [selectedVendor, setSelectedVendor] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [formView, setFormView] = useState(false);
+    const [detailsView, setDetailsView] = useState<any>(null);
     const [editItem, setEditItem] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('own');
+    const [stats, setStats] = useState<any[]>([]);
+    const [filterDates, setFilterDates] = useState({ start: '', end: '' });
     const [newItem, setNewItem] = useState({
         name: '',
         category: '',
@@ -51,10 +58,11 @@ const VehicleDetails = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [vehicleRes, vendorRes, categoryRes] = await Promise.all([
+            const [vehicleRes, vendorRes, categoryRes, reportRes] = await Promise.all([
                 axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`),
                 axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/transport`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicle-categories`)
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicle-categories`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/vehicle-cost`)
             ]);
 
             if (vehicleRes.data.success) {
@@ -65,6 +73,9 @@ const VehicleDetails = () => {
             }
             if (categoryRes.data.success) {
                 setCategories(categoryRes.data.data);
+            }
+            if (reportRes.data.success) {
+                setStats(reportRes.data.data);
             }
         } catch (error) {
             console.error(error);
@@ -149,7 +160,88 @@ const VehicleDetails = () => {
         setEditItem(null);
         setSelectedVendor(null);
         setFormView(false);
+        setDetailsView(null);
     };
+
+    const [expenseHistory, setExpenseHistory] = useState({
+        diesel: [],
+        maintenance: []
+    });
+
+    const handleViewDetails = async (asset: any) => {
+        setLoading(true);
+        try {
+            const plateNum = asset.vehicleNumber || asset.registrationNumber;
+            const displayName = asset.category ? `${asset.category} (${plateNum})` : (plateNum ? `${asset.name} (${plateNum})` : asset.name);
+
+            const dateQuery = filterDates.start && filterDates.end ? `&startDate=${filterDates.start}&endDate=${filterDates.end}` : '';
+
+            const [dieselRes, maintenanceRes, statsRes] = await Promise.all([
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/fuel-tracking?vehicleOrMachine=${encodeURIComponent(displayName)}${dateQuery}`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/maintenance-history?vehicleOrMachine=${encodeURIComponent(displayName)}${dateQuery}`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/vehicle-cost?${dateQuery.replace('&', '')}`)
+            ]);
+
+            setExpenseHistory({
+                diesel: dieselRes.data.success ? dieselRes.data.data : [],
+                maintenance: maintenanceRes.data.success ? maintenanceRes.data.data : []
+            });
+
+            if (statsRes.data.success) {
+                setStats(statsRes.data.data);
+            }
+
+            setDetailsView(asset);
+        } catch (error) {
+            console.error(error);
+            showToast('Error loading expense details', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExportExcel = () => {
+        if (!detailsView) return;
+
+        const wb = XLSX.utils.book_new();
+
+        // 1. Diesel Data
+        if (expenseHistory.diesel.length > 0) {
+            const dieselData = expenseHistory.diesel.map((e: any) => ({
+                Date: new Date(e.date).toLocaleDateString(),
+                Reading: e.meterReading || '-',
+                'Qty (L)': e.quantity,
+                Rate: e.rate,
+                Amount: e.amount,
+                'Payment Mode': e.paymentMode
+            }));
+            const ws = XLSX.utils.json_to_sheet(dieselData);
+            XLSX.utils.book_append_sheet(wb, ws, 'Diesel Expenses');
+        }
+
+        // 2. Maintenance Data
+        if (expenseHistory.maintenance.length > 0) {
+            const maintData = expenseHistory.maintenance.map((e: any) => ({
+                Date: new Date(e.date).toLocaleDateString(),
+                Type: e.maintenanceType || 'Regular',
+                'Vendor/Description': e.vendorName || e.description || '-',
+                'Spare Parts Cost': e.sparePartsCost || 0,
+                'Labour Charge': e.labourCharge || 0,
+                'Total Amount': e.amount
+            }));
+            const ws = XLSX.utils.json_to_sheet(maintData);
+            XLSX.utils.book_append_sheet(wb, ws, 'Maintenance');
+        }
+
+        const fileName = `${detailsView.name}_Expenses_${filterDates.start || 'All'}_to_${filterDates.end || 'Now'}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    };
+
+    useEffect(() => {
+        if (detailsView) {
+            handleViewDetails(detailsView);
+        }
+    }, [filterDates.start, filterDates.end]);
 
     const handleEdit = (item: any) => {
         setEditItem(item);
@@ -391,6 +483,203 @@ const VehicleDetails = () => {
                         </div>
                     </form>
                 </div>
+            ) : detailsView ? (
+                <div className="space-y-6">
+                    <div className="panel shadow-2xl rounded-2xl border-none overflow-hidden">
+                        <div className="p-0">
+                            <div className="bg-primary/10 p-6 flex flex-col md:flex-row items-start md:items-center justify-between border-b border-primary/10">
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => setDetailsView(null)} className="btn btn-outline-primary btn-sm flex items-center justify-center rounded-xl w-10 h-10 p-0 shadow-lg shadow-primary/20">
+                                        <IconArrowLeft className="h-5 w-5" />
+                                    </button>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h5 className="text-2xl font-black text-black dark:text-white-light uppercase tracking-tight">{detailsView.name}</h5>
+                                            <span className="bg-primary text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">{detailsView.vehicleNumber}</span>
+                                        </div>
+                                        <p className="text-primary text-xs font-bold uppercase tracking-widest mt-1 opacity-70">{detailsView.category} • {detailsView.ownershipType === 'Own' ? 'Own Fleet' : 'Contractor Fleet'}</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col md:flex-row items-center gap-3 mt-4 md:mt-0">
+                                    <div className="flex items-center gap-2 bg-white dark:bg-[#1b2a47] p-1.5 rounded-xl border border-primary/20 shadow-sm">
+                                        <div className="flex items-center gap-2 px-2">
+                                            <span className="text-[9px] font-black uppercase text-white-dark">From</span>
+                                            <input
+                                                type="date"
+                                                className="form-input form-input-sm border-none bg-transparent font-bold text-xs p-0 focus:ring-0 w-32"
+                                                value={filterDates.start}
+                                                onChange={(e) => setFilterDates(prev => ({ ...prev, start: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700"></div>
+                                        <div className="flex items-center gap-2 px-2">
+                                            <span className="text-[9px] font-black uppercase text-white-dark">To</span>
+                                            <input
+                                                type="date"
+                                                className="form-input form-input-sm border-none bg-transparent font-bold text-xs p-0 focus:ring-0 w-32"
+                                                value={filterDates.end}
+                                                onChange={(e) => setFilterDates(prev => ({ ...prev, end: e.target.value }))}
+                                            />
+                                        </div>
+                                        {(filterDates.start || filterDates.end) && (
+                                            <button
+                                                onClick={() => setFilterDates({ start: '', end: '' })}
+                                                className="p-1 hover:text-danger text-white-dark transition-colors"
+                                                title="Clear Filters"
+                                            >
+                                                <IconTrashLines className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={handleExportExcel}
+                                        className="btn btn-outline-success rounded-xl px-5 font-bold uppercase text-[10px] tracking-widest h-10"
+                                        disabled={expenseHistory.diesel.length === 0 && expenseHistory.maintenance.length === 0}
+                                    >
+                                        <IconDownload className="w-4 h-4 mr-2" /> Export XL
+                                    </button>
+                                    <button onClick={() => handleEdit(detailsView)} className="btn btn-info rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest h-10">
+                                        <IconEdit className="w-4 h-4 mr-2" /> Edit Profile
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                {/* Profile Stats */}
+                                <div className="lg:col-span-1 space-y-6">
+                                    <div className="bg-white-light dark:bg-[#1b2a47] p-5 rounded-2xl border border-gray-100 dark:border-white-light/5">
+                                        <h6 className="text-xs font-black uppercase text-white-dark tracking-widest mb-4">Core Info</h6>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Driver</span>
+                                                <span className="text-sm font-black">{detailsView.driverName || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Owner</span>
+                                                <span className="text-sm font-black">{detailsView.ownerName || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Condition</span>
+                                                <span className="text-sm font-black">{detailsView.currentCondition || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Purchase Date</span>
+                                                <span className="text-sm font-black">{detailsView.purchaseDate ? new Date(detailsView.purchaseDate).toLocaleDateString() : 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {(() => {
+                                        const plateNum = detailsView.vehicleNumber || detailsView.registrationNumber;
+                                        const displayName = detailsView.category ? `${detailsView.category} (${plateNum})` : (plateNum ? `${detailsView.name} (${plateNum})` : detailsView.name);
+                                        const vehicleStats = stats.find(s => s._id === displayName);
+
+                                        return (
+                                            <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10">
+                                                <h6 className="text-xs font-black uppercase text-primary tracking-widest mb-4">Cost Analytics</h6>
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <span className="font-bold text-white-dark">Diesel</span>
+                                                        <span className="font-black text-black dark:text-white">₹ {(vehicleStats?.fuelCost || 0).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <span className="font-bold text-white-dark">Maintenance</span>
+                                                        <span className="font-black text-black dark:text-white">₹ {(vehicleStats?.maintenanceCost || 0).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="pt-3 border-t border-primary/20 flex justify-between items-center">
+                                                        <span className="text-xs font-black uppercase text-primary">Total Exp.</span>
+                                                        <span className="text-lg font-black text-primary">₹ {(vehicleStats?.totalCost || 0).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+
+                                {/* Detailed History Tabs */}
+                                <div className="lg:col-span-3">
+                                    <div className="panel bg-[#f6f8fa] dark:bg-black p-4 rounded-2xl">
+                                        <div className="flex items-center gap-4 mb-6 border-b border-gray-200 dark:border-white-light/10 pb-2">
+                                            <h6 className="text-xs font-black uppercase tracking-[0.2em] text-primary">Expense Tracks</h6>
+                                        </div>
+
+                                        <div className="space-y-8">
+                                            {/* Diesel Section */}
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-4 text-xs font-black uppercase text-[#e91e63] tracking-widest">
+                                                    <span>⛽ Diesel History</span>
+                                                </div>
+                                                <div className="table-responsive">
+                                                    <table className="table-hover table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Date</th>
+                                                                <th>Reading</th>
+                                                                <th>Qty (L)</th>
+                                                                <th>Rate</th>
+                                                                <th className="text-right">Amount</th>
+                                                                <th>Mode</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {expenseHistory.diesel.length > 0 ? expenseHistory.diesel.slice(0, 5).map((e: any, idx: number) => (
+                                                                <tr key={idx}>
+                                                                    <td className="font-bold">{new Date(e.date).toLocaleDateString()}</td>
+                                                                    <td className="font-black text-info">{e.meterReading || '-'}</td>
+                                                                    <td className="font-bold">{e.quantity}</td>
+                                                                    <td>{e.rate}</td>
+                                                                    <td className="text-right font-black text-danger">₹ {e.amount.toLocaleString()}</td>
+                                                                    <td><span className="badge badge-outline-dark uppercase text-[9px]">{e.paymentMode}</span></td>
+                                                                </tr>
+                                                            )) : (
+                                                                <tr><td colSpan={6} className="text-center py-4 italic opacity-50">No diesel records found</td></tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* Maintenance Section */}
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-4 text-xs font-black uppercase text-[#00bcd4] tracking-widest">
+                                                    <span>🛠️ Service & Maintenance</span>
+                                                </div>
+                                                <div className="table-responsive">
+                                                    <table className="table-hover table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Date</th>
+                                                                <th>Type</th>
+                                                                <th>Vendor / Desc</th>
+                                                                <th className="text-right">Parts</th>
+                                                                <th className="text-right">Labour</th>
+                                                                <th className="text-right font-black">Total</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {expenseHistory.maintenance.length > 0 ? expenseHistory.maintenance.slice(0, 5).map((e: any, idx: number) => (
+                                                                <tr key={idx}>
+                                                                    <td className="font-bold">{new Date(e.date).toLocaleDateString()}</td>
+                                                                    <td><span className="text-[10px] font-black uppercase px-2 py-0.5 bg-info/10 text-info rounded">{e.maintenanceType || 'Regular'}</span></td>
+                                                                    <td className="max-w-[150px] truncate font-bold">{e.vendorName || e.description || '-'}</td>
+                                                                    <td className="text-right">{(e.sparePartsCost || 0).toLocaleString()}</td>
+                                                                    <td className="text-right">{(e.labourCharge || 0).toLocaleString()}</td>
+                                                                    <td className="text-right font-black text-danger">₹ {e.amount.toLocaleString()}</td>
+                                                                </tr>
+                                                            )) : (
+                                                                <tr><td colSpan={6} className="text-center py-4 italic opacity-50">No maintenance records found</td></tr>
+                                                            )}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             ) : (
                 <>
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -458,6 +747,9 @@ const VehicleDetails = () => {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
+                                                <button onClick={() => handleViewDetails(asset)} className="p-2 bg-white/50 dark:bg-white/10 rounded-lg hover:text-primary transition-colors shadow-sm" title="View Details">
+                                                    <IconEye className="w-4 h-4" />
+                                                </button>
                                                 <button onClick={() => handleEdit(asset)} className="p-2 bg-white/50 dark:bg-white/10 rounded-lg hover:text-info transition-colors shadow-sm">
                                                     <IconEdit className="w-4 h-4" />
                                                 </button>
