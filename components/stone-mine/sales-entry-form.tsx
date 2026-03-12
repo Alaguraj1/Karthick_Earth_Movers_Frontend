@@ -11,6 +11,9 @@ import IconEye from '@/components/icon/icon-eye';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
+import IconDownload from '@/components/icon/icon-download';
+import IconFileUpload from '@/components/icon/icon-file-upload';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -21,6 +24,8 @@ const SalesEntryForm = () => {
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         invoiceDate: new Date().toISOString().split('T')[0],
         customer: '',
@@ -245,6 +250,79 @@ const SalesEntryForm = () => {
         }
     };
 
+    const downloadTemplate = () => {
+        const template = [
+            {
+                'Invoice Date': new Date().toISOString().split('T')[0],
+                'Customer Name': 'Example Customer',
+                'Item': '20mm Blue Metal',
+                'Quantity': 10,
+                'Unit': 'Tons',
+                'Rate': 550,
+                'Payment Type': 'Cash',
+                'GST Percentage': 5,
+                'From Location': 'Quarry',
+                'To Location': 'Site A',
+                'Notes': 'Bulk load'
+            }
+        ];
+        const ws = XLSX.utils.json_to_sheet(template);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'SalesTemplate');
+        XLSX.writeFile(wb, 'Sales_Bulk_Upload_Template.xlsx');
+    };
+
+    const handleFileUpload = async (e: any) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            try {
+                setIsUploading(true);
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
+
+                if (data.length === 0) {
+                    showToast('The file is empty', 'error');
+                    return;
+                }
+
+                // Map Excel headers to API keys
+                const salesData = data.map((row: any) => ({
+                    invoiceDate: row['Invoice Date'],
+                    customerName: row['Customer Name'],
+                    item: row['Item'],
+                    quantity: row['Quantity'],
+                    unit: row['Unit'],
+                    rate: row['Rate'],
+                    paymentType: row['Payment Type'],
+                    gstPercentage: row['GST Percentage'],
+                    fromLocation: row['From Location'],
+                    toLocation: row['To Location'],
+                    notes: row['Notes']
+                }));
+
+                const res = await axios.post(`${API}/sales/bulk`, { salesData });
+                if (res.data.success) {
+                    showToast(`✅ ${res.data.message}`, 'success');
+                    fetchSales();
+                }
+            } catch (error: any) {
+                console.error(error);
+                const msg = error.response?.data?.errors ? error.response.data.errors.join('\n') : (error.response?.data?.message || 'Error uploading file');
+                showToast(msg, 'error');
+            } finally {
+                setIsUploading(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
     return (
         <div className="space-y-6">
             {/* Sale Entry Form — shown only when creating/editing */}
@@ -447,10 +525,21 @@ const SalesEntryForm = () => {
                     <div className="flex flex-col gap-5 mb-5">
                         <div className="flex items-center justify-between flex-wrap gap-4">
                             <h5 className="text-lg font-bold dark:text-white-light whitespace-nowrap">விற்பனை பட்டியல் (Sales List)</h5>
-                            <button className="btn btn-primary shadow-lg shadow-primary/20 whitespace-nowrap" onClick={handleCreateNew}>
-                                <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
-                                Create New Sale
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
+                                <button className="btn btn-outline-primary whitespace-nowrap" onClick={downloadTemplate}>
+                                    <IconDownload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
+                                    Template
+                                </button>
+                                <button className="btn btn-info whitespace-nowrap" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                                    <IconFileUpload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
+                                    {isUploading ? 'Uploading...' : 'Bulk Upload'}
+                                </button>
+                                <button className="btn btn-primary shadow-lg shadow-primary/20 whitespace-nowrap" onClick={handleCreateNew}>
+                                    <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
+                                    Create New Sale
+                                </button>
+                            </div>
                         </div>
 
                         {/* Filter Panel */}
