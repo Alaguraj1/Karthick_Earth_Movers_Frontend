@@ -35,6 +35,8 @@ const SalesEntryForm = () => {
         notes: '',
         fromLocation: 'Quarry',
         toLocation: '',
+        receiptNumber: '',
+        receiptFile: '',
     });
 
     const [items, setItems] = useState<any[]>([
@@ -46,6 +48,8 @@ const SalesEntryForm = () => {
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
     const [filterDelivery, setFilterDelivery] = useState('');
+    const [filterReceipt, setFilterReceipt] = useState('');
+    const [filterGst, setFilterGst] = useState('');
 
     const fetchSales = async () => {
         try {
@@ -138,6 +142,8 @@ const SalesEntryForm = () => {
             notes: '',
             fromLocation: 'Quarry',
             toLocation: '',
+            receiptNumber: '',
+            receiptFile: '',
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]);
     };
@@ -153,6 +159,8 @@ const SalesEntryForm = () => {
             notes: '',
             fromLocation: 'Quarry',
             toLocation: '',
+            receiptNumber: '',
+            receiptFile: '',
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]);
         setShowForm(true);
@@ -173,6 +181,8 @@ const SalesEntryForm = () => {
                     notes: sale.notes || '',
                     fromLocation: sale.fromLocation || 'Quarry',
                     toLocation: sale.toLocation || '',
+                    receiptNumber: sale.receiptNumber || '',
+                    receiptFile: sale.receiptFile || '',
                 });
                 setItems(
                     sale.items?.map((item: any) => ({
@@ -253,6 +263,8 @@ const SalesEntryForm = () => {
     const downloadTemplate = () => {
         const template = [
             {
+                'Receipt Number': 'REC-12345',
+                'Receipt File': '',
                 'Invoice Date': new Date().toISOString().split('T')[0],
                 'Customer Name': 'Example Customer',
                 'Item': '20mm Blue Metal',
@@ -303,7 +315,9 @@ const SalesEntryForm = () => {
                     gstPercentage: row['GST Percentage'],
                     fromLocation: row['From Location'],
                     toLocation: row['To Location'],
-                    notes: row['Notes']
+                    notes: row['Notes'],
+                    receiptNumber: row['Receipt Number'],
+                    receiptFile: row['Receipt File']
                 }));
 
                 const res = await axios.post(`${API}/sales/bulk`, { salesData });
@@ -321,6 +335,27 @@ const SalesEntryForm = () => {
             }
         };
         reader.readAsBinaryString(file);
+    };
+
+    const handleReceiptUpload = async (e: any) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formDataFile = new FormData();
+        formDataFile.append('bill', file);
+
+        try {
+            const { data } = await axios.post(`${API}/upload`, formDataFile, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            if (data.success) {
+                setFormData((prev) => ({ ...prev, receiptFile: data.filePath }));
+                showToast('Receipt uploaded successfully!', 'success');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Error uploading receipt', 'error');
+        }
     };
 
     return (
@@ -376,6 +411,21 @@ const SalesEntryForm = () => {
                                         <input type="date" name="dueDate" className="form-input border-warning" value={formData.dueDate} onChange={handleChange} />
                                     </div>
                                 )}
+                                <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Receipt Number</label>
+                                    <input type="text" name="receiptNumber" className="form-input" placeholder="Enter receipt #" value={formData.receiptNumber} onChange={handleChange} />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Receipt Upload</label>
+                                    <div className="flex items-center gap-2">
+                                        <input type="file" className="form-input p-1 h-10 flex-1" accept=".jpg,.jpeg,.png,.pdf" onChange={handleReceiptUpload} />
+                                        {formData.receiptFile && (
+                                            <a href={`${(API || '').replace('/api', '')}${formData.receiptFile}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-info p-2" title="View Uploaded File">
+                                                <IconEye className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -529,7 +579,7 @@ const SalesEntryForm = () => {
                                 <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
                                 <button className="btn btn-outline-primary whitespace-nowrap" onClick={downloadTemplate}>
                                     <IconDownload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
-                                    Template
+                                    Download Template
                                 </button>
                                 <button className="btn btn-info whitespace-nowrap" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
                                     <IconFileUpload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
@@ -582,6 +632,24 @@ const SalesEntryForm = () => {
                                     <option value="completed">✅ Completed</option>
                                 </select>
                             </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Receipt #</label>
+                                <input
+                                    type="text"
+                                    placeholder="Receipt #..."
+                                    className="form-input h-10"
+                                    value={filterReceipt}
+                                    onChange={(e) => setFilterReceipt(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Billing Type</label>
+                                <select className="form-select h-10" value={filterGst} onChange={(e) => setFilterGst(e.target.value)}>
+                                    <option value="">All</option>
+                                    <option value="gst">📄 GST Account</option>
+                                    <option value="normal">📄 Normal (0%)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div className="table-responsive">
@@ -598,6 +666,7 @@ const SalesEntryForm = () => {
                                     <th className="!text-right">Total</th>
                                     <th className="!text-center">Payment</th>
                                     <th className="!text-center">Delivery</th>
+                                    <th className="!text-center">Receipt</th>
                                     <th className="!text-center">Actions</th>
                                 </tr>
                             </thead>
@@ -617,7 +686,14 @@ const SalesEntryForm = () => {
 
                                         const matchesDelivery = !filterDelivery || (s.deliveryStatus || 'open') === filterDelivery;
 
-                                        return matchesSearch && matchesCustomer && matchesStart && matchesEnd && matchesDelivery;
+                                        const matchesReceipt = !filterReceipt ||
+                                            s.receiptNumber?.toLowerCase().includes(filterReceipt.toLowerCase());
+
+                                        const matchesGst = !filterGst || (
+                                            filterGst === 'gst' ? (s.gstPercentage > 0) : (s.gstPercentage === 0 || !s.gstPercentage)
+                                        );
+
+                                        return matchesSearch && matchesCustomer && matchesStart && matchesEnd && matchesDelivery && matchesReceipt && matchesGst;
                                     });
 
                                     if (filtered.length === 0) {
@@ -673,6 +749,21 @@ const SalesEntryForm = () => {
                                                 </button>
                                             </td>
                                             <td className="!text-center">
+                                                {sale.receiptNumber && <div className="text-[10px] font-bold text-white-dark mb-1">{sale.receiptNumber}</div>}
+                                                {sale.receiptFile ? (
+                                                    <a
+                                                        href={`${(API || '').replace('/api', '')}${sale.receiptFile}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="badge bg-info/10 text-info hover:bg-info hover:text-white transition-colors"
+                                                    >
+                                                        View File
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-white-dark/30">—</span>
+                                                )}
+                                            </td>
+                                            <td className="!text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button
                                                         className="btn btn-sm btn-outline-primary"
@@ -704,7 +795,8 @@ const SalesEntryForm = () => {
                         </table>
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* Delete Confirmation Modal */}
             <DeleteConfirmModal
@@ -714,7 +806,7 @@ const SalesEntryForm = () => {
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteId(null)}
             />
-        </div>
+        </div >
     );
 };
 
