@@ -18,6 +18,7 @@ const LabourListPage = () => {
 
     const [data, setData] = useState<any[]>([]);
     const [contractors, setContractors] = useState<any[]>([]);
+    const [workTypes, setWorkTypes] = useState<any[]>([]);
     const [selectedContractor, setSelectedContractor] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [formView, setFormView] = useState(false);
@@ -27,7 +28,7 @@ const LabourListPage = () => {
         name: '',
         mobile: '',
         address: '',
-        workType: 'Helper',
+        workType: '',
         wage: '',
         wageType: 'Daily',
         labourType: 'Direct',
@@ -37,17 +38,17 @@ const LabourListPage = () => {
         status: 'active'
     });
 
-    const workTypes = ['Helper', 'Machine Operator', 'Driver', 'Supervisor', 'Cleaner', 'Security', 'Office Staff'];
-
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [labourRes, contractorRes] = await Promise.all([
+            const [labourRes, contractorRes, workTypesRes] = await Promise.all([
                 axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/labour`)
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/labour`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/work-types`)
             ]);
             if (labourRes.data.success) setData(labourRes.data.data);
             if (contractorRes.data.success) setContractors(contractorRes.data.data);
+            if (workTypesRes.data.success) setWorkTypes(workTypesRes.data.data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -68,7 +69,7 @@ const LabourListPage = () => {
                 if (value === 'Direct') {
                     updated.contractor = '';
                     updated.wage = '';
-                    updated.workType = 'Helper';
+                    updated.workType = workTypes[0]?.name || '';
                 }
             }
 
@@ -138,7 +139,7 @@ const LabourListPage = () => {
             name: '',
             mobile: '',
             address: '',
-            workType: 'Helper',
+            workType: workTypes[0]?.name || '',
             wage: '',
             wageType: 'Daily',
             labourType: activeTab === 'direct' ? 'Direct' : 'Vendor',
@@ -161,7 +162,7 @@ const LabourListPage = () => {
             name: item.name,
             mobile: item.mobile || '',
             address: item.address || '',
-            workType: item.workType || 'Helper',
+            workType: item.workType || '',
             wage: item.wage || '',
             wageType: item.wageType || 'Daily',
             labourType: item.labourType || 'Direct',
@@ -293,7 +294,7 @@ const LabourListPage = () => {
                         <div className="space-y-5 bg-info/5 p-6 rounded-2xl border border-info/10">
                             <div className="flex items-center gap-2 text-info font-bold uppercase text-xs tracking-wider border-b border-info/10 pb-2 mb-4">
                                 <IconPlus className="w-4 h-4" />
-                                2. Personal & Work Information (தனிப்பட்ட விவரங்கள்)
+                                2. Personal &amp; Work Information (தனிப்பட்ட விவரங்கள்)
                             </div>
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                                 <div className="md:col-span-2 lg:col-span-1">
@@ -321,7 +322,10 @@ const LabourListPage = () => {
                                         onChange={handleChange}
                                         disabled={formData.labourType === 'Vendor'}
                                     >
-                                        {workTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                                        <option value="">Select Work Type</option>
+                                        {workTypes.map((type: any) => (
+                                            <option key={type._id} value={type.name}>{type.name}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div>

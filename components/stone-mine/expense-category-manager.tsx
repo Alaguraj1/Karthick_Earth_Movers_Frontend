@@ -28,7 +28,10 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const [loading, setLoading] = useState(true);
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [labours, setLabours] = useState<any[]>([]);
+    const [contractors, setContractors] = useState<any[]>([]);
     const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
+    const [workTypes, setWorkTypes] = useState<any[]>([]);
+    const [selectedContractorSummary, setSelectedContractorSummary] = useState<any>(null);
 
     // View State
     const [formView, setFormView] = useState(false);
@@ -143,6 +146,24 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         }
     };
 
+    const fetchContractors = async () => {
+        try {
+            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/labour`);
+            if (data.success) setContractors(data.data);
+        } catch (error) {
+            console.error('Error fetching contractors:', error);
+        }
+    };
+
+    const fetchWorkTypes = async () => {
+        try {
+            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/work-types`);
+            if (data.success) setWorkTypes(data.data);
+        } catch (error) {
+            console.error('Error fetching work types:', error);
+        }
+    };
+
     const fetchExpenseCategories = async () => {
         try {
             const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/expense-categories`);
@@ -153,7 +174,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     };
 
     useEffect(() => {
-        if (category === 'Labour Wages' && formData.labourName && labours.length > 0) {
+        if (category === 'Labour Wages' && formData.labourName && (labours.length > 0 || contractors.length > 0)) {
             const fetchLabourSummary = async () => {
                 try {
                     const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/wages-summary`, {
@@ -161,39 +182,65 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     });
 
                     if (data.success) {
-                        const summary = data.data.find((s: any) => s.name === formData.labourName);
+                        let summary;
+                        if (formData.labourType === 'Vendor') {
+                            summary = data.data.find((s: any) => s.isVendorGroup && s.contractorId === formData.labourId);
+                            setSelectedContractorSummary(summary);
+                        } else {
+                            summary = data.data.find((s: any) => !s.isVendorGroup && s.name === formData.labourName);
+                            setSelectedContractorSummary(null);
+                        }
+
                         if (summary) {
                             if (summary.attendance.total === 0 && summary.attendance.totalDaysAll > 0) {
-                                showToast(`Salary for ${formData.labourName} is already fully paid for this month!`, 'error');
+                                showToast(`${formData.labourType === 'Vendor' ? 'Wages for Contractor' : 'Salary for'} ${formData.labourName} is already fully paid for this month!`, 'error');
                                 setFormData(prev => ({ ...prev, labourName: '', labourId: '', quantity: '0', amount: '0', netPay: '0', otAmount: '0', perDaySalary: '0' }));
+                                setSelectedContractorSummary(null);
                                 return;
                             } else if (summary.attendance.total === 0 && summary.attendance.totalDaysAll === 0) {
                                 showToast(`No attendance records found for ${formData.labourName} in this month.`, 'warning');
                                 setFormData(prev => ({ ...prev, quantity: '0', amount: '0', netPay: '0', otAmount: '0', perDaySalary: '0' }));
+                                setSelectedContractorSummary(null);
                                 return;
                             }
 
-                            setFormData(prev => ({
-                                ...prev,
-                                labourId: summary.labourId,
-                                quantity: summary.attendance.total.toString(),
-                                perDaySalary: summary.dailyRate.toString(),
-                                rate: summary.dailyWage.toString(),
-                                amount: (parseFloat(summary.totalWages) + parseFloat(summary.otAmount || '0')).toFixed(2),
-                                advanceDeduction: summary.totalAdvance.toString(),
-                                netPay: summary.netPayable.toString(),
-                                otAmount: (summary.otAmount || 0).toString()
-                            }));
+                            if (formData.labourType === 'Vendor') {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    quantity: summary.attendance.total.toString(),
+                                    perDaySalary: '',
+                                    rate: '', // No fixed single rate, it's aggregated
+                                    amount: (parseFloat(summary.totalWages) + parseFloat(summary.otAmount || '0')).toFixed(2),
+                                    advanceDeduction: summary.totalAdvance.toString(),
+                                    netPay: summary.netPayable.toString(),
+                                    otAmount: (summary.otAmount || 0).toString()
+                                }));
+                            } else {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    labourId: summary.labourId,
+                                    quantity: summary.attendance.total.toString(),
+                                    perDaySalary: summary.dailyRate.toString(),
+                                    rate: summary.dailyWage.toString(),
+                                    amount: (parseFloat(summary.totalWages) + parseFloat(summary.otAmount || '0')).toFixed(2),
+                                    advanceDeduction: summary.totalAdvance.toString(),
+                                    netPay: summary.netPayable.toString(),
+                                    otAmount: (summary.otAmount || 0).toString()
+                                }));
+                            }
                         }
+                    } else {
+                        setSelectedContractorSummary(null);
                     }
                 } catch (error) {
                     console.error('Error fetching labour summary:', error);
+                    setSelectedContractorSummary(null);
                 }
             };
             fetchLabourSummary();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData.labourName, lookupMonth, lookupYear, category, labours]);
+    }, [formData.labourName, lookupMonth, lookupYear, category, labours, contractors, formData.labourType]);
 
     useEffect(() => {
         fetchExpenses();
@@ -203,7 +250,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     useEffect(() => {
         fetchVehicles();
         fetchLabours();
+        fetchContractors();
         fetchExpenseCategories();
+        fetchWorkTypes();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [category]);
 
@@ -313,26 +362,47 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     updated.perDaySalary = '';
                     updated.advanceDeduction = '';
                     updated.otAmount = '';
+                    if (name === 'labourType') {
+                        updated.workType = ''; // Reset to "All Work Types" value
+                    }
+                    setSelectedContractorSummary(null); // Reset summary on type change
                 }
 
                 if (name === 'labourName') {
                     // Note: In Labour Wages, name='labourName' is triggered by the select. 
                     // We'll pass the ID in value for better reliability.
-                    const worker = labours.find((l: any) => l._id === value);
-                    if (worker) {
-                        updated.labourId = worker._id;
-                        updated.labourName = worker.name;
-                        updated.workType = worker.workType || '';
-                        updated.wageType = worker.wageType === 'Daily' ? 'Daily Wage' : (worker.wageType === 'Monthly' ? 'Monthly Salary' : '');
-                        updated.rate = (worker.wage || '').toString();
+                    if (updated.labourType === 'Vendor') {
+                        const contractor = contractors.find((c: any) => c._id === value);
+                        if (contractor) {
+                            updated.labourId = contractor._id;
+                            updated.labourName = contractor.name || contractor.companyName;
+                            updated.workType = ''; // Represents "All Work Types"
+                            updated.wageType = 'Contract Payment';
+                            updated.rate = '';
+                        }
+                    } else {
+                        const worker = labours.find((l: any) => l._id === value);
+                        if (worker) {
+                            updated.labourId = worker._id;
+                            updated.labourName = worker.name;
+                            updated.workType = worker.workType || '';
+                            updated.wageType = worker.wageType === 'Daily' ? 'Daily Wage' : (worker.wageType === 'Monthly' ? 'Monthly Salary' : '');
+                            updated.rate = (worker.wage || '').toString();
+                        }
                     }
                 }
 
                 // Exact Days in the selected Attendance Month
                 const daysInMonth = new Date(lookupYear, lookupMonth, 0).getDate();
-                const qty = parseFloat(name === 'quantity' ? value : updated.quantity || prev.quantity) || 0;
-                const rate = parseFloat(name === 'rate' ? value : updated.rate || prev.rate) || 0;
-                const advance = parseFloat(name === 'advanceDeduction' ? value : updated.advanceDeduction || prev.advanceDeduction) || 0;
+                const qtyVal = name === 'quantity' ? value : updated.quantity;
+                const rateVal = name === 'rate' ? value : updated.rate;
+                const advanceVal = name === 'advanceDeduction' ? value : updated.advanceDeduction;
+                const otVal = name === 'otAmount' ? value : updated.otAmount;
+
+                const qty = parseFloat(qtyVal) || 0;
+                const rate = parseFloat(rateVal) || 0;
+                const advance = parseFloat(advanceVal) || 0;
+                const ot = parseFloat(otVal) || 0;
 
                 let total = 0;
                 if (updated.wageType === 'Monthly Salary') {
@@ -340,12 +410,17 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     const daily = rate / (daysInMonth || 30);
                     updated.perDaySalary = daily.toFixed(2);
                     total = qty * daily;
+                } else if (updated.wageType === 'Contract Payment') {
+                    updated.perDaySalary = '';
+                    // For contractor, amount is often pre-fetched from summary
+                    const currentAmount = parseFloat(name === 'amount' ? value : updated.amount) || 0;
+                    total = currentAmount - ot;
+                    if (total < 0) total = 0;
                 } else {
                     updated.perDaySalary = rate.toString();
                     total = qty * rate;
                 }
 
-                const ot = parseFloat(updated.otAmount || prev.otAmount || '0') || 0;
                 updated.amount = (total + ot).toFixed(2);
                 updated.netPay = (total + ot - advance).toFixed(2);
             }
@@ -503,6 +578,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         setSelectedFile(null);
         setFormView(false);
         setEditMode(false);
+        setSelectedContractorSummary(null); // Reset contractor summary
     };
 
     const openEditModal = (expense: any) => {
@@ -1306,17 +1382,13 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">Work Type (வேலை வகை)</label>
                                             <select name="workType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.workType} onChange={handleChange}>
                                                 <option value="">All Work Types</option>
-                                                <option value="Machine Operator">Machine Operator</option>
-                                                <option value="Helper">Helper</option>
-                                                <option value="Driver">Driver</option>
-                                                <option value="Supervisor">Supervisor</option>
-                                                <option value="Cleaner">Cleaner</option>
-                                                <option value="Office Staff">Office Staff</option>
-                                                <option value="Quarry loading">Quarry loading</option>
-                                                <option value="Drilling">Drilling</option>
-                                                <option value="Crusher labour">Crusher labour</option>
-                                                <option value="Blasting support">Blasting support</option>
-                                                <option value="Transporter">Transporter</option>
+                                                {workTypes.length > 0 ? (
+                                                    workTypes.map((type: any) => <option key={type._id} value={type.name}>{type.name}</option>)
+                                                ) : (
+                                                    ['Machine Operator', 'Helper', 'Driver', 'Supervisor', 'Cleaner', 'Office Staff', 'Quarry loading', 'Drilling', 'Crusher labour', 'Blasting support', 'Transporter'].map(t => (
+                                                        <option key={t} value={t}>{t}</option>
+                                                    ))
+                                                )}
                                             </select>
                                         </div>
                                         <div>
@@ -1327,16 +1399,26 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 <option value="Vendor">கான்ட்ராக்டர் (Contractor)</option>
                                             </select>
                                         </div>
-                                        <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Name (தொழிலாளர் பெயர்)</label>
-                                            <select name="labourName" className="form-select border-2 font-bold rounded-xl h-12" value={formData.labourId} onChange={handleChange} required>
-                                                <option value="">Select Labour</option>
-                                                {labours
-                                                    .filter(l => (!formData.workType || l.workType === formData.workType) &&
-                                                        (!formData.labourType || l.labourType === formData.labourType))
-                                                    .map((l: any) => <option key={l._id} value={l._id}>{l.name}</option>)}
-                                            </select>
-                                        </div>
+                                        {formData.labourType === 'Vendor' ? (
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Contractor Name (கான்ட்ராக்டர் பெயர்)</label>
+                                                <select name="labourName" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.labourId} onChange={handleChange} required>
+                                                    <option value="">Select Contractor</option>
+                                                    {contractors.map((c: any) => <option key={c._id} value={c._id}>{c.name || c.companyName}</option>)}
+                                                </select>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Name (தொழிலாளர் பெயர்)</label>
+                                                <select name="labourName" className="form-select border-2 font-bold rounded-xl h-12" value={formData.labourId} onChange={handleChange} required>
+                                                    <option value="">Select Labour</option>
+                                                    {labours
+                                                        .filter(l => (!formData.workType || l.workType === formData.workType) &&
+                                                            l.labourType !== 'Vendor') // Direct only or specified
+                                                        .map((l: any) => <option key={l._id} value={l._id}>{l.name}</option>)}
+                                                </select>
+                                            </div>
+                                        )}
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Wage Type</label>
                                             <select name="wageType" className="form-select border-2 font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10" value={formData.wageType} onChange={handleChange} disabled>
@@ -1445,6 +1527,67 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 <textarea name="description" className="form-textarea border-2 font-bold rounded-xl  min-h-[100px]" value={formData.description} onChange={handleChange} placeholder="Enter additional details..."></textarea>
                             </div>
                         </div>
+
+                        {formData.labourType === 'Vendor' && selectedContractorSummary && selectedContractorSummary.workers && selectedContractorSummary.workers.length > 0 && (
+                            <div className="mt-8 mb-4 border-t-2 border-primary/10 pt-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h6 className="text-primary font-black uppercase text-xs flex items-center tracking-widest bg-primary/5 px-4 py-2 rounded-lg border border-primary/10">
+                                        <span className="w-2 h-2 rounded-full bg-primary mr-2 animate-pulse"></span>
+                                        Detailed Labour Report (தொழிலாளர் விரிவான அறிக்கை)
+                                    </h6>
+                                    <div className="badge badge-outline-primary font-black bg-primary/5">
+                                        {selectedContractorSummary.workers.length} Members
+                                    </div>
+                                </div>
+                                <div className="table-responsive border-2 border-primary/20 rounded-2xl overflow-hidden bg-white/50 backdrop-blur-sm shadow-xl">
+                                    <table className="table-hover w-full text-xs font-bold uppercase">
+                                        <thead>
+                                            <tr className="bg-primary text-white border-b-0">
+                                                <th className="py-4 px-4 text-left font-black tracking-wider">Labour Name</th>
+                                                <th className="py-4 text-left font-black tracking-wider">Work & Wage</th>
+                                                <th className="py-4 text-center font-black tracking-wider">Days</th>
+                                                <th className="py-4 text-center font-black tracking-wider">OT (Hrs)</th>
+                                                <th className="py-4 text-right font-black tracking-wider">Wage</th>
+                                                <th className="py-4 text-right font-black tracking-wider">Advance</th>
+                                                <th className="py-4 text-right pr-4 font-black tracking-wider">Net Payable</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-primary/10">
+                                            {selectedContractorSummary.workers.map((worker: any, idx: number) => (
+                                                <tr key={idx} className="hover:bg-primary/5 transition-colors group">
+                                                    <td className="py-3 px-4 font-black group-hover:text-primary transition-colors">{worker.name}</td>
+                                                    <td className="py-3 text-white-dark font-bold">
+                                                        <div className="flex flex-col">
+                                                            <span>{worker.workType}</span>
+                                                            <span className="text-[9px] text-info/70">{worker.wageType}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 text-center">
+                                                        <span className="px-2 py-1 bg-success/10 text-success rounded-md border border-success/20">
+                                                            {worker.attendance.total}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 text-center text-info">{worker.attendance.otHours || 0}</td>
+                                                    <td className="py-3 text-right text-white-dark font-mono">₹{parseFloat(worker.totalWages).toLocaleString()}</td>
+                                                    <td className="py-3 text-right text-danger/80 font-mono">₹{parseFloat(worker.totalAdvance).toLocaleString()}</td>
+                                                    <td className="py-3 text-right font-black text-primary pr-4 font-mono">₹{parseFloat(worker.netPayable).toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-primary/5 border-t-2 border-primary/20">
+                                                <td colSpan={2} className="py-4 px-4 font-black text-sm text-primary">GRAND TOTAL (மொத்தம்)</td>
+                                                <td className="py-4 text-center font-black text-sm">{selectedContractorSummary.attendance.total}</td>
+                                                <td className="py-4 text-center font-black text-sm">{selectedContractorSummary.attendance.otHours}</td>
+                                                <td className="py-4 text-right font-black text-sm">₹{parseFloat(selectedContractorSummary.totalWages).toLocaleString()}</td>
+                                                <td className="py-4 text-right font-black text-sm text-danger">₹{parseFloat(selectedContractorSummary.totalAdvance).toLocaleString()}</td>
+                                                <td className="py-4 text-right font-black text-lg text-primary bg-primary/10 pr-4 animate-pulse">₹{parseFloat(selectedContractorSummary.netPayable).toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Section 3: Payment and Attachment */}
                         <div className="space-y-5">
