@@ -85,11 +85,30 @@ const DriverPaymentManagement = () => {
         }
     };
 
-    const fetchTripsForDate = async (date: string) => {
+    // Fetch trips for a given date, filtering out trips that already have a payment.
+    // If editing, the current trip (currentEditTripId) is always shown in the list.
+    const fetchTripsForDate = async (date: string, currentEditTripId?: string) => {
         try {
-            const res = await axios.get(`${API}/trips?date=${date}`);
-            if (res.data.success) {
-                setTripsByDate(res.data.data);
+            const [tripsRes, paymentsRes] = await Promise.all([
+                axios.get(`${API}/trips?date=${date}`),
+                axios.get(`${API}/driver-payments`)
+            ]);
+
+            if (tripsRes.data.success) {
+                const allTrips = tripsRes.data.data;
+
+                // Collect all tripIds that already have a payment recorded
+                const paidTripIds: string[] = (paymentsRes.data.success ? paymentsRes.data.data : [])
+                    .filter((p: any) => p.tripId)
+                    .map((p: any) => p.tripId.toString());
+
+                // Filter: exclude already-paid trips, but always include the currently-being-edited trip
+                const availableTrips = allTrips.filter((t: any) => {
+                    if (currentEditTripId && t._id.toString() === currentEditTripId) return true;
+                    return !paidTripIds.includes(t._id.toString());
+                });
+
+                setTripsByDate(availableTrips);
             }
         } catch (error) {
             console.error('Error fetching trips:', error);
@@ -107,8 +126,8 @@ const DriverPaymentManagement = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
 
         if (name === 'date') {
-            fetchTripsForDate(value);
-            setFormData(prev => ({ ...prev, tripId: '', vehicleType: '', driverName: '' })); // Reset when date changes
+            fetchTripsForDate(value, editId || undefined);
+            setFormData(prev => ({ ...prev, date: value, tripId: '', vehicleType: '', driverName: '' }));
         }
 
         if (name === 'tripId') {
@@ -116,6 +135,7 @@ const DriverPaymentManagement = () => {
             if (selectedTrip) {
                 setFormData(prev => ({
                     ...prev,
+                    tripId: value,
                     vehicleType: selectedTrip.vehicleType || 'Lorry',
                     driverName: selectedTrip.driverName,
                     notes: `Trip: ${selectedTrip.fromLocation} to ${selectedTrip.toLocation} (${selectedTrip.vehicleNumber})`
@@ -157,7 +177,8 @@ const DriverPaymentManagement = () => {
         setEditId(payment._id);
         setShowForm(true);
         if (payment.date) {
-            fetchTripsForDate(payment.date.split('T')[0]);
+            // Pass the current trip ID so it always appears in the list when editing
+            fetchTripsForDate(payment.date.split('T')[0], payment.tripId || undefined);
         }
     };
 
@@ -218,7 +239,7 @@ const DriverPaymentManagement = () => {
                                             {t.vehicleNumber} | {t.fromLocation} → {t.toLocation}
                                         </option>
                                     ))}
-                                    {tripsByDate.length === 0 && <option disabled>No trips found on this date</option>}
+                                    {tripsByDate.length === 0 && <option disabled>No unpaid trips found on this date</option>}
                                 </select>
                             </div>
                         </div>
