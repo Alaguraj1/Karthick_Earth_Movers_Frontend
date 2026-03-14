@@ -47,6 +47,7 @@ const TripManagement = () => {
         stoneTypeId: '',
         customerId: '',
         saleId: '',
+        permitId: '',
         loadQuantity: '',
         loadUnit: 'Tons',
         notes: ''
@@ -62,11 +63,12 @@ const TripManagement = () => {
     const [customers, setCustomers] = useState<any[]>([]);
     const [stoneTypes, setStoneTypes] = useState<any[]>([]);
     const [vehicleCategories, setVehicleCategories] = useState<any[]>([]);
+    const [permits, setPermits] = useState<any[]>([]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [tripRes, vehicleRes, labourRes, customerRes, stoneRes, categoryRes, salesRes] = await Promise.all([
+            const [tripRes, vehicleRes, labourRes, customerRes, stoneRes, categoryRes, salesRes, permitRes] = await Promise.all([
                 axios.get(`${API}/trips`),
                 axios.get(`${API}/master/vehicles`),
                 axios.get(`${API}/labour`),
@@ -74,6 +76,7 @@ const TripManagement = () => {
                 axios.get(`${API}/master/stone-types`),
                 axios.get(`${API}/master/vehicle-categories`),
                 axios.get(`${API}/sales`),
+                axios.get(`${API}/permits`),
             ]);
 
             if (tripRes.data.success) setTrips(tripRes.data.data);
@@ -86,6 +89,7 @@ const TripManagement = () => {
             if (stoneRes.data.success) setStoneTypes(stoneRes.data.data);
             if (categoryRes.data.success) setVehicleCategories(categoryRes.data.data);
             if (salesRes && salesRes.data.success) setSales(salesRes.data.data);
+            if (permitRes.data.success) setPermits(permitRes.data.data);
         } catch (error) {
             console.error(error);
             showToast('Error fetching data', 'error');
@@ -251,6 +255,7 @@ const TripManagement = () => {
             stoneTypeId: trip.stoneTypeId?._id || trip.stoneTypeId || '',
             customerId: trip.customerId?._id || trip.customerId || '',
             saleId: trip.saleId?._id || trip.saleId || '',
+            permitId: trip.permitId?._id || trip.permitId || '',
             loadQuantity: trip.loadQuantity || '',
             loadUnit: trip.loadUnit || 'Tons',
             notes: trip.notes || ''
@@ -369,8 +374,8 @@ const TripManagement = () => {
                             </div>
                         </div>
 
-                        {/* Customer → Sale → Smart Fields */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Customer → Sale → Permit */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary">Customer (வாடிக்கையாளர்) *</label>
                                 <select name="customerId" className="form-select border-primary" value={formData.customerId} onChange={handleChange}>
@@ -406,6 +411,25 @@ const TripManagement = () => {
                                             </option>
                                         );
                                     })}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-warning">Link Transport Permit</label>
+                                <select
+                                    name="permitId"
+                                    className="form-select border-warning"
+                                    value={formData.permitId}
+                                    onChange={handleChange}
+                                    disabled={!formData.vehicleId}
+                                >
+                                    <option value="">-- No Permit --</option>
+                                    {permits
+                                        .filter(p => (p.vehicleId?._id || p.vehicleId) === formData.vehicleId && (p.status === 'Active' || p._id === formData.permitId))
+                                        .map((p: any) => (
+                                            <option key={p._id} value={p._id}>
+                                                {p.permitNumber} ({p.remainingTrips ?? (p.totalTripsAllowed - (p.usedTrips || 0))} trips left)
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
                         </div>

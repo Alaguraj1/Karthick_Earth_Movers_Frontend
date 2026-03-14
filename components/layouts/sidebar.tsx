@@ -271,6 +271,9 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/transport/driver-payments">Driver Payment</Link>
                                                 </li>
+                                                <li>
+                                                    <Link href="/transport/permits">Permit Management</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>
