@@ -35,6 +35,7 @@ const DriverPaymentManagement = () => {
         paymentType: 'Per Trip',
         amount: '',
         padiKasu: '',
+        tripCount: '1',
         paymentMode: 'Cash',
         notes: ''
     };
@@ -133,25 +134,63 @@ const DriverPaymentManagement = () => {
         if (name === 'tripId') {
             const selectedTrip = tripsByDate.find(t => t._id === value);
             if (selectedTrip) {
+                const isContract = selectedTrip.vehicleId?.ownershipType === 'Contract';
+                const contractorName = selectedTrip.vehicleId?.contractor?.name;
+                const vNum = selectedTrip.vehicleId?.vehicleNumber || selectedTrip.vehicleId?.registrationNumber || 'No Plate';
+
+                // Calculate how many trips this specific vehicle did on this day
+                const vehicleTripsCount = tripsByDate.filter(t =>
+                    (t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.vehicleId?._id) === (selectedTrip.vehicleId?.vehicleNumber || selectedTrip.vehicleId?.registrationNumber || selectedTrip.vehicleId?._id)
+                ).length;
+
                 setFormData(prev => ({
                     ...prev,
                     tripId: value,
                     vehicleType: selectedTrip.vehicleType || 'Lorry',
-                    driverName: selectedTrip.driverName,
-                    notes: `Trip: ${selectedTrip.fromLocation} to ${selectedTrip.toLocation} (${selectedTrip.vehicleNumber})`
+                    driverName: isContract && contractorName ? `[VENDOR] ${contractorName}` : selectedTrip.driverName,
+                    tripCount: vehicleTripsCount.toString(),
+                    notes: `Trip: ${selectedTrip.fromLocation} to ${selectedTrip.toLocation} (${vNum})${contractorName ? ` | Vendor: ${contractorName}` : ''}`
                 }));
             }
+        }
+    };
+
+    const resetForm = () => {
+        setFormData(initialForm);
+        setEditId(null);
+        setTripsByDate([]);
+        setShowForm(false);
+        fetchTripsForDate(initialForm.date);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+        try {
+            await axios.delete(`${API}/driver-payments/${deleteId}`);
+            showToast('Payment record deleted', 'success');
+            fetchData();
+        } catch (error) {
+            console.error(error);
+            showToast('Error deleting record', 'error');
+        } finally {
+            setDeleteId(null);
         }
     };
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         try {
+            const payload = {
+                ...formData,
+                amount: Number(formData.amount),
+                padiKasu: Number(formData.padiKasu || 0),
+                tripCount: Number(formData.tripCount || 1),
+            };
             if (editId) {
-                await axios.put(`${API}/driver-payments/${editId}`, formData);
+                await axios.put(`${API}/driver-payments/${editId}`, payload);
                 showToast('Payment updated successfully!', 'success');
             } else {
-                await axios.post(`${API}/driver-payments`, formData);
+                await axios.post(`${API}/driver-payments`, payload);
                 showToast('Payment recorded successfully!', 'success');
             }
             resetForm();
@@ -171,6 +210,7 @@ const DriverPaymentManagement = () => {
             paymentType: payment.paymentType,
             amount: payment.amount.toString(),
             padiKasu: payment.padiKasu.toString(),
+            tripCount: (payment.tripCount || 1).toString(),
             paymentMode: payment.paymentMode,
             notes: payment.notes || ''
         });
@@ -180,28 +220,6 @@ const DriverPaymentManagement = () => {
             // Pass the current trip ID so it always appears in the list when editing
             fetchTripsForDate(payment.date.split('T')[0], payment.tripId || undefined);
         }
-    };
-
-    const confirmDelete = async () => {
-        if (!deleteId) return;
-        try {
-            await axios.delete(`${API}/driver-payments/${deleteId}`);
-            showToast('Payment record deleted', 'success');
-            fetchData();
-        } catch (error) {
-            console.error(error);
-            showToast('Error deleting record', 'error');
-        } finally {
-            setDeleteId(null);
-        }
-    };
-
-    const resetForm = () => {
-        setFormData(initialForm);
-        setEditId(null);
-        setTripsByDate([]);
-        setShowForm(false);
-        fetchTripsForDate(initialForm.date);
     };
 
     return (
@@ -236,13 +254,37 @@ const DriverPaymentManagement = () => {
                                     <option value="">Choose Trip ID</option>
                                     {tripsByDate.map((t) => (
                                         <option key={t._id} value={t._id}>
-                                            {t.vehicleNumber} | {t.fromLocation} → {t.toLocation}
+                                            {t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || 'No Plate'} | {t.fromLocation} → {t.toLocation} | {t.vehicleId?.ownershipType === 'Contract' ? `(CONTRACT - ${t.vehicleId?.contractor?.name || 'Vendor'})` : '(OWN)'}
                                         </option>
                                     ))}
                                     {tripsByDate.length === 0 && <option disabled>No unpaid trips found on this date</option>}
                                 </select>
                             </div>
                         </div>
+
+                        {/* Trip Day Summary */}
+                        {tripsByDate.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2 bg-gray-50 dark:bg-white/5 p-2 rounded-lg border border-dashed border-white-dark/20 text-center">
+                                <div>
+                                    <p className="text-[10px] text-white-dark font-bold uppercase">Total Trips</p>
+                                    <p className="text-sm font-black text-primary">{tripsByDate.length}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-white-dark font-bold uppercase">Own / Contract</p>
+                                    <p className="text-sm font-black">
+                                        <span className="text-success">{tripsByDate.filter(t => t.vehicleId?.ownershipType === 'Own').length}</span>
+                                        <span className="text-white-dark mx-1">/</span>
+                                        <span className="text-warning">{tripsByDate.filter(t => t.vehicleId?.ownershipType === 'Contract').length}</span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-white-dark font-bold uppercase">Vehicles</p>
+                                    <p className="text-sm font-black text-info">
+                                        {new Set(tripsByDate.map(t => t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.vehicleId?._id)).size}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -288,11 +330,27 @@ const DriverPaymentManagement = () => {
                             </div>
                         </div>
                         {formData.tripId && (
-                            <div className="bg-primary/5 p-2 rounded border border-primary/20 -mt-2">
-                                <p className="text-[11px] text-primary font-bold flex items-center gap-1">
+                            <div className="bg-primary/5 p-3 rounded-lg border border-primary/20 -mt-2">
+                                <p className="text-[11px] text-primary font-bold flex items-center gap-1 mb-2">
                                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                    Vehicle Type and Driver Name automatically locked from Trip ID: {tripsByDate.find(t => t._id === formData.tripId)?.vehicleNumber}
+                                    Trip Linked: {tripsByDate.find(t => t._id === formData.tripId)?.vehicleId?.vehicleNumber || 'No Plate'}
                                 </p>
+                                <div className="flex items-center justify-between bg-white dark:bg-black/20 p-2 rounded border border-white-dark/10">
+                                    <span className="text-[10px] font-bold text-white-dark uppercase">Payment Target:</span>
+                                    {tripsByDate.find(t => t._id === formData.tripId)?.vehicleId?.ownershipType === 'Contract' ? (
+                                        <div className="flex flex-col items-end">
+                                            <span className="badge badge-outline-warning text-[10px] py-0">TRANSPORT VENDOR</span>
+                                            <span className="text-[11px] font-black text-warning uppercase mt-0.5">
+                                                {tripsByDate.find(t => t._id === formData.tripId)?.vehicleId?.contractor?.name || 'External Vendor'}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-end">
+                                            <span className="badge badge-outline-success text-[10px] py-0">OWN FLEET</span>
+                                            <span className="text-[11px] font-black text-success uppercase mt-0.5">Company Driver</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -316,20 +374,40 @@ const DriverPaymentManagement = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary font-black underline decoration-primary/20">Basic Amount / சம்பளம் (₹)</label>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary font-black underline decoration-primary/20">Basic Amount (₹)</label>
                                 <input type="number" name="amount" className="form-input border-primary text-primary font-bold text-lg" value={formData.amount} onChange={handleChange} required placeholder="0" />
                             </div>
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-warning font-black underline decoration-warning/20">Padi Kasu / படிக்காசு (₹)</label>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-warning font-black underline decoration-warning/20">Padi Kasu (₹)</label>
                                 <input type="number" name="padiKasu" className="form-input border-warning text-warning font-bold text-lg" value={formData.padiKasu} onChange={handleChange} placeholder="0" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-info font-black">No. of Trips</label>
+                                <div className="flex items-center gap-2">
+                                    <input type="number" name="tripCount" className="form-input border-info text-info font-black text-lg text-center" value={formData.tripCount} onChange={handleChange} required min="1" />
+                                    {formData.tripId && (
+                                        <div className="badge badge-outline-info whitespace-nowrap">
+                                            Auto: {tripsByDate.filter(t =>
+                                                (t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.vehicleId?._id) === (tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?.vehicleNumber || tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?.registrationNumber || tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?._id)
+                                            ).length}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
                         <div className="bg-dark/5 p-3 rounded-xl border border-dashed border-dark/20 flex items-center justify-between">
-                            <span className="text-white-dark font-bold uppercase text-xs">Total Payable Amount (சம்பளம் + படி):</span>
-                            <span className="text-2xl font-black text-black dark:text-white-light font-mono">₹{(Number(formData.amount || 0) + Number(formData.padiKasu || 0)).toLocaleString()}</span>
+                            <div className="flex flex-col">
+                                <span className="text-white-dark font-bold uppercase text-xs tracking-wider">Total Payable Amount:</span>
+                                <span className="text-[10px] text-white-dark italic">
+                                    (₹{Number(formData.amount || 0).toLocaleString()} + ₹{Number(formData.padiKasu || 0).toLocaleString()}) × {formData.tripCount} trips
+                                </span>
+                            </div>
+                            <span className="text-3xl font-black text-black dark:text-white-light font-mono shadow-sm">
+                                ₹{((Number(formData.amount || 0) + Number(formData.padiKasu || 0)) * Number(formData.tripCount || 1)).toLocaleString()}
+                            </span>
                         </div>
 
                         <div>
@@ -363,25 +441,31 @@ const DriverPaymentManagement = () => {
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Driver Name</th>
+                                    <th>Target / Driver</th>
                                     <th>Payment Type</th>
                                     <th className="!text-center">Mode</th>
                                     <th className="!text-right">Salary (₹)</th>
                                     <th className="!text-right text-warning">Padi (₹)</th>
                                     <th className="!text-right text-success bg-success/5 font-black">Total (₹)</th>
+                                    <th>Trips</th>
                                     <th className="!text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan={8} className="text-center py-8">Loading...</td></tr>
+                                    <tr><td colSpan={9} className="text-center py-8">Loading...</td></tr>
                                 ) : payments.length === 0 ? (
-                                    <tr><td colSpan={8} className="text-center py-8">No payments recorded.</td></tr>
+                                    <tr><td colSpan={9} className="text-center py-8">No payments recorded.</td></tr>
                                 ) : (
                                     payments.map((pay) => (
                                         <tr key={pay._id}>
-                                            <td>{new Date(pay.date).toLocaleDateString('en-GB')}</td>
-                                            <td className="font-bold text-primary">{pay.driverName}</td>
+                                            <td className="whitespace-nowrap">{new Date(pay.date).toLocaleDateString('en-GB')}</td>
+                                            <td>
+                                                <div className={`font-bold ${pay.driverName.startsWith('[VENDOR]') ? 'text-warning' : 'text-primary'}`}>
+                                                    {pay.driverName}
+                                                </div>
+                                                {pay.notes && <div className="text-[10px] text-white-dark truncate max-w-[150px]">{pay.notes}</div>}
+                                            </td>
                                             <td>
                                                 <span className={`badge ${pay.paymentType === 'Monthly Salary' ? 'badge-outline-primary' :
                                                     pay.paymentType === 'Per Trip' ? 'badge-outline-success' :
@@ -395,7 +479,8 @@ const DriverPaymentManagement = () => {
                                             </td>
                                             <td className="!text-right font-bold text-lg font-mono">₹{pay.amount?.toLocaleString()}</td>
                                             <td className="!text-right font-bold text-lg font-mono text-warning">₹{pay.padiKasu?.toLocaleString() || '0'}</td>
-                                            <td className="!text-right font-black text-lg font-mono text-success bg-success/5">₹{(Number(pay.amount || 0) + Number(pay.padiKasu || 0)).toLocaleString()}</td>
+                                            <td className="!text-right font-black text-lg font-mono text-success bg-success/5">₹{((Number(pay.amount || 0) + Number(pay.padiKasu || 0)) * (pay.tripCount || 1)).toLocaleString()}</td>
+                                            <td className="text-center font-bold">x {pay.tripCount || 1}</td>
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <button onClick={() => handleEdit(pay)} className="btn btn-sm btn-outline-primary p-1">
