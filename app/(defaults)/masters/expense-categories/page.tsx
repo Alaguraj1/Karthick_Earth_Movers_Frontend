@@ -8,7 +8,8 @@ import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+import { useToast } from '@/components/stone-mine/toast-notification';
+import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 
 const ExpenseCategoriesMaster = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -23,6 +24,8 @@ const ExpenseCategoriesMaster = () => {
     });
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const { showToast } = useToast();
 
     const fetchData = async () => {
         setLoading(true);
@@ -31,6 +34,7 @@ const ExpenseCategoriesMaster = () => {
             if (json.success) setData(json.data);
         } catch (error) {
             console.error(error);
+            showToast('Error fetching data', 'error');
         } finally {
             setLoading(false);
         }
@@ -51,15 +55,7 @@ const ExpenseCategoriesMaster = () => {
 
             const { data: json } = await axios[method](endpoint, newItem);
             if (json.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: editItem ? 'Updated!' : 'Added!',
-                    text: editItem ? 'Category updated successfully.' : 'New category added successfully.',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    position: 'top',
-                    toast: true,
-                });
+                showToast(editItem ? 'Category updated successfully.' : 'New category added successfully.', 'success');
                 setNewItem({
                     name: '', description: ''
                 });
@@ -70,11 +66,7 @@ const ExpenseCategoriesMaster = () => {
         } catch (error: any) {
             console.error(error);
             const message = error.response?.data?.message || 'Error saving data';
-            Swal.fire({
-                icon: 'error',
-                title: 'Operation Failed',
-                text: message,
-            });
+            showToast(message, 'error');
         }
     };
 
@@ -87,38 +79,19 @@ const ExpenseCategoriesMaster = () => {
         setFormView(true);
     };
 
-    const handleDelete = async (id: string) => {
-        const result = await Swal.fire({
-            icon: 'warning',
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            showCancelButton: true,
-            confirmButtonText: 'Delete',
-        });
-
-        if (result.value) {
-            try {
-                const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}/${id}`);
-                if (json.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Deleted!',
-                        text: 'Category has been deleted.',
-                        timer: 2000,
-                        showConfirmButton: false,
-                        position: 'top',
-                        toast: true,
-                    });
-                    fetchData();
-                }
-            } catch (error) {
-                console.error(error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Failed to delete category.',
-                });
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+        try {
+            const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}/${deleteId}`);
+            if (json.success) {
+                showToast('Category has been deleted.', 'success');
+                fetchData();
             }
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to delete category.', 'error');
+        } finally {
+            setDeleteId(null);
         }
     };
 
@@ -233,7 +206,7 @@ const ExpenseCategoriesMaster = () => {
                                                     <button type="button" className="p-2 rounded-lg text-primary hover:bg-primary hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>
                                                         <IconEdit className="h-4.5 w-4.5" />
                                                     </button>
-                                                    {isOwner && (<button type="button" className="p-2 rounded-lg text-danger hover:bg-danger hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20" onClick={() => handleDelete(item._id)}>
+                                                    {isOwner && (<button type="button" className="p-2 rounded-lg text-danger hover:bg-danger hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20" onClick={() => setDeleteId(item._id)}>
                                                         <IconTrashLines className="h-4.5 w-4.5" />
                                                     </button>)}
                                                 </div>
@@ -246,6 +219,13 @@ const ExpenseCategoriesMaster = () => {
                     </div>
                 </div>
             )}
+            <DeleteConfirmModal
+                show={!!deleteId}
+                onCancel={() => setDeleteId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Category"
+                message="Are you sure you want to delete this expense category? This action cannot be undone."
+            />
         </div >
     );
 };

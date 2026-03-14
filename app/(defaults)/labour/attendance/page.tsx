@@ -7,7 +7,7 @@ import IconChecks from '@/components/icon/icon-checks';
 import IconX from '@/components/icon/icon-x';
 import IconSearch from '@/components/icon/icon-search';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+import { useToast } from '@/components/stone-mine/toast-notification';
 
 const AttendancePage = () => {
     const [labours, setLabours] = useState<any[]>([]);
@@ -18,6 +18,7 @@ const AttendancePage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState<'all' | 'Direct' | 'Vendor'>('all');
     const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+    const { showToast } = useToast();
 
     const fetchLaboursAndAttendance = async () => {
         setLoading(true);
@@ -49,6 +50,7 @@ const AttendancePage = () => {
             }
         } catch (error) {
             console.error(error);
+            showToast('Error fetching attendance data', 'error');
         } finally {
             setLoading(false);
         }
@@ -113,15 +115,7 @@ const AttendancePage = () => {
                 }));
 
             if (dataToSave.length === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'No Selection',
-                    text: 'Please select an attendance option for at least one worker.',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
+                showToast('Please select attendance for at least one worker', 'warning');
                 setSaving(false);
                 return;
             }
@@ -132,21 +126,13 @@ const AttendancePage = () => {
             });
 
             if (data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Attendance Saved!',
-                    text: 'Attendance saved successfully!',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    position: 'top',
-                    toast: true
-                });
+                showToast('Attendance saved successfully!', 'success');
                 // Re-fetch to ensure local state matches server
                 await fetchLaboursAndAttendance();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to save attendance' });
+            showToast(error.response?.data?.message || 'Failed to save attendance', 'error');
         } finally {
             setSaving(false);
         }

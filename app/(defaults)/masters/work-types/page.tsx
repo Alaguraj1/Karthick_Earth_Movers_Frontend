@@ -8,6 +8,8 @@ import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import axios from 'axios';
+import { useToast } from '@/components/stone-mine/toast-notification';
+import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 
 const WorkTypeMaster = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -16,12 +18,14 @@ const WorkTypeMaster = () => {
     const activeTab = 'work-types';
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { showToast } = useToast();
     const [newItem, setNewItem] = useState({
         name: '',
         description: ''
     });
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -30,6 +34,7 @@ const WorkTypeMaster = () => {
             if (json.success) setData(json.data);
         } catch (error) {
             console.error(error);
+            showToast('Error fetching data', 'error');
         } finally {
             setLoading(false);
         }
@@ -50,7 +55,7 @@ const WorkTypeMaster = () => {
 
             const { data: json } = await axios[method](endpoint, newItem);
             if (json.success) {
-                alert(editItem ? 'Work Type updated successfully!' : 'Work Type added successfully!');
+                showToast(editItem ? 'Work Type updated successfully!' : 'Work Type added successfully!', 'success');
                 setNewItem({
                     name: '',
                     description: ''
@@ -62,7 +67,7 @@ const WorkTypeMaster = () => {
         } catch (error: any) {
             console.error(error);
             const message = error.response?.data?.message || 'Error saving data';
-            alert(message);
+            showToast(message, 'error');
         }
     };
 
@@ -75,15 +80,19 @@ const WorkTypeMaster = () => {
         setFormView(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this work type?')) return;
+    const confirmDelete = async () => {
+        if (!deleteId) return;
         try {
-            const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}/${id}`);
+            const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}/${deleteId}`);
             if (json.success) {
+                showToast('Work Type deleted successfully!', 'success');
                 fetchData();
             }
         } catch (error) {
             console.error(error);
+            showToast('Error deleting work type', 'error');
+        } finally {
+            setDeleteId(null);
         }
     };
 
@@ -198,7 +207,7 @@ const WorkTypeMaster = () => {
                                                     <button type="button" className="p-2 rounded-lg text-primary hover:bg-primary hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>
                                                         <IconEdit className="h-4.5 w-4.5" />
                                                     </button>
-                                                    {isOwner && (<button type="button" className="p-2 rounded-lg text-danger hover:bg-danger hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20" onClick={() => handleDelete(item._id)}>
+                                                    {isOwner && (<button type="button" className="p-2 rounded-lg text-danger hover:bg-danger hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20" onClick={() => setDeleteId(item._id)}>
                                                         <IconTrashLines className="h-4.5 w-4.5" />
                                                     </button>)}
                                                 </div>
@@ -211,6 +220,13 @@ const WorkTypeMaster = () => {
                     </div>
                 </div>
             )}
+            <DeleteConfirmModal
+                show={!!deleteId}
+                onCancel={() => setDeleteId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Work Type"
+                message="Are you sure you want to delete this work type? This may affect labour records linked to this type."
+            />
         </div >
     );
 };

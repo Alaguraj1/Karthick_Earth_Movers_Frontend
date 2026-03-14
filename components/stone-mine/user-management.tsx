@@ -1,13 +1,14 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import api from '@/utils/api';
-import Swal from 'sweetalert2';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import IconUserPlus from '@/components/icon/icon-user-plus';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconLockDots from '@/components/icon/icon-lock-dots';
+import { useToast } from '@/components/stone-mine/toast-notification';
+import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 
 interface User {
     _id: string;
@@ -32,6 +33,8 @@ const UserManagement = () => {
     const [showModal, setShowModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [editId, setEditId] = useState('');
+    const [deleteUser, setDeleteUser] = useState<User | null>(null);
+    const { showToast } = useToast();
     const [form, setForm] = useState<any>(defaultForm);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
@@ -43,7 +46,7 @@ const UserManagement = () => {
             const { data } = await api.get('/users');
             setUsers(data.data || []);
         } catch (e: any) {
-            Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Failed to load users' });
+            showToast(e.response?.data?.message || 'Failed to load users', 'error');
         } finally {
             setLoading(false);
         }
@@ -84,41 +87,37 @@ const UserManagement = () => {
             if (editMode) {
                 const payload: any = { name: form.name, username: form.username, email: form.email, role: form.role, status: form.status };
                 await api.put(`/users/${editId}`, payload);
-                Swal.fire({ icon: 'success', title: 'Updated', text: 'User updated successfully', toast: true, position: 'top', timer: 2500, showConfirmButton: false });
+                showToast('User updated successfully', 'success');
             } else {
                 await api.post('/users', form);
-                Swal.fire({ icon: 'success', title: 'Created', text: 'User created successfully', toast: true, position: 'top', timer: 2500, showConfirmButton: false });
+                showToast('User created successfully', 'success');
             }
             setShowModal(false);
             fetchUsers();
         } catch (e: any) {
-            Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Operation failed' });
+            showToast(e.response?.data?.message || 'Operation failed', 'error');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDelete = async (user: User) => {
-        const result = await Swal.fire({
-            icon: 'warning',
-            title: 'Delete User?',
-            text: `Are you sure you want to delete "${user.name}"? This cannot be undone.`,
-            showCancelButton: true,
-            confirmButtonColor: '#e7515a',
-            confirmButtonText: 'Yes, Delete',
-            cancelButtonText: 'Cancel',
-        });
-        if (!result.isConfirmed) return;
+    const confirmDelete = async () => {
+        if (!deleteUser) return;
         try {
-            await api.delete(`/users/${user._id}`);
-            Swal.fire({ icon: 'success', title: 'Deleted', text: 'User deleted successfully', toast: true, position: 'top', timer: 2000, showConfirmButton: false });
+            await api.delete(`/users/${deleteUser._id}`);
+            showToast('User deleted successfully', 'success');
             fetchUsers();
         } catch (e: any) {
-            Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Delete failed' });
+            showToast(e.response?.data?.message || 'Delete failed', 'error');
+        } finally {
+            setDeleteUser(null);
         }
     };
 
     const handleResetPassword = async (user: User) => {
+        // We'll keep Swal for the input dialog as we don't have a direct replacement for 'input' type modals yet, 
+        // but we'll use showToast for the result.
+        const Swal = (await import('sweetalert2')).default;
         const { value: newPassword } = await Swal.fire({
             title: `Reset Password for ${user.name}`,
             input: 'password',
@@ -132,14 +131,15 @@ const UserManagement = () => {
         if (!newPassword) return;
         try {
             await api.put(`/users/${user._id}/reset-password`, { newPassword });
-            Swal.fire({ icon: 'success', title: 'Done', text: 'Password reset successfully', toast: true, position: 'top', timer: 2000, showConfirmButton: false });
+            showToast('Password reset successfully', 'success');
         } catch (e: any) {
-            Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Reset failed' });
+            showToast(e.response?.data?.message || 'Reset failed', 'error');
         }
     };
 
     const handleToggleStatus = async (user: User) => {
         const newStatus = user.status === 'active' ? 'inactive' : 'active';
+        const Swal = (await import('sweetalert2')).default;
         const result = await Swal.fire({
             icon: 'question',
             title: `${newStatus === 'inactive' ? 'Deactivate' : 'Activate'} User?`,
@@ -150,10 +150,10 @@ const UserManagement = () => {
         if (!result.isConfirmed) return;
         try {
             await api.put(`/users/${user._id}`, { status: newStatus });
-            Swal.fire({ icon: 'success', title: 'Updated', text: `User ${newStatus}`, toast: true, position: 'top', timer: 2000, showConfirmButton: false });
+            showToast(`User ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`, 'success');
             fetchUsers();
         } catch (e: any) {
-            Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Update failed' });
+            showToast(e.response?.data?.message || 'Update failed', 'error');
         }
     };
 
@@ -292,7 +292,7 @@ const UserManagement = () => {
                                                     <button
                                                         className="btn btn-sm btn-outline-danger px-2"
                                                         title="Delete"
-                                                        onClick={() => handleDelete(u)}
+                                                        onClick={() => setDeleteUser(u)}
                                                         disabled={u._id === currentUser?.id}
                                                     >
                                                         <IconTrashLines className="w-4 h-4" />
@@ -403,6 +403,14 @@ const UserManagement = () => {
                     </div>
                 </div>
             )}
+
+            <DeleteConfirmModal
+                show={!!deleteUser}
+                onCancel={() => setDeleteUser(null)}
+                onConfirm={confirmDelete}
+                title="Delete User"
+                message={`Are you sure you want to delete "${deleteUser?.name}"? This cannot be undone.`}
+            />
         </div>
     );
 };
