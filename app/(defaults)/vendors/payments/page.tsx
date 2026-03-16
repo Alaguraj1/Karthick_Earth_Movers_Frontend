@@ -1,13 +1,14 @@
+'use client';
 import VendorPaymentManagement from '@/components/stone-mine/vendor/vendor-payment-management';
-import { Metadata } from 'next';
+import RoleGuard from '@/components/stone-mine/role-guard';
 import React from 'react';
 
-export const metadata: Metadata = {
-    title: 'Vendor Payment History',
-};
-
 const VendorPaymentsPage = () => {
-    return <VendorPaymentManagement />;
+    return (
+        <RoleGuard allowedRoles={['owner', 'manager']} redirectTo="/expenses/diesel">
+            <VendorPaymentManagement />
+        </RoleGuard>
+    );
 };
 
 export default VendorPaymentsPage;

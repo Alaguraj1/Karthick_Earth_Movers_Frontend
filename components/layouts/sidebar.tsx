@@ -251,9 +251,11 @@ const Sidebar = () => {
                                                         <Link href="/labour/wages">Wages Calculation</Link>
                                                     </li>
                                                 )}
-                                                <li>
-                                                    <Link href="/labour/advance">Advance Payment</Link>
-                                                </li>
+                                                {isManagement && (
+                                                    <li>
+                                                        <Link href="/labour/advance">Advance Payment</Link>
+                                                    </li>
+                                                )}
                                                 <li>
                                                     <Link href="/labour/report">Labour Report</Link>
                                                 </li>

@@ -1,13 +1,14 @@
+'use client';
 import DriverPaymentManagement from '@/components/stone-mine/transport/driver-payment-management';
-import { Metadata } from 'next';
+import RoleGuard from '@/components/stone-mine/role-guard';
 import React from 'react';
 
-export const metadata: Metadata = {
-    title: 'Driver Payments',
-};
-
 const DriverPaymentsPage = () => {
-    return <DriverPaymentManagement />;
+    return (
+        <RoleGuard allowedRoles={['owner', 'manager']} redirectTo="/expenses/diesel">
+            <DriverPaymentManagement />
+        </RoleGuard>
+    );
 };
 
 export default DriverPaymentsPage;

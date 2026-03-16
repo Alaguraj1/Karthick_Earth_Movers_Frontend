@@ -1,13 +1,14 @@
+'use client';
 import VendorOutstandingManagement from '@/components/stone-mine/vendor/vendor-outstanding-management';
-import { Metadata } from 'next';
+import RoleGuard from '@/components/stone-mine/role-guard';
 import React from 'react';
 
-export const metadata: Metadata = {
-    title: 'Outstanding Balances',
-};
-
 const VendorOutstandingPage = () => {
-    return <VendorOutstandingManagement />;
+    return (
+        <RoleGuard allowedRoles={['owner', 'manager']} redirectTo="/expenses/diesel">
+            <VendorOutstandingManagement />
+        </RoleGuard>
+    );
 };
 
 export default VendorOutstandingPage;
