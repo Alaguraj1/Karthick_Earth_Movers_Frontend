@@ -743,7 +743,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             value={listYear}
                                             onChange={(e) => setListYear(parseInt(e.target.value))}
                                         >
-                                            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                                            {Array.from({ length: (new Date().getFullYear() + 1) - 2024 + 1 }, (_, i) => 2024 + i).map(y => (
+                                                <option key={y} value={y}>{y}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -1434,7 +1436,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                     value={lookupYear}
                                                     onChange={(e) => setLookupYear(parseInt(e.target.value))}
                                                 >
-                                                    {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                                                    {Array.from({ length: (new Date().getFullYear() + 1) - 2024 + 1 }, (_, i) => 2024 + i).map(y => (
+                                                        <option key={y} value={y}>{y}</option>
+                                                    ))}
                                                 </select>
                                             </div>
                                         </div>

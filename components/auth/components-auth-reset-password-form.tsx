@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import api from '@/utils/api';
-import Swal from 'sweetalert2';
+import { useToast } from '@/components/stone-mine/toast-notification';
 
 const ComponentsAuthResetPasswordForm = () => {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
+    const [demoLink, setDemoLink] = useState('');
+    const { showToast } = useToast();
 
     const submitForm = async (e: any) => {
         e.preventDefault();
@@ -17,22 +19,12 @@ const ComponentsAuthResetPasswordForm = () => {
         try {
             const { data } = await api.post('/auth/forgotpassword', { email });
             if (data.success) {
-                // In this dummy app, show the reset token in the alert to allow actually resetting. 
-                // Normally we just say "Email sent".
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Email Sent',
-                    text: 'Please check your email for the password reset link.',
-                    footer: `<div class="text-xs text-center">Since emailing is disabled for demo, here is your link:<br/><a href="/auth/boxed-reset-password/${data.resetToken}" class="text-primary font-bold">Reset Password Now</a></div>`
-                });
+                showToast('Please check your email for the password reset link.', 'success');
+                setDemoLink(`/auth/boxed-reset-password/${data.resetToken}`);
                 setEmail('');
             }
         } catch (error: any) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: error.response?.data?.message || 'Error processing request'
-            });
+            showToast(error.response?.data?.message || 'Error processing request', 'error');
         } finally {
             setLoading(false);
         }
@@ -62,6 +54,14 @@ const ComponentsAuthResetPasswordForm = () => {
             <button type="submit" className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]" disabled={loading}>
                 {loading ? 'Sending...' : 'RECOVER'}
             </button>
+            {demoLink && (
+                <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 text-center animate-fade-in-down mt-5">
+                    <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-2 opacity-70">Demo Environment Override</p>
+                    <Link href={demoLink} className="text-sm font-bold text-primary hover:underline">
+                        RE-SET PASSWORD NOW (DEMO LINK)
+                    </Link>
+                </div>
+            )}
             <div className="text-center mt-4">
                 <Link href="/auth/boxed-signin" className="text-primary hover:underline font-semibold">Back to Login</Link>
             </div>

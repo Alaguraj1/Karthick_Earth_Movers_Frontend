@@ -92,7 +92,9 @@ const SummaryReports = () => {
                     </div>
                     <div className="flex items-center gap-3">
                         <select className="form-select w-32" value={year} onChange={(e) => setYear(parseInt(e.target.value))}>
-                            {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                            {Array.from({ length: (new Date().getFullYear() + 2) - 2024 }, (_, i) => 2024 + i).map(y => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
                         </select>
                         <button className="btn btn-outline-primary" onClick={exportToExcel}>
                             <IconDownload className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Export

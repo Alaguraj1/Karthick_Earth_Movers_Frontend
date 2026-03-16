@@ -9,6 +9,8 @@ import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconLockDots from '@/components/icon/icon-lock-dots';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
+import ConfirmationModal from '@/components/stone-mine/confirmation-modal';
+import PasswordResetModal from '@/components/stone-mine/password-reset-modal';
 
 interface User {
     _id: string;
@@ -39,6 +41,8 @@ const UserManagement = () => {
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
     const [roleList, setRoleList] = useState<any[]>([]);
+    const [resetUser, setResetUser] = useState<User | null>(null);
+    const [statusChangeUser, setStatusChangeUser] = useState<User | null>(null);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -114,46 +118,29 @@ const UserManagement = () => {
         }
     };
 
-    const handleResetPassword = async (user: User) => {
-        // We'll keep Swal for the input dialog as we don't have a direct replacement for 'input' type modals yet, 
-        // but we'll use showToast for the result.
-        const Swal = (await import('sweetalert2')).default;
-        const { value: newPassword } = await Swal.fire({
-            title: `Reset Password for ${user.name}`,
-            input: 'password',
-            inputLabel: 'New Password (min 6 characters)',
-            inputPlaceholder: 'Enter new password',
-            showCancelButton: true,
-            confirmButtonText: 'Reset',
-            inputAttributes: { minlength: '6', autocomplete: 'new-password' },
-            inputValidator: (val) => (!val || val.length < 6 ? 'Password must be at least 6 characters' : null),
-        });
-        if (!newPassword) return;
+    const handleResetPassword = async (password: string) => {
+        if (!resetUser) return;
         try {
-            await api.put(`/users/${user._id}/reset-password`, { newPassword });
+            await api.put(`/users/${resetUser._id}/reset-password`, { newPassword: password });
             showToast('Password reset successfully', 'success');
         } catch (e: any) {
             showToast(e.response?.data?.message || 'Reset failed', 'error');
+        } finally {
+            setResetUser(null);
         }
     };
 
-    const handleToggleStatus = async (user: User) => {
-        const newStatus = user.status === 'active' ? 'inactive' : 'active';
-        const Swal = (await import('sweetalert2')).default;
-        const result = await Swal.fire({
-            icon: 'question',
-            title: `${newStatus === 'inactive' ? 'Deactivate' : 'Activate'} User?`,
-            text: `Set "${user.name}" to ${newStatus}?`,
-            showCancelButton: true,
-            confirmButtonText: 'Yes',
-        });
-        if (!result.isConfirmed) return;
+    const confirmToggleStatus = async () => {
+        if (!statusChangeUser) return;
+        const newStatus = statusChangeUser.status === 'active' ? 'inactive' : 'active';
         try {
-            await api.put(`/users/${user._id}`, { status: newStatus });
+            await api.put(`/users/${statusChangeUser._id}`, { status: newStatus });
             showToast(`User ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`, 'success');
             fetchUsers();
         } catch (e: any) {
             showToast(e.response?.data?.message || 'Update failed', 'error');
+        } finally {
+            setStatusChangeUser(null);
         }
     };
 
@@ -260,7 +247,7 @@ const UserManagement = () => {
                                         {canManageUsers ? (
                                             <button
                                                 className={`badge cursor-pointer ${u.status === 'active' ? 'bg-success' : 'bg-danger'}`}
-                                                onClick={() => handleToggleStatus(u)}
+                                                onClick={() => setStatusChangeUser(u)}
                                                 title="Click to toggle status"
                                             >
                                                 {u.status}
@@ -285,7 +272,7 @@ const UserManagement = () => {
                                                     <button
                                                         className="btn btn-sm btn-outline-warning px-2"
                                                         title="Reset Password"
-                                                        onClick={() => handleResetPassword(u)}
+                                                        onClick={() => setResetUser(u)}
                                                     >
                                                         <IconLockDots className="w-4 h-4" />
                                                     </button>
@@ -410,6 +397,24 @@ const UserManagement = () => {
                 onConfirm={confirmDelete}
                 title="Delete User"
                 message={`Are you sure you want to delete "${deleteUser?.name}"? This cannot be undone.`}
+            />
+
+            <PasswordResetModal
+                show={!!resetUser}
+                title="Reset User Password"
+                userName={resetUser?.name || ''}
+                onCancel={() => setResetUser(null)}
+                onConfirm={handleResetPassword}
+            />
+
+            <ConfirmationModal
+                show={!!statusChangeUser}
+                title={statusChangeUser?.status === 'active' ? 'Deactivate User?' : 'Activate User?'}
+                message={`Are you sure you want to set "${statusChangeUser?.name}" to ${statusChangeUser?.status === 'active' ? 'Inactive' : 'Active'}?`}
+                type="question"
+                confirmText="Yes, Update Status"
+                onCancel={() => setStatusChangeUser(null)}
+                onConfirm={confirmToggleStatus}
             />
         </div>
     );

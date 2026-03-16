@@ -8,11 +8,12 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setCredentials, setLoading } from '@/store/authSlice';
 import api from '@/utils/api';
-import Swal from 'sweetalert2';
+import { useToast } from '@/components/stone-mine/toast-notification';
 
 const ComponentsAuthRegisterForm = () => {
     const router = useRouter();
     const dispatch = useDispatch();
+    const { showToast } = useToast();
     const [name, setName] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -23,11 +24,7 @@ const ComponentsAuthRegisterForm = () => {
         e.preventDefault();
 
         if (password !== confirmPassword) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Passwords do not match',
-            });
+            showToast('Passwords do not match', 'error');
             return;
         }
 
@@ -45,28 +42,12 @@ const ComponentsAuthRegisterForm = () => {
 
             if (data.success) {
                 dispatch(setCredentials({ user: data.user, token: data.token }));
-
-                const toast = Swal.mixin({
-                    toast: true,
-                    position: 'top',
-                    showConfirmButton: false,
-                    timer: 2000,
-                });
-                toast.fire({
-                    icon: 'success',
-                    title: 'Registration successful',
-                    padding: '10px 20px',
-                });
-
+                showToast('Registration successful', 'success');
                 router.push('/');
             }
         } catch (error: any) {
             console.error(error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Registration Failed',
-                text: error.response?.data?.message || 'Something went wrong. Please try again.',
-            });
+            showToast(error.response?.data?.message || 'Something went wrong. Please try again.', 'error');
         } finally {
             dispatch(setLoading(false));
         }

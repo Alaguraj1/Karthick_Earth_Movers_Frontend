@@ -27,15 +27,19 @@ const ComponentsDashboardSales = () => {
     const [isMounted, setIsMounted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
+    const [chartPeriod, setChartPeriod] = useState('last12months');
 
     useEffect(() => {
         setIsMounted(true);
-        fetchDashboardData();
     }, []);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [chartPeriod]);
 
     const fetchDashboardData = async () => {
         try {
-            const { data: res } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/dashboard-summary`);
+            const { data: res } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/dashboard-summary?chartPeriod=${chartPeriod}`);
             if (res.success) {
                 setData(res.data);
             }
@@ -47,36 +51,95 @@ const ComponentsDashboardSales = () => {
     };
 
     // Revenue Chart Data Processing - Synchronized Alignment
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const last12Months: any[] = [];
-    for (let i = 11; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        last12Months.push({
-            month: d.getMonth() + 1,
-            year: d.getFullYear(),
-            label: months[d.getMonth()] || 'N/A'
-        });
-    }
+    const monthsLabel = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    const getChartDataPoints = () => {
+        const points: any[] = [];
+        const now = new Date();
+
+        if (chartPeriod === 'week') {
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+                points.push({
+                    day: d.getDate(),
+                    month: d.getMonth() + 1,
+                    year: d.getFullYear(),
+                    label: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+                });
+            }
+        } else if (chartPeriod === 'month') {
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            for (let i = 1; i <= daysInMonth; i++) {
+                points.push({
+                    day: i,
+                    month: now.getMonth() + 1,
+                    year: now.getFullYear(),
+                    label: i.toString()
+                });
+            }
+        } else if (chartPeriod === 'year') {
+            for (let i = 0; i < 12; i++) {
+                points.push({
+                    month: i + 1,
+                    year: now.getFullYear(),
+                    label: monthsLabel[i]
+                });
+            }
+        } else if (chartPeriod === 'all') {
+            const years = new Set<number>();
+            data?.revenueChart?.revenueData?.forEach((rd: any) => years.add(rd._id.year));
+            data?.revenueChart?.expenseData?.forEach((ed: any) => years.add(ed._id.year));
+            const sortedYears = Array.from(years).sort((a, b) => a - b);
+
+            sortedYears.forEach(year => {
+                points.push({
+                    year,
+                    label: year.toString()
+                });
+            });
+        } else {
+            // last12months
+            for (let i = 11; i >= 0; i--) {
+                const d = new Date();
+                d.setMonth(d.getMonth() - i);
+                points.push({
+                    month: d.getMonth() + 1,
+                    year: d.getFullYear(),
+                    label: `${monthsLabel[d.getMonth()]} ${d.getFullYear().toString().slice(2)}`
+                });
+            }
+        }
+        return points;
+    };
+
+    const chartPoints = getChartDataPoints();
 
     const revenueChartSeries = [
         {
             name: 'Income',
-            data: last12Months.map(m => {
-                const found = data?.revenueChart?.revenueData?.find((rd: any) => rd._id.month === m.month && rd._id.year === m.year);
+            data: chartPoints.map(p => {
+                const found = data?.revenueChart?.revenueData?.find((rd: any) =>
+                    (p.day ? rd._id.day === p.day : true) &&
+                    (p.month ? rd._id.month === p.month : true) &&
+                    rd._id.year === p.year
+                );
                 return found?.total ?? 0;
             })
         },
         {
             name: 'Expenses',
-            data: last12Months.map(m => {
-                const found = data?.revenueChart?.expenseData?.find((ed: any) => ed._id.month === m.month && ed._id.year === m.year);
+            data: chartPoints.map(p => {
+                const found = data?.revenueChart?.expenseData?.find((ed: any) =>
+                    (p.day ? ed._id.day === p.day : true) &&
+                    (p.month ? ed._id.month === p.month : true) &&
+                    ed._id.year === p.year
+                );
                 return found?.total ?? 0;
             })
         }
     ];
 
-    const revenueChartLabels = last12Months.map(m => m.label);
+    const revenueChartLabels = chartPoints.map(p => p.label);
 
     //Revenue Chart Options
     const revenueChart: any = {
@@ -202,20 +265,6 @@ const ComponentsDashboardSales = () => {
 
 
 
-    //Total Loads Sent Chart
-    const totalOrders: any = {
-        series: [{ name: 'Loads', data: [28, 40, 36, 52, 38, 60, 38, 52, 36, 40] }],
-        options: {
-            chart: { height: 290, type: 'area', fontFamily: 'Nunito, sans-serif', sparkline: { enabled: true } },
-            stroke: { curve: 'smooth', width: 2 },
-            colors: ['#00ab55'],
-            labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-            yaxis: { min: 0, show: false },
-            grid: { padding: { top: 125, right: 0, bottom: 0, left: 0 } },
-            fill: { opacity: 1, type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 1, inverseColors: false, opacityFrom: 0.3, opacityTo: 0.05, stops: [100, 100] } },
-            tooltip: { x: { show: false }, y: { formatter: (val: any) => val !== undefined && val !== null ? val : 0 } },
-        },
-    };
 
     if (loading) return <div className="flex justify-center items-center h-screen"><span className="animate-spin border-4 border-primary border-t-transparent rounded-full w-12 h-12"></span></div>;
 
@@ -274,6 +323,42 @@ const ComponentsDashboardSales = () => {
                         <div className="panel h-full xl:col-span-2 border-none shadow-xl rounded-3xl">
                             <div className="mb-5 flex items-center justify-between dark:text-white-light px-2">
                                 <h5 className="text-xl font-black uppercase tracking-tight">Revenue vs Expenses (வருமானம் & செலவுகள்)</h5>
+                                <div className="dropdown">
+                                    <Dropdown
+                                        offset={[0, 5]}
+                                        placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                                        btnClassName="btn btn-outline-primary dropdown-toggle btn-sm font-black uppercase tracking-widest text-[10px]"
+                                        button={
+                                            <>
+                                                {chartPeriod === 'week' ? 'Last 7 Days' :
+                                                    chartPeriod === 'month' ? 'This Month' :
+                                                        chartPeriod === 'year' ? 'This Year' :
+                                                            chartPeriod === 'all' ? 'All Years' : 'Last 12 Months'}
+                                                <span>
+                                                    <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
+                                                </span>
+                                            </>
+                                        }
+                                    >
+                                        <ul className="!min-w-[150px] font-bold uppercase text-[10px] tracking-widest">
+                                            <li>
+                                                <button type="button" onClick={() => setChartPeriod('week')}>Last 7 Days</button>
+                                            </li>
+                                            <li>
+                                                <button type="button" onClick={() => setChartPeriod('month')}>This Month</button>
+                                            </li>
+                                            <li>
+                                                <button type="button" onClick={() => setChartPeriod('year')}>This Year</button>
+                                            </li>
+                                            <li>
+                                                <button type="button" onClick={() => setChartPeriod('last12months')}>Last 12 Months</button>
+                                            </li>
+                                            <li>
+                                                <button type="button" onClick={() => setChartPeriod('all')}>All Years</button>
+                                            </li>
+                                        </ul>
+                                    </Dropdown>
+                                </div>
                             </div>
                             <div className="flex items-center gap-4 px-2 mb-4">
                                 <div>
@@ -356,20 +441,86 @@ const ComponentsDashboardSales = () => {
                             </div>
                         </div>
 
-                        <div className="panel h-full p-0 border-none shadow-xl rounded-3xl overflow-hidden relative group">
-                            <div className="absolute top-6 left-6 z-10">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-success/10 text-success transition-transform group-hover:rotate-12">
-                                    <IconShoppingCart className="w-6 h-6" />
+                        {/* Quick Business Stats Card - Light Version */}
+                        <div className="panel h-full border-none shadow-xl rounded-3xl bg-white dark:bg-black overflow-hidden relative">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-8 translate-x-8"></div>
+                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-success/5 rounded-full translate-y-6 -translate-x-6"></div>
+                            <div className="relative z-10 p-6 flex flex-col h-full justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white-dark mb-1">Quick Stats — இந்த மாதம்</p>
+                                    <h5 className="text-2xl font-black text-black dark:text-white">Business Overview</h5>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 mt-4">
+                                    <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10">
+                                        <p className="text-[9px] uppercase tracking-widest font-black text-white-dark mb-1">Month Income</p>
+                                        <p className="text-xl font-black text-primary">₹{((data?.summary?.monthIncome || 0) / 1000).toFixed(1)}K</p>
+                                    </div>
+                                    <div className="bg-danger/5 rounded-2xl p-4 border border-danger/10">
+                                        <p className="text-[9px] uppercase tracking-widest font-black text-white-dark mb-1">Month Expense</p>
+                                        <p className="text-xl font-black text-danger">₹{((data?.summary?.monthExpense || 0) / 1000).toFixed(1)}K</p>
+                                    </div>
+                                    <div className="bg-success/5 rounded-2xl p-4 border border-success/10">
+                                        <p className="text-[9px] uppercase tracking-widest font-black text-white-dark mb-1">Net Profit</p>
+                                        <p className={`text-xl font-black ${(data?.summary?.netProfit || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
+                                            ₹{((data?.summary?.netProfit || 0) / 1000).toFixed(1)}K
+                                        </p>
+                                    </div>
+                                    <div className="bg-warning/5 rounded-2xl p-4 border border-warning/10">
+                                        <p className="text-[9px] uppercase tracking-widest font-black text-white-dark mb-1">Total Invoices</p>
+                                        <p className="text-xl font-black text-warning">{data?.summary?.totalInvoices || 0}</p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex items-center justify-between border-t border-gray-100 dark:border-white/10 pt-4">
+                                    <span className="text-[9px] uppercase tracking-widest font-black text-white-dark">Profit Margin</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-24 h-1.5 rounded-full bg-gray-100 dark:bg-white/10 overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full bg-gradient-to-r from-success to-primary"
+                                                style={{ width: `${data?.summary?.monthIncome > 0 ? Math.max(Math.min((data?.summary?.netProfit / data?.summary?.monthIncome) * 100, 100), 0) : 0}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-xs font-black text-success">
+                                            {data?.summary?.monthIncome > 0 ? Math.round((data?.summary?.netProfit / data?.summary?.monthIncome) * 100) : 0}%
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="absolute top-6 right-6 z-10 text-right">
-                                <h5 className="text-3xl font-black italic ltr:text-right rtl:text-left dark:text-white-light text-success">
-                                    {data?.summary?.totalInvoices}
-                                    <span className="block text-[10px] uppercase tracking-[0.2em] font-black text-white-dark mt-1">Total Sales Record</span>
-                                </h5>
-                            </div>
-                            <div className="rounded-lg bg-transparent">
-                                {isMounted && <ReactApexChart series={totalOrders.series} options={totalOrders.options} type="area" height={290} width={'100%'} />}
+                        </div>
+
+                        {/* Today's Labour Attendance Card */}
+                        <div className="panel h-full border-none shadow-xl rounded-3xl bg-white dark:bg-black overflow-hidden relative">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-8 translate-x-8"></div>
+                            <div className="relative z-10 p-6 flex flex-col h-full justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white-dark mb-1">Attendance — இருப்பகுதி</p>
+                                    <h5 className="text-2xl font-black text-black dark:text-white">Labour Stats</h5>
+                                </div>
+
+                                <div className="mt-4 flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-primary/10 text-primary text-2xl">👷</div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-white-dark mb-0.5">Present Today</p>
+                                            <p className="text-2xl font-black text-primary">{data?.summary?.todayAttendance ?? 0}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] uppercase tracking-widest text-white-dark font-black">இன்றைய ஆட்கள்</p>
+                                        <div className="mt-1 h-1.5 w-16 rounded-full bg-primary/10 overflow-hidden ml-auto">
+                                            <div className="h-full rounded-full bg-primary" style={{ width: '100%' }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10 space-y-2">
+                                    <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-tight text-white-dark">
+                                        <span>Status</span>
+                                        <span className="text-success">Live Tracking</span>
+                                    </div>
+                                    <Link href="/labour/wages" className="text-[9px] font-black uppercase tracking-[0.2em] text-primary hover:underline flex items-center gap-1">
+                                        Open Labour Management <IconArrowLeft className="w-3 h-3 rotate-180" />
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     </div>

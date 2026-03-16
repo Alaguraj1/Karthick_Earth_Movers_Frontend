@@ -8,9 +8,12 @@ import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import axios from 'axios';
+import { useToast } from '@/components/stone-mine/toast-notification';
+import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 
 const StoneTypesMaster = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const { showToast } = useToast();
     const isOwner = currentUser?.role?.toLowerCase() === 'owner';
 
     const activeTab = 'stone-types';
@@ -24,6 +27,7 @@ const StoneTypesMaster = () => {
     });
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -52,7 +56,7 @@ const StoneTypesMaster = () => {
 
             const { data: json } = await axios[method](endpoint, newItem);
             if (json.success) {
-                alert(editItem ? 'Updated successfully!' : 'Added successfully!');
+                showToast(editItem ? 'Updated successfully!' : 'Added successfully!', 'success');
                 setNewItem({
                     name: '', description: '',
                     unit: 'Tons', defaultPrice: ''
@@ -64,7 +68,7 @@ const StoneTypesMaster = () => {
         } catch (error: any) {
             console.error(error);
             const message = error.response?.data?.message || 'Error saving data';
-            alert(message);
+            showToast(message, 'error');
         }
     };
 
@@ -79,15 +83,23 @@ const StoneTypesMaster = () => {
         setFormView(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this stone type?')) return;
+    const handleDelete = (id: string) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
         try {
-            const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}/${id}`);
+            const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}/${deleteId}`);
             if (json.success) {
+                showToast('Stone type deleted successfully!', 'success');
                 fetchData();
             }
         } catch (error) {
             console.error(error);
+            showToast('Error deleting stone type', 'error');
+        } finally {
+            setDeleteId(null);
         }
     };
 
@@ -241,6 +253,13 @@ const StoneTypesMaster = () => {
                     </div>
                 </div>
             )}
+            <DeleteConfirmModal
+                show={!!deleteId}
+                onCancel={() => setDeleteId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Stone Type"
+                message="Are you sure you want to delete this stone type? This action cannot be undone."
+            />
         </div >
     );
 };

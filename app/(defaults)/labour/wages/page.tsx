@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import RoleGuard from '@/components/stone-mine/role-guard';
+import PaymentConfirmModal from '@/components/stone-mine/payment-confirm-modal';
 
 const WagesCalculationPage = () => {
     const [summaries, setSummaries] = useState<any[]>([]);
@@ -10,6 +11,8 @@ const WagesCalculationPage = () => {
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const { showToast } = useToast();
+    const [payoutItem, setPayoutItem] = useState<any>(null);
+    const [vendorPayoutItem, setVendorPayoutItem] = useState<any>(null);
 
     const months = [
         { id: 1, label: 'January' }, { id: 2, label: 'February' }, { id: 3, label: 'March' },
@@ -18,7 +21,7 @@ const WagesCalculationPage = () => {
         { id: 10, label: 'October' }, { id: 11, label: 'November' }, { id: 12, label: 'December' }
     ];
 
-    const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+    const years = Array.from({ length: (new Date().getFullYear() + 1) - 2024 + 1 }, (_, i) => 2024 + i).reverse();
 
     const fetchWagesSummary = async () => {
         setLoading(true);
@@ -33,126 +36,73 @@ const WagesCalculationPage = () => {
         }
     };
 
-    const handleSettle = async (summary: any) => {
-        if (summary.attendance.total === 0) {
-            showToast('This worker is already fully paid for this month!', 'warning');
-            return;
-        }
+    /* Settle logic for direct labour */
+    const confirmSettle = async (mode: string) => {
+        if (!payoutItem) return;
+        try {
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, {
+                category: 'Labour Wages',
+                amount: parseFloat(payoutItem.totalWages) + parseFloat(payoutItem.otAmount || 0),
+                date: new Date(),
+                paymentMode: mode,
+                description: `Wages for ${selectedMonth}/${selectedYear}`,
+                labourId: payoutItem.labourId,
+                labourName: payoutItem.name,
+                workType: payoutItem.workType,
+                quantity: payoutItem.attendance.total,
+                rate: payoutItem.dailyWage,
+                otAmount: parseFloat(payoutItem.otAmount || 0),
+                advanceDeduction: parseFloat(payoutItem.totalAdvance || 0),
+                netPay: parseFloat(payoutItem.netPayable),
+                salaryMonth: selectedMonth,
+                salaryYear: selectedYear
+            });
 
-        const Swal = (await import('sweetalert2')).default;
-        const { value: mode } = await Swal.fire({
-            title: 'Select Payment Mode',
-            input: 'select',
-            inputOptions: {
-                'Cash': 'Cash',
-                'Bank Transfer': 'Bank Transfer',
-                'UPI': 'UPI'
-            },
-            inputPlaceholder: 'Select a payment mode',
-            showCancelButton: true,
-        });
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/mark-wages-paid`, {
+                month: selectedMonth,
+                year: selectedYear,
+                labourId: payoutItem.labourId
+            });
 
-        if (!mode) return;
-
-        const result = await Swal.fire({
-            title: 'Confirm Payment',
-            text: `Confirm payment of ₹${summary.netPayable} to ${summary.name}? This will record it as an Expense.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, confirm payment',
-        });
-
-        if (result.isConfirmed) {
-            try {
-                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, {
-                    category: 'Labour Wages',
-                    amount: parseFloat(summary.totalWages) + parseFloat(summary.otAmount || 0),
-                    date: new Date(),
-                    paymentMode: mode,
-                    description: `Wages for ${selectedMonth}/${selectedYear}`,
-                    labourId: summary.labourId,
-                    labourName: summary.name,
-                    workType: summary.workType,
-                    quantity: summary.attendance.total,
-                    rate: summary.dailyWage,
-                    otAmount: parseFloat(summary.otAmount || 0),
-                    advanceDeduction: parseFloat(summary.totalAdvance || 0),
-                    netPay: parseFloat(summary.netPayable),
-                    salaryMonth: selectedMonth,
-                    salaryYear: selectedYear
-                });
-
-                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/mark-wages-paid`, {
-                    month: selectedMonth,
-                    year: selectedYear,
-                    labourId: summary.labourId
-                });
-
-                showToast('Payment successful! Recorded in Expenses.', 'success');
-                fetchWagesSummary();
-            } catch (error: any) {
-                console.error(error);
-                showToast(error.response?.data?.message || 'Error recording payment.', 'error');
-            }
+            showToast('Payment successful! Recorded in Expenses.', 'success');
+            fetchWagesSummary();
+        } catch (error: any) {
+            console.error(error);
+            showToast(error.response?.data?.message || 'Error recording payment.', 'error');
+        } finally {
+            setPayoutItem(null);
         }
     };
 
-    const handleVendorSettle = async (summary: any) => {
-        if (summary.attendance.total === 0) {
-            showToast('This contractor is already fully paid for this month!', 'warning');
-            return;
-        }
+    /* Settle logic for vendor contractor */
+    const confirmVendorSettle = async (mode: string) => {
+        if (!vendorPayoutItem) return;
+        try {
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/vendors/payments`, {
+                date: new Date(),
+                vendorId: vendorPayoutItem.contractorId,
+                vendorType: 'LabourContractor',
+                vendorName: vendorPayoutItem.contractorName,
+                invoiceAmount: parseFloat(vendorPayoutItem.netPayable),
+                paidAmount: parseFloat(vendorPayoutItem.netPayable),
+                paymentMode: mode,
+                referenceNumber: '',
+                notes: `Wages payout for ${selectedMonth}/${selectedYear} based on actual attendance of ${vendorPayoutItem.labourCount} vendor labours.`
+            });
 
-        const Swal = (await import('sweetalert2')).default;
-        const { value: mode } = await Swal.fire({
-            title: 'Select Payment Mode',
-            input: 'select',
-            inputOptions: {
-                'Cash': 'Cash',
-                'Bank Transfer': 'Bank Transfer',
-                'UPI': 'UPI',
-                'Cheque': 'Cheque'
-            },
-            inputPlaceholder: 'Select a payment mode',
-            showCancelButton: true,
-        });
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/mark-wages-paid`, {
+                month: selectedMonth,
+                year: selectedYear,
+                contractorId: vendorPayoutItem.contractorId
+            });
 
-        if (!mode) return;
-
-        const result = await Swal.fire({
-            title: 'Confirm Payout',
-            text: `Confirm direct payout of ₹${summary.netPayable} to Contractor ${summary.contractorName}? This will record a Vendor Payment.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, confirm payout',
-        });
-
-        if (result.isConfirmed) {
-            try {
-                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/vendors/payments`, {
-                    date: new Date(),
-                    vendorId: summary.contractorId,
-                    vendorType: 'LabourContractor',
-                    vendorName: summary.contractorName,
-                    invoiceAmount: parseFloat(summary.netPayable),
-                    paidAmount: parseFloat(summary.netPayable),
-                    paymentMode: mode,
-                    referenceNumber: '',
-                    notes: `Wages payout for ${selectedMonth}/${selectedYear} based on actual attendance of ${summary.labourCount} vendor labours.`
-                });
-
-                await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/mark-wages-paid`, {
-                    month: selectedMonth,
-                    year: selectedYear,
-                    contractorId: summary.contractorId
-                });
-
-                showToast('Vendor payment success! Recorded in Vendor Payments.', 'success');
-                fetchWagesSummary();
-            } catch (error: any) {
-                console.error(error);
-                showToast(error.response?.data?.message || 'Error recording vendor payment.', 'error');
-            }
+            showToast('Vendor payment success! Recorded in Vendor Payments.', 'success');
+            fetchWagesSummary();
+        } catch (error: any) {
+            console.error(error);
+            showToast(error.response?.data?.message || 'Error recording vendor payment.', 'error');
+        } finally {
+            setVendorPayoutItem(null);
         }
     };
 
@@ -253,7 +203,7 @@ const WagesCalculationPage = () => {
                                                         </span>
                                                     ) : (
                                                         <button
-                                                            onClick={() => handleVendorSettle(summary)}
+                                                            onClick={() => setVendorPayoutItem(summary)}
                                                             className="btn btn-sm btn-warning rounded-lg font-black text-[9px] uppercase tracking-widest shadow-lg hover:scale-105 transition-all"
                                                         >
                                                             Pay Vendor
@@ -292,7 +242,7 @@ const WagesCalculationPage = () => {
                                                         </span>
                                                     ) : (
                                                         <button
-                                                            onClick={() => handleSettle(summary)}
+                                                            onClick={() => setPayoutItem(summary)}
                                                             className="btn btn-sm btn-outline-success rounded-lg font-black text-[9px] uppercase tracking-widest hover:scale-105 transition-all"
                                                         >
                                                             Settle & Pay

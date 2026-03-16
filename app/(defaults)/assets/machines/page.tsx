@@ -9,16 +9,20 @@ import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import axios from 'axios';
 import Link from 'next/link';
+import { useToast } from '@/components/stone-mine/toast-notification';
 import IconSettings from '@/components/icon/icon-settings';
+import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 
 const MachineDetails = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const { showToast } = useToast();
     const isOwner = currentUser?.role?.toLowerCase() === 'owner';
 
     const [assets, setAssets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('own');
     const [newItem, setNewItem] = useState({
         name: '',
@@ -87,13 +91,14 @@ const MachineDetails = () => {
 
             const { data: json } = await axios[method](endpoint, { ...newItem, type: 'Machine' });
             if (json.success) {
+                showToast(editItem ? 'Machine details updated!' : 'Machine registered successfully!', 'success');
                 resetForm();
                 fetchAssets();
             }
         } catch (error: any) {
             console.error(error);
             const message = error.response?.data?.message || 'Error saving data';
-            alert(message);
+            showToast(message, 'error');
         }
     };
 
@@ -136,15 +141,23 @@ const MachineDetails = () => {
         setFormView(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this machine?')) return;
+    const handleDelete = (id: string) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
         try {
-            const { data } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles/${id}`);
+            const { data } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles/${deleteId}`);
             if (data.success) {
+                showToast('Machine deleted successfully!', 'success');
                 fetchAssets();
             }
         } catch (error) {
             console.error(error);
+            showToast('Error deleting machine', 'error');
+        } finally {
+            setDeleteId(null);
         }
     };
 
@@ -430,6 +443,13 @@ const MachineDetails = () => {
                     </div>
                 </>
             )}
+            <DeleteConfirmModal
+                show={!!deleteId}
+                onCancel={() => setDeleteId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Machine Record"
+                message="Are you sure you want to delete this machine? This action cannot be undone."
+            />
         </div>
     );
 };

@@ -15,6 +15,7 @@ import IconEye from '@/components/icon/icon-eye';
 import IconFile from '@/components/icon/icon-file';
 import IconDownload from '@/components/icon/icon-download';
 import * as XLSX from 'xlsx';
+import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 
 const VehicleDetails = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -29,6 +30,7 @@ const VehicleDetails = () => {
     const [detailsView, setDetailsView] = useState<any>(null);
     const [editItem, setEditItem] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('own');
+    const [deleteId, setDeleteId] = useState<string | null>(null);
     const [stats, setStats] = useState<any[]>([]);
     const [filterDates, setFilterDates] = useState({ start: '', end: '' });
     const [newItem, setNewItem] = useState({
@@ -272,15 +274,23 @@ const VehicleDetails = () => {
         setFormView(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this vehicle?')) return;
+    const handleDelete = (id: string) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
         try {
-            const { data } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles/${id}`);
+            const { data } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles/${deleteId}`);
             if (data.success) {
+                showToast('Vehicle deleted successfully!', 'success');
                 fetchData();
             }
         } catch (error) {
             console.error(error);
+            showToast('Error deleting vehicle', 'error');
+        } finally {
+            setDeleteId(null);
         }
     };
 
@@ -797,6 +807,13 @@ const VehicleDetails = () => {
                     </div>
                 </>
             )}
+            <DeleteConfirmModal
+                show={!!deleteId}
+                onCancel={() => setDeleteId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Vehicle"
+                message="Are you sure you want to delete this vehicle? This action cannot be undone."
+            />
         </div>
     );
 };

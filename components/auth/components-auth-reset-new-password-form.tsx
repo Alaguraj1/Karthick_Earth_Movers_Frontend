@@ -3,10 +3,11 @@ import IconLockDots from '@/components/icon/icon-lock-dots';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import api from '@/utils/api';
-import Swal from 'sweetalert2';
+import { useToast } from '@/components/stone-mine/toast-notification';
 
 const ComponentsAuthResetNewPasswordForm = ({ token }: { token: string }) => {
     const router = useRouter();
+    const { showToast } = useToast();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -15,11 +16,7 @@ const ComponentsAuthResetNewPasswordForm = ({ token }: { token: string }) => {
         e.preventDefault();
 
         if (password !== confirmPassword) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Passwords do not match',
-            });
+            showToast('Passwords do not match', 'error');
             return;
         }
 
@@ -27,21 +24,11 @@ const ComponentsAuthResetNewPasswordForm = ({ token }: { token: string }) => {
         try {
             const { data } = await api.put(`/auth/resetpassword/${token}`, { password });
             if (data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Password Reset',
-                    text: 'Your password has been successfully reset. You are now logged in.',
-                    timer: 2000,
-                    showConfirmButton: false,
-                });
+                showToast('Your password has been successfully reset. You are now logged in.', 'success');
                 router.push('/');
             }
         } catch (error: any) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: error.response?.data?.message || 'Error resetting password',
-            });
+            showToast(error.response?.data?.message || 'Error resetting password', 'error');
         } finally {
             setLoading(false);
         }
