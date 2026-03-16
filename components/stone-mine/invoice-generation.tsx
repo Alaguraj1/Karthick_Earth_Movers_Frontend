@@ -1,6 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import IconSearch from '@/components/icon/icon-search';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconX from '@/components/icon/icon-x';
@@ -10,6 +12,10 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 
 const InvoiceGeneration = () => {
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isManagement = ['owner', 'manager', 'admin'].includes(currentUser?.role?.toLowerCase() || '');
+
     const querySaleId = searchParams.get('id');
     const [sales, setSales] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -80,6 +86,16 @@ const InvoiceGeneration = () => {
         printWindow.focus();
         setTimeout(() => { printWindow.print(); }, 500);
     };
+
+    if (!isManagement) {
+        return (
+            <div className="panel p-5 text-center">
+                <h4 className="text-xl font-bold text-danger">Access Denied (அனுமதி இல்லை)</h4>
+                <p className="mt-2 text-white-dark font-medium uppercase tracking-wider text-xs">Only Owners and Managers can access this page.</p>
+                <button className="btn btn-primary mt-6 mx-auto" onClick={() => router.push('/')}>Go to Dashboard</button>
+            </div>
+        );
+    }
 
     return (
         <div>

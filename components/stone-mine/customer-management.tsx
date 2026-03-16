@@ -8,6 +8,8 @@ import IconSave from '@/components/icon/icon-save';
 import IconX from '@/components/icon/icon-x';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import { useToast } from '@/components/stone-mine/toast-notification';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import axios from 'axios';
 import Link from 'next/link';
 
@@ -15,6 +17,9 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 
 const CustomerManagement = () => {
     const { showToast } = useToast();
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const [customers, setCustomers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -194,9 +199,9 @@ const CustomerManagement = () => {
                                                 <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(cust)}>
                                                     <IconEdit className="w-4 h-4" />
                                                 </button>
-                                                <button className="btn btn-sm btn-outline-danger" onClick={() => setDeleteId(cust._id)}>
+                                                {isOwner && (<button className="btn btn-sm btn-outline-danger" onClick={() => setDeleteId(cust._id)}>
                                                     <IconTrash className="w-4 h-4" />
-                                                </button>
+                                                </button>)}
                                             </div>
                                         </td>
                                     </tr>

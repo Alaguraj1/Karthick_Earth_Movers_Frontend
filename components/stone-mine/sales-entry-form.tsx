@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import Link from 'next/link';
 import IconSave from '@/components/icon/icon-save';
 import IconPlus from '@/components/icon/icon-plus';
@@ -18,6 +20,10 @@ import IconFileUpload from '@/components/icon/icon-file-upload';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const SalesEntryForm = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const canSeeFinancials = currentUser?.role?.toLowerCase() === 'owner' || currentUser?.role?.toLowerCase() === 'manager';
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+
     const { showToast } = useToast();
     const [customers, setCustomers] = useState<any[]>([]);
     const [stoneTypes, setStoneTypes] = useState<any[]>([]);
@@ -398,13 +404,15 @@ const SalesEntryForm = () => {
                                         ))}
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Payment Type *</label>
-                                    <select name="paymentType" className="form-select" value={formData.paymentType} onChange={handleChange}>
-                                        <option value="Cash">💵 Cash Sale</option>
-                                        <option value="Credit">📒 Credit Sale</option>
-                                    </select>
-                                </div>
+                                {canSeeFinancials && (
+                                    <div>
+                                        <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Payment Type *</label>
+                                        <select name="paymentType" className="form-select" value={formData.paymentType} onChange={handleChange}>
+                                            <option value="Cash">💵 Cash Sale</option>
+                                            <option value="Credit">📒 Credit Sale</option>
+                                        </select>
+                                    </div>
+                                )}
                                 {formData.paymentType === 'Credit' && (
                                     <div>
                                         <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Due Date</label>
@@ -449,8 +457,8 @@ const SalesEntryForm = () => {
                                             <th>Item (Material)</th>
                                             <th>Quantity</th>
                                             <th>Unit</th>
-                                            <th>Rate (₹)</th>
-                                            <th className="!text-right">Amount (₹)</th>
+                                            {canSeeFinancials && <th>Rate (₹)</th>}
+                                            {canSeeFinancials && <th className="!text-right">Amount (₹)</th>}
                                             <th className="!text-center w-16">Action</th>
                                         </tr>
                                     </thead>
@@ -478,12 +486,16 @@ const SalesEntryForm = () => {
                                                         <option value="Loads">Loads</option>
                                                     </select>
                                                 </td>
-                                                <td>
-                                                    <input type="number" name="rate" className="form-input text-sm w-28" placeholder="0.00" value={item.rate} onChange={(e) => handleItemChange(idx, e)} required />
-                                                </td>
-                                                <td className="!text-right font-bold text-primary text-lg">
-                                                    ₹{item.amount.toLocaleString()}
-                                                </td>
+                                                {canSeeFinancials && (
+                                                    <td>
+                                                        <input type="number" name="rate" className="form-input text-sm w-28" placeholder="0.00" value={item.rate} onChange={(e) => handleItemChange(idx, e)} required />
+                                                    </td>
+                                                )}
+                                                {canSeeFinancials && (
+                                                    <td className="!text-right font-bold text-primary text-lg">
+                                                        ₹{item.amount.toLocaleString()}
+                                                    </td>
+                                                )}
                                                 <td className="!text-center">
                                                     <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeItem(idx)} disabled={items.length === 1}>
                                                         <IconTrash className="w-4 h-4" />
@@ -515,40 +527,42 @@ const SalesEntryForm = () => {
                         </div>
 
                         {/* Section 4: GST & Totals */}
-                        <div className="space-y-5">
-                            <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2">
-                                <IconEdit className="w-4 h-4" />
-                                GST & Totals
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">GST %</label>
-                                    <select name="gstPercentage" className="form-select" value={formData.gstPercentage} onChange={handleChange}>
-                                        <option value="0">No GST (0%)</option>
-                                        <option value="5">5%</option>
-                                        <option value="12">12%</option>
-                                        <option value="18">18%</option>
-                                        <option value="28">28%</option>
-                                    </select>
+                        {canSeeFinancials && (
+                            <div className="space-y-5">
+                                <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2">
+                                    <IconEdit className="w-4 h-4" />
+                                    GST & Totals
                                 </div>
-                                <div className="bg-dark-light/5 dark:bg-dark p-4 rounded-lg space-y-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-white-dark">Subtotal:</span>
-                                        <span className="font-bold">₹{subtotal.toLocaleString()}</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="text-xs font-bold text-white-dark uppercase mb-2 block">GST %</label>
+                                        <select name="gstPercentage" className="form-select" value={formData.gstPercentage} onChange={handleChange}>
+                                            <option value="0">No GST (0%)</option>
+                                            <option value="5">5%</option>
+                                            <option value="12">12%</option>
+                                            <option value="18">18%</option>
+                                            <option value="28">28%</option>
+                                        </select>
                                     </div>
-                                    {gstAmount > 0 && (
+                                    <div className="bg-dark-light/5 dark:bg-dark p-4 rounded-lg space-y-3">
                                         <div className="flex justify-between text-sm">
-                                            <span className="text-white-dark">GST ({formData.gstPercentage}%):</span>
-                                            <span className="font-bold">₹{gstAmount.toLocaleString()}</span>
+                                            <span className="text-white-dark">Subtotal:</span>
+                                            <span className="font-bold">₹{subtotal.toLocaleString()}</span>
                                         </div>
-                                    )}
-                                    <div className="flex justify-between text-lg border-t border-[#ebedf2] dark:border-[#1b2e4b] pt-2">
-                                        <span className="font-bold text-primary">Grand Total:</span>
-                                        <span className="font-black text-primary text-2xl">₹{grandTotal.toLocaleString()}</span>
+                                        {gstAmount > 0 && (
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-white-dark">GST ({formData.gstPercentage}%):</span>
+                                                <span className="font-bold">₹{gstAmount.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between text-lg border-t border-[#ebedf2] dark:border-[#1b2e4b] pt-2">
+                                            <span className="font-bold text-primary">Grand Total:</span>
+                                            <span className="font-black text-primary text-2xl">₹{grandTotal.toLocaleString()}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Notes */}
                         <div>
@@ -662,8 +676,8 @@ const SalesEntryForm = () => {
                                     <th>Customer</th>
                                     <th>Location</th>
                                     <th>Items</th>
-                                    <th>Type</th>
-                                    <th className="!text-right">Total</th>
+                                    {canSeeFinancials && <th>Type</th>}
+                                    {canSeeFinancials && <th className="!text-right">Total</th>}
                                     <th className="!text-center">Payment</th>
                                     <th className="!text-center">Delivery</th>
                                     <th className="!text-center">Receipt</th>
@@ -722,12 +736,14 @@ const SalesEntryForm = () => {
                                                     {sale.items?.length || 0} items
                                                 </span>
                                             </td>
-                                            <td>
-                                                <span className={`badge ${sale.paymentType === 'Cash' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                                                    {sale.paymentType === 'Cash' ? '💵 Cash' : '📒 Credit'}
-                                                </span>
-                                            </td>
-                                            <td className="!text-right font-bold">₹{sale.grandTotal?.toLocaleString()}</td>
+                                            {canSeeFinancials && (
+                                                <td>
+                                                    <span className={`badge ${sale.paymentType === 'Cash' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                                                        {sale.paymentType === 'Cash' ? '💵 Cash' : '📒 Credit'}
+                                                    </span>
+                                                </td>
+                                            )}
+                                            {canSeeFinancials && <td className="!text-right font-bold">₹{sale.grandTotal?.toLocaleString()}</td>}
                                             <td className="!text-center">
                                                 <span className={`badge ${sale.paymentStatus === 'Paid' ? 'bg-success/10 text-success'
                                                     : sale.paymentStatus === 'Partial' ? 'bg-warning/10 text-warning'
@@ -779,13 +795,13 @@ const SalesEntryForm = () => {
                                                     >
                                                         <IconEye className="w-4 h-4" />
                                                     </Link>
-                                                    <button
+                                                    {isOwner && (<button
                                                         className="btn btn-sm btn-outline-danger"
                                                         onClick={() => setDeleteId(sale._id)}
                                                         title="Delete Sale"
                                                     >
                                                         <IconTrash className="w-4 h-4" />
-                                                    </button>
+                                                    </button>)}
                                                 </div>
                                             </td>
                                         </tr>

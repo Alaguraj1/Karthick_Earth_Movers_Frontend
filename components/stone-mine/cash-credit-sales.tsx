@@ -1,11 +1,18 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
+import { IRootState } from '@/store';
 import IconSearch from '@/components/icon/icon-search';
 import axios from 'axios';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const CashCreditSales = () => {
+    const router = useRouter();
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isManagement = ['owner', 'manager', 'admin'].includes(currentUser?.role?.toLowerCase() || '');
+
     const [sales, setSales] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'all' | 'Cash' | 'Credit'>('all');
@@ -40,6 +47,16 @@ const CashCreditSales = () => {
     const totalCreditPending = creditSales.reduce((sum, s) => sum + s.balanceAmount, 0);
 
     const displayedSales = activeTab === 'all' ? sales : sales.filter(s => s.paymentType === activeTab);
+
+    if (!isManagement) {
+        return (
+            <div className="panel p-5 text-center">
+                <h4 className="text-xl font-bold text-danger">Access Denied (அனுமதி இல்லை)</h4>
+                <p className="mt-2 text-white-dark font-medium uppercase tracking-wider text-xs">Only Owners and Managers can access this page.</p>
+                <button className="btn btn-primary mt-6 mx-auto" onClick={() => router.push('/')}>Go to Dashboard</button>
+            </div>
+        );
+    }
 
     return (
         <div>

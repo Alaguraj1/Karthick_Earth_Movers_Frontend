@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
@@ -24,6 +26,9 @@ const SalesDetailsView = () => {
     const [trips, setTrips] = useState<any[]>([]);
     const [payments, setPayments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const canSeeFinancials = currentUser?.role?.toLowerCase() === 'owner' || currentUser?.role?.toLowerCase() === 'manager';
 
     const fetchData = async () => {
         if (!saleId) return;
@@ -121,15 +126,17 @@ const SalesDetailsView = () => {
                                     <p className="font-bold">{sale.toLocation || 'N/A'}</p>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 bg-warning/10 rounded-lg text-warning">
-                                    <IconInfoCircle className="w-5 h-5" />
+                            {canSeeFinancials && (
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-warning/10 rounded-lg text-warning">
+                                        <IconInfoCircle className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-white-dark text-xs uppercase font-bold">Payment Status</p>
+                                        <p className="font-bold">{sale.paymentStatus} ({sale.paymentType})</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-white-dark text-xs uppercase font-bold">Payment Status</p>
-                                    <p className="font-bold">{sale.paymentStatus} ({sale.paymentType})</p>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
@@ -141,18 +148,18 @@ const SalesDetailsView = () => {
                                 <thead>
                                     <tr>
                                         <th>Material</th>
-                                        <th className="text-center">Rate</th>
+                                        {canSeeFinancials && <th className="text-center">Rate</th>}
                                         <th className="text-center">Total Qty</th>
-                                        <th className="text-right">Amount</th>
+                                        {canSeeFinancials && <th className="text-right">Amount</th>}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {sale.items?.map((item: any, i: number) => (
                                         <tr key={i}>
                                             <td className="font-bold">{item.item}</td>
-                                            <td className="text-center">₹{item.rate}</td>
+                                            {canSeeFinancials && <td className="text-center">₹{item.rate}</td>}
                                             <td className="text-center">{item.quantity} {item.unit}</td>
-                                            <td className="text-right font-bold">₹{item.amount?.toLocaleString()}</td>
+                                            {canSeeFinancials && <td className="text-right font-bold">₹{item.amount?.toLocaleString()}</td>}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -202,56 +209,60 @@ const SalesDetailsView = () => {
                     </div>
                 </div>
 
-                {/* Right Column: Financial Summary */}
+                {/* Right Column: Financial Summary & Remarks */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="panel bg-primary text-white">
-                        <h5 className="font-bold text-lg mb-4 text-white">Financial Summary</h5>
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center opacity-80">
-                                <span>Subtotal:</span>
-                                <span>₹{sale.subtotal?.toLocaleString()}</span>
-                            </div>
-                            {sale.gstAmount > 0 && (
-                                <div className="flex justify-between items-center opacity-80">
-                                    <span>GST ({sale.gstPercentage}%):</span>
-                                    <span>₹{sale.gstAmount?.toLocaleString()}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between items-center pt-3 border-t border-white/20 text-xl font-black italic">
-                                <span>Grand Total:</span>
-                                <span>₹{sale.grandTotal?.toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="panel">
-                        <h5 className="font-bold text-lg mb-4">Payment History</h5>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center p-3 bg-success/10 rounded-lg">
-                                <div>
-                                    <p className="text-xs text-white-dark uppercase font-bold">Total Paid</p>
-                                    <p className="text-lg font-black text-success">₹{sale.amountPaid?.toLocaleString()}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs text-white-dark uppercase font-bold">Pending</p>
-                                    <p className="text-lg font-black text-danger">₹{sale.balanceAmount?.toLocaleString()}</p>
-                                </div>
-                            </div>
-
-                            {payments.length > 0 ? (
-                                <div className="space-y-2">
-                                    {payments.map((p: any, i: number) => (
-                                        <div key={i} className="flex justify-between text-xs p-2 border-b border-white-light dark:border-white-dark/10 last:border-0">
-                                            <span>{new Date(p.paymentDate).toLocaleDateString()}</span>
-                                            <span className="font-bold">₹{p.amount?.toLocaleString()}</span>
+                    {canSeeFinancials && (
+                        <>
+                            <div className="panel bg-primary text-white">
+                                <h5 className="font-bold text-lg mb-4 text-white">Financial Summary</h5>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center opacity-80">
+                                        <span>Subtotal:</span>
+                                        <span>₹{sale.subtotal?.toLocaleString()}</span>
+                                    </div>
+                                    {sale.gstAmount > 0 && (
+                                        <div className="flex justify-between items-center opacity-80">
+                                            <span>GST ({sale.gstPercentage}%):</span>
+                                            <span>₹{sale.gstAmount?.toLocaleString()}</span>
                                         </div>
-                                    ))}
+                                    )}
+                                    <div className="flex justify-between items-center pt-3 border-t border-white/20 text-xl font-black italic">
+                                        <span>Grand Total:</span>
+                                        <span>₹{sale.grandTotal?.toLocaleString()}</span>
+                                    </div>
                                 </div>
-                            ) : (
-                                <p className="text-xs text-center text-white-dark italic">No payment records found.</p>
-                            )}
-                        </div>
-                    </div>
+                            </div>
+
+                            <div className="panel">
+                                <h5 className="font-bold text-lg mb-4">Payment History</h5>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center p-3 bg-success/10 rounded-lg">
+                                        <div>
+                                            <p className="text-xs text-white-dark uppercase font-bold">Total Paid</p>
+                                            <p className="text-lg font-black text-success">₹{sale.amountPaid?.toLocaleString()}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-white-dark uppercase font-bold">Pending</p>
+                                            <p className="text-lg font-black text-danger">₹{sale.balanceAmount?.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+
+                                    {payments.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {payments.map((p: any, i: number) => (
+                                                <div key={i} className="flex justify-between text-xs p-2 border-b border-white-light dark:border-white-dark/10 last:border-0">
+                                                    <span>{new Date(p.paymentDate).toLocaleDateString()}</span>
+                                                    <span className="font-bold">₹{p.amount?.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-center text-white-dark italic">No payment records found.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     {sale.receiptFile && (
                         <div className="panel">

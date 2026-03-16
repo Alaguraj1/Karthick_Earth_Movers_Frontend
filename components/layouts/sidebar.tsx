@@ -45,6 +45,8 @@ const Sidebar = () => {
     const semidark = useSelector((state: IRootState) => state.themeConfig.semidark);
     const userRole = useSelector((state: IRootState) => state.auth.user?.role?.toLowerCase());
     const isAdmin = userRole === 'admin' || userRole === 'owner';
+    const isManagement = userRole === 'owner' || userRole === 'manager' || userRole === 'admin';
+    const isOwner = userRole === 'owner';
     const toggleMenu = (value: string) => {
         setCurrentMenu((oldValue) => {
             return oldValue === value ? '' : value;
@@ -145,9 +147,11 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/expenses/machine-maintenance">Maintenance</Link>
                                                 </li>
-                                                <li>
-                                                    <Link href="/expenses/labour-wages">Labour Wages</Link>
-                                                </li>
+                                                {isManagement && (
+                                                    <li>
+                                                        <Link href="/expenses/labour-wages">Labour Wages</Link>
+                                                    </li>
+                                                )}
                                                 <li>
                                                     <Link href="/expenses/explosive-cost">Explosive Cost</Link>
                                                 </li>
@@ -180,15 +184,19 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/sales-billing/sales-entry">Sales Entry</Link>
                                                 </li>
-                                                <li>
-                                                    <Link href="/sales-billing/invoices">Invoice Generation</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/sales-billing/cash-credit">Cash / Credit Sales</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/sales-billing/pending-payments">Pending Payments</Link>
-                                                </li>
+                                                {isManagement && (
+                                                    <>
+                                                        <li>
+                                                            <Link href="/sales-billing/invoices">Invoice Generation</Link>
+                                                        </li>
+                                                        <li>
+                                                            <Link href="/sales-billing/cash-credit">Cash / Credit Sales</Link>
+                                                        </li>
+                                                        <li>
+                                                            <Link href="/sales-billing/pending-payments">Pending Payments</Link>
+                                                        </li>
+                                                    </>
+                                                )}
                                             </ul>
                                         </AnimateHeight>
                                     </li>
@@ -238,9 +246,11 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/labour/attendance">Daily Attendance</Link>
                                                 </li>
-                                                <li>
-                                                    <Link href="/labour/wages">Wages Calculation</Link>
-                                                </li>
+                                                {isManagement && (
+                                                    <li>
+                                                        <Link href="/labour/wages">Wages Calculation</Link>
+                                                    </li>
+                                                )}
                                                 <li>
                                                     <Link href="/labour/advance">Advance Payment</Link>
                                                 </li>
@@ -268,9 +278,11 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/transport/trips">Vehicle Trip Management</Link>
                                                 </li>
-                                                <li>
-                                                    <Link href="/transport/driver-payments">Driver Payment</Link>
-                                                </li>
+                                                {isManagement && (
+                                                    <li>
+                                                        <Link href="/transport/driver-payments">Driver Payment</Link>
+                                                    </li>
+                                                )}
                                                 <li>
                                                     <Link href="/transport/permits">Permit Management</Link>
                                                 </li>
@@ -301,87 +313,95 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/vendors/transport">Transport Vendors</Link>
                                                 </li>
-                                                <li>
-                                                    <Link href="/vendors/payments">Payment History</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/vendors/outstanding">Outstanding Balance</Link>
-                                                </li>
+                                                {isManagement && (
+                                                    <>
+                                                        <li>
+                                                            <Link href="/vendors/payments">Payment History</Link>
+                                                        </li>
+                                                        <li>
+                                                            <Link href="/vendors/outstanding">Outstanding Balance</Link>
+                                                        </li>
+                                                    </>
+                                                )}
                                             </ul>
                                         </AnimateHeight>
                                     </li>
 
-                                    <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'accounts-reports' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('accounts-reports')}>
-                                            <div className="flex items-center">
-                                                <IconMenuCharts className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Accounts & Reports</span>
-                                            </div>
+                                    {isOwner && (
+                                        <li className="menu nav-item">
+                                            <button type="button" className={`${currentMenu === 'accounts-reports' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('accounts-reports')}>
+                                                <div className="flex items-center">
+                                                    <IconMenuCharts className="shrink-0 group-hover:!text-primary" />
+                                                    <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Accounts & Reports</span>
+                                                </div>
 
-                                            <div className={currentMenu !== 'accounts-reports' ? '-rotate-90 rtl:rotate-90' : ''}>
-                                                <IconCaretDown />
-                                            </div>
-                                        </button>
+                                                <div className={currentMenu !== 'accounts-reports' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                    <IconCaretDown />
+                                                </div>
+                                            </button>
 
-                                        <AnimateHeight duration={300} height={currentMenu === 'accounts-reports' ? 'auto' : 0}>
-                                            <ul className="sub-menu text-gray-500">
-                                                <li>
-                                                    <Link href="/accounts-reports/day-book">Day Book</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/accounts-reports/cash-flow">Cash Flow Statement</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/accounts-reports/profit-loss">Profit & Loss A/c</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/accounts-reports/summary">Monthly/Yearly Reports</Link>
-                                                </li>
-                                            </ul>
-                                        </AnimateHeight>
-                                    </li>
+                                            <AnimateHeight duration={300} height={currentMenu === 'accounts-reports' ? 'auto' : 0}>
+                                                <ul className="sub-menu text-gray-500">
+                                                    <li>
+                                                        <Link href="/accounts-reports/day-book">Day Book</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/accounts-reports/cash-flow">Cash Flow Statement</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/accounts-reports/profit-loss">Profit & Loss A/c</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/accounts-reports/summary">Monthly/Yearly Reports</Link>
+                                                    </li>
+                                                </ul>
+                                            </AnimateHeight>
+                                        </li>
+                                    )}
 
-                                    <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'masters-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('masters-mgmt')}>
-                                            <div className="flex items-center">
-                                                <IconMenuForms className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Masters</span>
-                                            </div>
+                                    {isManagement && (
+                                        <li className="menu nav-item">
+                                            <button type="button" className={`${currentMenu === 'masters-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('masters-mgmt')}>
+                                                <div className="flex items-center">
+                                                    <IconMenuForms className="shrink-0 group-hover:!text-primary" />
+                                                    <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Masters</span>
+                                                </div>
 
-                                            <div className={currentMenu !== 'masters-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
-                                                <IconCaretDown />
-                                            </div>
-                                        </button>
+                                                <div className={currentMenu !== 'masters-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                    <IconCaretDown />
+                                                </div>
+                                            </button>
 
-                                        <AnimateHeight duration={300} height={currentMenu === 'masters-mgmt' ? 'auto' : 0}>
-                                            <ul className="sub-menu text-gray-500">
-                                                <li>
-                                                    <Link href="/masters/stone-types">Stone Types</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/masters/explosive-materials">Explosive Materials</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/masters/vehicle-categories">Vehicle Categories</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/masters/machine-categories">Machine Categories</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/masters/expense-categories">Expense Categories</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/masters/roles">User Roles</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/masters/work-types">Work Types</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/masters/maintenance-types">Maintenance Types</Link>
-                                                </li>
-                                            </ul>
-                                        </AnimateHeight>
-                                    </li>
+                                            <AnimateHeight duration={300} height={currentMenu === 'masters-mgmt' ? 'auto' : 0}>
+                                                <ul className="sub-menu text-gray-500">
+                                                    <li>
+                                                        <Link href="/masters/stone-types">Stone Types</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/masters/explosive-materials">Explosive Materials</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/masters/vehicle-categories">Vehicle Categories</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/masters/machine-categories">Machine Categories</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/masters/expense-categories">Expense Categories</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/masters/roles">User Roles</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/masters/work-types">Work Types</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/masters/maintenance-types">Maintenance Types</Link>
+                                                    </li>
+                                                </ul>
+                                            </AnimateHeight>
+                                        </li>
+                                    )}
 
                                     <li className="nav-item">
                                         <Link href="/workflow" className="group">
