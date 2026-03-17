@@ -49,6 +49,7 @@ const MachineDetails = () => {
     const categories = ['JCB', 'Hitachi', 'Loader', 'Generator', 'Compressor', 'Driller', 'Tractor', 'Stone Crusher', 'Other'];
 
     const [machineCategories, setMachineCategories] = useState<any[]>([]);
+    const [operators, setOperators] = useState<any[]>([]);
 
     const fetchAssets = async () => {
         setLoading(true);
@@ -75,9 +76,25 @@ const MachineDetails = () => {
         }
     };
 
+    const fetchOperators = async () => {
+        try {
+            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour`);
+            if (data.success) {
+                // Only show operators
+                const filtered = data.data.filter((l: any) =>
+                    l.workType?.toLowerCase().includes('operator')
+                );
+                setOperators(filtered);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchAssets();
         fetchCategories();
+        fetchOperators();
     }, []);
 
     const handleAdd = async (e: any) => {
@@ -302,7 +319,16 @@ const MachineDetails = () => {
                                 </div>
                                 <div className="md:col-span-2">
                                     <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Operator Name</label>
-                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.operatorName} onChange={(e) => setNewItem({ ...newItem, operatorName: e.target.value })} />
+                                    <select
+                                        className="form-select border-2 font-bold rounded-xl h-12"
+                                        value={newItem.operatorName}
+                                        onChange={(e) => setNewItem({ ...newItem, operatorName: e.target.value })}
+                                    >
+                                        <option value="">Select Operator (இயக்குபவர்)</option>
+                                        {operators.map((op: any) => (
+                                            <option key={op._id} value={op.name}>{op.name} {op.mobile ? `- ${op.mobile}` : ''}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
                             <div className="pt-4">

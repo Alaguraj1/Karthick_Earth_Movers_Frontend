@@ -220,6 +220,9 @@ const Sidebar = () => {
                                                     <Link href="/assets/machines">Machine Details</Link>
                                                 </li>
                                                 <li>
+                                                    <Link href="/assets/machine-production">Machine Production</Link>
+                                                </li>
+                                                <li>
                                                     <Link href="/assets/vehicles">Vehicle Details</Link>
                                                 </li>
                                             </ul>
