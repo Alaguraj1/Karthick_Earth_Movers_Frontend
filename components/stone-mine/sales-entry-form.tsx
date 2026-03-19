@@ -43,6 +43,7 @@ const SalesEntryForm = () => {
         toLocation: '',
         receiptNumber: '',
         receiptFile: '',
+        gstNumber: '',
     });
 
     const [items, setItems] = useState<any[]>([
@@ -85,6 +86,36 @@ const SalesEntryForm = () => {
     const handleChange = (e: any) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (name === 'gstNumber' && value.length >= 3) {
+            handleGstSearch(value);
+        }
+
+        if (name === 'customer') {
+            const selected = customers.find(c => c._id === value);
+            if (selected) {
+                setFormData(prev => ({ ...prev, gstNumber: selected.gstNumber || '' }));
+            }
+        }
+    };
+
+    const handleGstSearch = async (gst: string) => {
+        try {
+            const res = await axios.get(`${API}/customers?search=${gst}`);
+            if (res.data.success && res.data.data.length > 0) {
+                // Find an exact match if possible, otherwise first match
+                const match = res.data.data.find((c: any) => c.gstNumber?.toLowerCase() === gst.toLowerCase()) || res.data.data[0];
+                if (match) {
+                    setFormData(prev => ({
+                        ...prev,
+                        customer: match._id,
+                        // We also update the notes or other fields if needed, but selecting the customer is primary
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error searching customer by GST:', error);
+        }
     };
 
     const handleToggleDeliveryStatus = async (sale: any) => {
@@ -150,6 +181,7 @@ const SalesEntryForm = () => {
             toLocation: '',
             receiptNumber: '',
             receiptFile: '',
+            gstNumber: '',
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]);
     };
@@ -167,6 +199,7 @@ const SalesEntryForm = () => {
             toLocation: '',
             receiptNumber: '',
             receiptFile: '',
+            gstNumber: '',
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]);
         setShowForm(true);
@@ -189,6 +222,7 @@ const SalesEntryForm = () => {
                     toLocation: sale.toLocation || '',
                     receiptNumber: sale.receiptNumber || '',
                     receiptFile: sale.receiptFile || '',
+                    gstNumber: sale.customer?.gstNumber || '',
                 });
                 setItems(
                     sale.items?.map((item: any) => ({
@@ -396,6 +430,20 @@ const SalesEntryForm = () => {
                                     <input type="date" name="invoiceDate" className="form-input" value={formData.invoiceDate} onChange={handleChange} required />
                                 </div>
                                 <div>
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">GST Number (Search)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            name="gstNumber"
+                                            className="form-input ltr:pr-10 rtl:pl-10 border-info"
+                                            placeholder="Enter GST..."
+                                            value={formData.gstNumber}
+                                            onChange={handleChange}
+                                        />
+                                        <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-info" />
+                                    </div>
+                                </div>
+                                <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Customer Name *</label>
                                     <select name="customer" className="form-select border-primary" value={formData.customer} onChange={handleChange} required>
                                         <option value="">Select Customer</option>
@@ -403,6 +451,28 @@ const SalesEntryForm = () => {
                                             <option key={c._id} value={c._id}>{c.name}</option>
                                         ))}
                                     </select>
+                                    {formData.customer && (
+                                        <div className="mt-2 p-2 bg-primary/5 rounded border border-primary/10">
+                                            {(() => {
+                                                const selected = customers.find(c => c._id === formData.customer);
+                                                if (selected) {
+                                                    return (
+                                                        <div className="text-[10px] space-y-1">
+                                                            <div className="flex justify-between">
+                                                                <span className="text-white-dark">Phone:</span>
+                                                                <span className="font-bold">{selected.phone || 'N/A'}</span>
+                                                            </div>
+                                                            <div className="border-t border-primary/5 pt-1">
+                                                                <span className="text-white-dark block mb-1">Address:</span>
+                                                                <span className="font-semibold block break-words whitespace-pre-wrap">{selected.address || 'N/A'}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
+                                    )}
                                 </div>
                                 {canSeeFinancials && (
                                     <div>
