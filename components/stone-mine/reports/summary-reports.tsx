@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import axios from 'axios';
 import ReactApexChart from 'react-apexcharts';
 import IconPrinter from '@/components/icon/icon-printer';
@@ -10,6 +12,8 @@ import * as XLSX from 'xlsx';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const SummaryReports = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
     const { showToast } = useToast();
     const [year, setYear] = useState(new Date().getFullYear());
     const [reportData, setReportData] = useState<any>(null);
@@ -96,9 +100,11 @@ const SummaryReports = () => {
                                 <option key={y} value={y}>{y}</option>
                             ))}
                         </select>
-                        <button className="btn btn-outline-primary" onClick={exportToExcel}>
-                            <IconDownload className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Export
-                        </button>
+                        {isOwner && (
+                            <button className="btn btn-outline-primary" onClick={exportToExcel}>
+                                <IconDownload className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Export
+                            </button>
+                        )}
                     </div>
                 </div>
 

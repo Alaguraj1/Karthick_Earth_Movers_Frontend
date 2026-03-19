@@ -8,6 +8,7 @@ import { ni18nConfig } from 'ni18n.config.ts';
 import Loading from '@/components/layouts/loading';
 
 import AuthGuard from '@/components/auth/AuthGuard';
+import { ToastProvider } from '@/components/stone-mine/toast-notification';
 
 interface IProps {
     children?: ReactNode;
@@ -17,9 +18,11 @@ const ProviderComponent = ({ children }: IProps) => {
     return (
         <Provider store={store}>
             <Suspense fallback={<Loading />}>
-                <AuthGuard>
-                    <App>{children}</App>
-                </AuthGuard>
+                <ToastProvider>
+                    <AuthGuard>
+                        <App>{children}</App>
+                    </AuthGuard>
+                </ToastProvider>
             </Suspense>
         </Provider>
     );

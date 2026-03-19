@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import axios from 'axios';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconDownload from '@/components/icon/icon-download';
@@ -12,6 +14,8 @@ import 'jspdf-autotable';
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const ProfitLoss = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
     const { showToast } = useToast();
     const [filters, setFilters] = useState({
         startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
@@ -95,14 +99,16 @@ const ProfitLoss = () => {
                         <h5 className="text-xl font-bold dark:text-white-light">லாப நட்ட அறிக்கை (Profit & Loss)</h5>
                         <p className="text-white-dark text-xs mt-1">Income vs Expense analysis (Accrual basis)</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button className="btn btn-outline-primary" onClick={exportToExcel}>
-                            <IconDownload className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Excel
-                        </button>
-                        <button className="btn btn-primary" onClick={exportToPDF}>
-                            <IconPrinter className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> PDF
-                        </button>
-                    </div>
+                    {isOwner && (
+                        <div className="flex items-center gap-3">
+                            <button className="btn btn-outline-primary" onClick={exportToExcel}>
+                                <IconDownload className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Excel
+                            </button>
+                            <button className="btn btn-primary" onClick={exportToPDF}>
+                                <IconPrinter className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> PDF
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex flex-wrap items-end gap-4 mb-8 bg-dark-light/5 p-4 rounded-xl border border-white-light/10">

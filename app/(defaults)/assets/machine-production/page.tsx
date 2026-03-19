@@ -1,5 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import IconPlus from '@/components/icon/icon-plus';
@@ -22,6 +24,8 @@ const MachineProductionPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
     const { showToast } = useToast();
 
     // Filter states
@@ -250,18 +254,22 @@ const MachineProductionPage = () => {
                         <p className="text-xs font-bold text-primary uppercase tracking-widest mt-1">Daily Work & Fuel Logs</p>
                     </div>
                     <div className="flex gap-3">
-                        <button
-                            className="btn btn-outline-success flex items-center gap-2 px-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
-                            onClick={exportToExcel}
-                        >
-                            <IconFile className="w-4 h-4" /> Excel
-                        </button>
-                        <button
-                            className="btn btn-outline-danger flex items-center gap-2 px-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
-                            onClick={exportToPDF}
-                        >
-                            <IconPrinter className="w-4 h-4" /> PDF
-                        </button>
+                        {isOwner && (
+                            <>
+                                <button
+                                    className="btn btn-outline-success flex items-center gap-2 px-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
+                                    onClick={exportToExcel}
+                                >
+                                    <IconFile className="w-4 h-4" /> Excel
+                                </button>
+                                <button
+                                    className="btn btn-outline-danger flex items-center gap-2 px-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
+                                    onClick={exportToPDF}
+                                >
+                                    <IconPrinter className="w-4 h-4" /> PDF
+                                </button>
+                            </>
+                        )}
                         <button
                             className="btn btn-primary shadow-lg shadow-primary/30 flex items-center gap-2 px-6 rounded-2xl"
                             onClick={() => { resetForm(); setShowModal(true); }}

@@ -7,38 +7,33 @@ import Overlay from '@/components/layouts/overlay';
 import ScrollToTop from '@/components/layouts/scroll-to-top';
 import Sidebar from '@/components/layouts/sidebar';
 import Portals from '@/components/portals';
-import { ToastProvider } from '@/components/stone-mine/toast-notification';
-
 export default function DefaultLayout({ children }: { children: React.ReactNode }) {
     return (
-        <ToastProvider>
-            {/* BEGIN MAIN CONTAINER */}
-            <div className="relative">
-                <Overlay />
-                <ScrollToTop />
+        <div className="relative">
+            <Overlay />
+            <ScrollToTop />
 
-                {/* APP SETTING LAUNCHER REMOVED */}
+            {/* APP SETTING LAUNCHER REMOVED */}
 
-                <MainContainer>
-                    {/* BEGIN SIDEBAR */}
-                    <Sidebar />
-                    {/* END SIDEBAR */}
-                    <div className="main-content flex min-h-screen flex-col">
-                        {/* BEGIN TOP NAVBAR */}
-                        <Header />
-                        {/* END TOP NAVBAR */}
+            <MainContainer>
+                {/* BEGIN SIDEBAR */}
+                <Sidebar />
+                {/* END SIDEBAR */}
+                <div className="main-content flex min-h-screen flex-col">
+                    {/* BEGIN TOP NAVBAR */}
+                    <Header />
+                    {/* END TOP NAVBAR */}
 
-                        {/* BEGIN CONTENT AREA */}
-                        <ContentAnimation>{children}</ContentAnimation>
-                        {/* END CONTENT AREA */}
+                    {/* BEGIN CONTENT AREA */}
+                    <ContentAnimation>{children}</ContentAnimation>
+                    {/* END CONTENT AREA */}
 
-                        {/* BEGIN FOOTER */}
-                        <Footer />
-                        {/* END FOOTER */}
-                        <Portals />
-                    </div>
-                </MainContainer>
-            </div>
-        </ToastProvider>
+                    {/* BEGIN FOOTER */}
+                    <Footer />
+                    {/* END FOOTER */}
+                    <Portals />
+                </div>
+            </MainContainer>
+        </div>
     );
 }

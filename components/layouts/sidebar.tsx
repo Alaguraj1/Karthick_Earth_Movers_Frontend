@@ -95,7 +95,7 @@ const Sidebar = () => {
             >
                 <div className="h-full bg-white dark:bg-black">
                     <div className="flex items-center justify-between px-4 py-3">
-                        <Link href={isAdmin ? "/" : "/expenses/diesel"} className="main-logo flex shrink-0 items-center">
+                        <Link href={isOwner ? "/" : "/expenses/diesel"} className="main-logo flex shrink-0 items-center">
                             <img className="ml-[5px] w-24 flex-none rounded-lg" src="/assets/images/logo.png" alt="logo" />
                             {/* <span className="align-middle text-xl font-black ltr:ml-2 rtl:mr-2 dark:text-white-light lg:inline uppercase tracking-tighter">Karthick Earth Movers</span> */}
                         </Link>
@@ -117,7 +117,7 @@ const Sidebar = () => {
 
                             <li className="nav-item">
                                 <ul>
-                                    {isAdmin && (
+                                    {isOwner && (
                                         <li className="nav-item">
                                             <Link href="/" className="group">
                                                 <div className="flex items-center">
@@ -394,9 +394,11 @@ const Sidebar = () => {
                                                     <li>
                                                         <Link href="/masters/expense-categories">Expense Categories</Link>
                                                     </li>
-                                                    <li>
-                                                        <Link href="/masters/roles">User Roles</Link>
-                                                    </li>
+                                                    {isOwner && (
+                                                        <li>
+                                                            <Link href="/masters/roles">User Roles</Link>
+                                                        </li>
+                                                    )}
                                                     <li>
                                                         <Link href="/masters/work-types">Work Types</Link>
                                                     </li>

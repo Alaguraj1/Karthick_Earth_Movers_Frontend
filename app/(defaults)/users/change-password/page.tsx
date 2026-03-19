@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import IconLockDots from '@/components/icon/icon-lock-dots';
 import IconSave from '@/components/icon/icon-save';
+import IconEye from '@/components/icon/icon-eye';
 import api from '@/utils/api';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/stone-mine/toast-notification';
@@ -10,6 +11,9 @@ const ChangePassword = () => {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const { showToast } = useToast();
@@ -60,12 +64,12 @@ const ChangePassword = () => {
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="currentPassword" className="text-[10px] font-black uppercase text-white-dark mb-2 block tracking-widest">Current Password</label>
-                            <div className="relative text-white-dark mt-1">
+                            <div className="relative text-white-dark mt-1 group">
                                 <input
                                     id="currentPassword"
-                                    type="password"
+                                    type={showCurrentPassword ? 'text' : 'password'}
                                     placeholder="Enter Current Password"
-                                    className="form-input ps-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all"
+                                    className="form-input ps-12 pe-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all"
                                     value={currentPassword}
                                     onChange={(e) => setCurrentPassword(e.target.value)}
                                     required
@@ -73,16 +77,24 @@ const ChangePassword = () => {
                                 <span className="absolute start-4 top-1/2 -translate-y-1/2 text-primary">
                                     <IconLockDots fill={true} />
                                 </span>
+                                <button
+                                    type="button"
+                                    className="absolute end-4 top-1/2 -translate-y-1/2 text-primary hover:text-primary-dark transition-colors"
+                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    title={showCurrentPassword ? 'Hide Password' : 'Show Password'}
+                                >
+                                    <IconEye fill={showCurrentPassword} className="h-5 w-5" />
+                                </button>
                             </div>
                         </div>
                         <div>
                             <label htmlFor="newPassword" className="text-[10px] font-black uppercase text-white-dark mb-2 block tracking-widest">New Password</label>
-                            <div className="relative text-white-dark mt-1">
+                            <div className="relative text-white-dark mt-1 group">
                                 <input
                                     id="newPassword"
-                                    type="password"
+                                    type={showNewPassword ? 'text' : 'password'}
                                     placeholder="Enter New Password (min 6 characters)"
-                                    className="form-input ps-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all"
+                                    className="form-input ps-12 pe-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
                                     required
@@ -91,16 +103,24 @@ const ChangePassword = () => {
                                 <span className="absolute start-4 top-1/2 -translate-y-1/2 text-primary">
                                     <IconLockDots fill={true} />
                                 </span>
+                                <button
+                                    type="button"
+                                    className="absolute end-4 top-1/2 -translate-y-1/2 text-primary hover:text-primary-dark transition-colors"
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    title={showNewPassword ? 'Hide Password' : 'Show Password'}
+                                >
+                                    <IconEye fill={showNewPassword} className="h-5 w-5" />
+                                </button>
                             </div>
                         </div>
                         <div>
                             <label htmlFor="confirmPassword" className="text-[10px] font-black uppercase text-white-dark mb-2 block tracking-widest">Confirm New Password</label>
-                            <div className="relative text-white-dark mt-1">
+                            <div className="relative text-white-dark mt-1 group">
                                 <input
                                     id="confirmPassword"
-                                    type="password"
+                                    type={showConfirmPassword ? 'text' : 'password'}
                                     placeholder="Confirm New Password"
-                                    className="form-input ps-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all"
+                                    className="form-input ps-12 pe-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
@@ -109,6 +129,14 @@ const ChangePassword = () => {
                                 <span className="absolute start-4 top-1/2 -translate-y-1/2 text-primary">
                                     <IconLockDots fill={true} />
                                 </span>
+                                <button
+                                    type="button"
+                                    className="absolute end-4 top-1/2 -translate-y-1/2 text-primary hover:text-primary-dark transition-colors"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    title={showConfirmPassword ? 'Hide Password' : 'Show Password'}
+                                >
+                                    <IconEye fill={showConfirmPassword} className="h-5 w-5" />
+                                </button>
                             </div>
                         </div>
                         <div className="flex justify-end pt-6">

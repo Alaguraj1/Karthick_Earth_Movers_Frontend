@@ -115,9 +115,11 @@ const InvoiceGeneration = () => {
                         <button className="btn btn-outline-danger" onClick={() => setShowInvoice(false)}>
                             <IconX className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Back to List
                         </button>
-                        <button className="btn btn-primary" onClick={handlePrint}>
-                            <IconPrinter className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Print / Download PDF
-                        </button>
+                        {currentUser?.role?.toLowerCase() === 'owner' && (
+                            <button className="btn btn-primary" onClick={handlePrint}>
+                                <IconPrinter className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Print / Download PDF
+                            </button>
+                        )}
                     </div>
 
                     <div id="invoice-print-area" className="panel">

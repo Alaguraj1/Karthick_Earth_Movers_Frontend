@@ -1,6 +1,7 @@
 'use client';
 import IconLockDots from '@/components/icon/icon-lock-dots';
 import IconUser from '@/components/icon/icon-user';
+import IconEye from '@/components/icon/icon-eye';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
@@ -14,6 +15,7 @@ const ComponentsAuthLoginForm = () => {
     const dispatch = useDispatch();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const { showToast } = useToast();
 
     const submitForm = async (e: any) => {
@@ -63,12 +65,12 @@ const ComponentsAuthLoginForm = () => {
             </div>
             <div>
                 <label htmlFor="Password" className="text-[10px] font-black uppercase text-white-dark mb-1 block tracking-widest">Password</label>
-                <div className="relative text-white-dark">
+                <div className="relative text-white-dark group">
                     <input
                         id="Password"
-                        type="password"
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="Enter Password"
-                        className="form-input ps-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all placeholder:text-white-dark/50"
+                        className="form-input ps-12 pe-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all placeholder:text-white-dark/50"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -76,6 +78,14 @@ const ComponentsAuthLoginForm = () => {
                     <span className="absolute start-4 top-1/2 -translate-y-1/2 text-primary">
                         <IconLockDots fill={true} />
                     </span>
+                    <button
+                        type="button"
+                        className="absolute end-4 top-1/2 -translate-y-1/2 text-primary hover:text-primary-dark transition-colors"
+                        onClick={() => setShowPassword(!showPassword)}
+                        title={showPassword ? 'Hide Password' : 'Show Password'}
+                    >
+                        <IconEye fill={showPassword} className="h-5 w-5" />
+                    </button>
                 </div>
                 <div className="flex justify-end pt-3">
                     <Link href="/auth/boxed-password-reset" className="text-primary text-[10px] font-black uppercase tracking-widest hover:underline opacity-70 hover:opacity-100 transition-all">Forgot Password?</Link>
@@ -84,12 +94,7 @@ const ComponentsAuthLoginForm = () => {
             <button type="submit" className="btn btn-primary h-12 w-full rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-[0_10px_20px_rgba(67,97,238,0.3)] transition-all transform hover:scale-[1.02]">
                 Sign in
             </button>
-            <div className="text-center dark:text-white mt-10 text-xs font-bold text-white-dark uppercase tracking-widest">
-                Don't have an account?&nbsp;
-                <Link href="/auth/boxed-signup" className="text-primary font-black underline transition-all hover:text-primary/70">
-                    SIGN UP
-                </Link>
-            </div>
+            {/* Signup link removed as per user request */}
         </form>
     );
 };

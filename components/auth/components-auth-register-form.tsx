@@ -143,11 +143,9 @@ const ComponentsAuthRegisterForm = () => {
             <button type="submit" className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)] font-bold py-3">
                 Sign Up
             </button>
-            <div className="text-center dark:text-white mt-10">
+            <div className="text-center dark:text-white mt-8 text-xs font-bold text-white-dark uppercase tracking-widest">
                 Already have an account?&nbsp;
-                <Link href="/auth/boxed-signin" className="uppercase text-primary underline transition hover:text-black dark:hover:text-white">
-                    SIGN IN
-                </Link>
+                <Link href="/login" className="text-primary font-black hover:underline mt-2 block sm:inline-block">SIGN IN</Link>
             </div>
         </form>
     );

@@ -11,6 +11,7 @@ import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import ConfirmationModal from '@/components/stone-mine/confirmation-modal';
 import PasswordResetModal from '@/components/stone-mine/password-reset-modal';
+import IconEye from '@/components/icon/icon-eye';
 
 interface User {
     _id: string;
@@ -43,6 +44,7 @@ const UserManagement = () => {
     const [roleList, setRoleList] = useState<any[]>([]);
     const [resetUser, setResetUser] = useState<User | null>(null);
     const [statusChangeUser, setStatusChangeUser] = useState<User | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -74,6 +76,7 @@ const UserManagement = () => {
         setForm(defaultForm);
         setEditMode(false);
         setEditId('');
+        setShowPassword(false); // Reset showPassword state
         setShowModal(true);
     };
 
@@ -81,6 +84,7 @@ const UserManagement = () => {
         setForm({ name: user.name, username: user.username, email: user.email || '', password: '', role: user.role, status: user.status });
         setEditMode(true);
         setEditId(user._id);
+        setShowPassword(false); // Reset showPassword state
         setShowModal(true);
     };
 
@@ -341,15 +345,25 @@ const UserManagement = () => {
                             {!editMode && (
                                 <div>
                                     <label>Password <span className="text-danger">*</span></label>
-                                    <input
-                                        type="password"
-                                        className="form-input mt-1"
-                                        placeholder="Min 6 characters"
-                                        value={form.password}
-                                        onChange={e => setForm({ ...form, password: e.target.value })}
-                                        required
-                                        minLength={6}
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            className="form-input mt-1 pe-12"
+                                            placeholder="Min 6 characters"
+                                            value={form.password}
+                                            onChange={e => setForm({ ...form, password: e.target.value })}
+                                            required
+                                            minLength={6}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="absolute end-4 top-1/2 -translate-y-1/2 text-primary hover:text-primary-dark transition-colors"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            title={showPassword ? 'Hide Password' : 'Show Password'}
+                                        >
+                                            <IconEye fill={showPassword} className="h-5 w-5" />
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                             <div>

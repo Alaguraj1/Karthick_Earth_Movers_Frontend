@@ -10,6 +10,7 @@ import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import axios from 'axios';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
+import IconLockDots from '@/components/icon/icon-lock-dots';
 
 const RoleMaster = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -97,6 +98,19 @@ const RoleMaster = () => {
             setDeleteId(null);
         }
     };
+
+    if (!isOwner && !loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] panel p-10">
+                <div className="text-danger mb-4">
+                    <IconLockDots className="w-16 h-16 mx-auto" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white-light mb-2">Access Denied</h2>
+                <p className="text-gray-500 mb-6">You do not have permission to access User Roles. Only owners can view or manage roles.</p>
+                <a href="/" className="btn btn-primary">Go to Dashboard</a>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

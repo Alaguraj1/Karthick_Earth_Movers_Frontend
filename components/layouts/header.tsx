@@ -41,6 +41,7 @@ const Header = () => {
     const { t, i18n } = getTranslation();
     const user = useSelector((state: IRootState) => state.auth.user);
     const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'owner';
+    const isOwner = user?.role?.toLowerCase() === 'owner';
 
     useEffect(() => {
         const selector = document.querySelector('ul.horizontal-menu a[href="' + window.location.pathname + '"]');
@@ -152,7 +153,7 @@ const Header = () => {
             <div className="shadow-sm">
                 <div className="relative flex w-full items-center bg-white px-5 py-2.5 dark:bg-black">
                     <div className="horizontal-logo flex items-center justify-between ltr:mr-2 rtl:ml-2 lg:hidden">
-                        <Link href={isAdmin ? "/" : "/expenses/diesel"} className="main-logo flex shrink-0 items-center">
+                        <Link href={isOwner ? "/" : "/expenses/diesel"} className="main-logo flex shrink-0 items-center">
                             <img className="inline w-10 rounded-lg ltr:-ml-1 rtl:-mr-1" src="/assets/images/logo.png" alt="logo" />
                             <span className="hidden align-middle text-xl font-black transition-all duration-300 ltr:ml-2 rtl:mr-2 dark:text-white-light md:inline uppercase tracking-tighter">Karthick Earth Movers</span>
                         </Link>
@@ -210,7 +211,7 @@ const Header = () => {
                                         <button type="button" className="flex w-full !py-3 text-danger hover:text-danger hover:bg-danger/10" onClick={() => {
                                             const { logout } = require('@/store/authSlice');
                                             dispatch(logout());
-                                            router.push('/auth/boxed-signin');
+                                            router.push('/login');
                                         }}>
                                             <IconLogout className="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
                                             Sign Out
@@ -224,7 +225,7 @@ const Header = () => {
 
                 {/* horizontal menu */}
                 <ul className="horizontal-menu hidden border-t border-[#ebedf2] bg-white px-6 py-1.5 font-semibold text-black rtl:space-x-reverse dark:border-[#191e3a] dark:bg-black dark:text-white-dark lg:space-x-1.5 xl:space-x-8">
-                    {isAdmin && (
+                    {isOwner && (
                         <li className="menu nav-item relative">
                             <button type="button" className="nav-link">
                                 <div className="flex items-center">
@@ -643,7 +644,7 @@ const Header = () => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/auth/boxed-signin" target="_blank">
+                                        <Link href="/login" target="_blank">
                                             {t('login_boxed')}
                                         </Link>
                                     </li>

@@ -63,7 +63,7 @@ const ComponentsAuthResetPasswordForm = () => {
                 </div>
             )}
             <div className="text-center mt-4">
-                <Link href="/auth/boxed-signin" className="text-primary hover:underline font-semibold">Back to Login</Link>
+                <Link href="/login" className="text-primary hover:underline font-semibold">Back to Login</Link>
             </div>
         </form>
     );

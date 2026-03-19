@@ -13,21 +13,21 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, user } = useSelector((state: IRootState) => state.auth);
     const [isChecking, setIsChecking] = useState(true);
 
-    const isAuthRoute = pathname.startsWith('/auth');
+    const isAuthRoute = pathname.startsWith('/auth') || pathname === '/login';
 
     useEffect(() => {
         // If Redux says authenticated but no token in storage, clear it
         const token = localStorage.getItem('token');
         if (!token && isAuthenticated) {
             dispatch(logout());
-            router.replace('/auth/boxed-signin');
+            router.replace('/login');
             setIsChecking(false);
             return;
         }
 
         if (!isAuthenticated && !isAuthRoute) {
             // Not logged in — send to login page
-            router.replace('/auth/boxed-signin');
+            router.replace('/login');
             // Don't show children while redirecting
             setIsChecking(false);
             return;
@@ -36,10 +36,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         if (isAuthenticated) {
             const userRole = user?.role?.toLowerCase();
             const isAdmin = userRole === 'admin' || userRole === 'owner';
+            const isOwner = userRole === 'owner';
 
             if (isAuthRoute) {
                 // Already logged in — send to their default page
-                if (isAdmin) {
+                if (isOwner) {
                     router.replace('/');
                 } else {
                     router.replace('/expenses/diesel');
@@ -48,8 +49,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            // If a non-admin tries to go to the dashboard (/), redirect them
-            if (pathname === '/' && !isAdmin) {
+            // If a non-owner tries to go to the dashboard (/), redirect them
+            if (pathname === '/' && !isOwner) {
                 router.replace('/expenses/diesel');
                 setIsChecking(false);
                 return;

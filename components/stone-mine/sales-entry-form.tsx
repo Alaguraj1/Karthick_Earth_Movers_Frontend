@@ -661,14 +661,18 @@ const SalesEntryForm = () => {
                             <h5 className="text-lg font-bold dark:text-white-light whitespace-nowrap">விற்பனை பட்டியல் (Sales List)</h5>
                             <div className="flex items-center gap-2">
                                 <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
-                                <button className="btn btn-outline-primary whitespace-nowrap" onClick={downloadTemplate}>
-                                    <IconDownload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
-                                    Download Template
-                                </button>
-                                <button className="btn btn-info whitespace-nowrap" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-                                    <IconFileUpload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
-                                    {isUploading ? 'Uploading...' : 'Bulk Upload'}
-                                </button>
+                                {isOwner && (
+                                    <>
+                                        <button className="btn btn-outline-primary whitespace-nowrap" onClick={downloadTemplate}>
+                                            <IconDownload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
+                                            Download Template
+                                        </button>
+                                        <button className="btn btn-info whitespace-nowrap" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                                            <IconFileUpload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
+                                            {isUploading ? 'Uploading...' : 'Bulk Upload'}
+                                        </button>
+                                    </>
+                                )}
                                 <button className="btn btn-primary shadow-lg shadow-primary/20 whitespace-nowrap" onClick={handleCreateNew}>
                                     <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
                                     Create New Sale

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import IconX from '@/components/icon/icon-x';
 import IconLockDots from '@/components/icon/icon-lock-dots';
+import IconEye from '@/components/icon/icon-eye';
 
 interface PasswordResetModalProps {
     show: boolean;
@@ -19,6 +20,7 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
     onCancel,
 }) => {
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
 
     if (!show) return null;
@@ -30,6 +32,7 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
         }
         onConfirm(password);
         setPassword('');
+        setShowPassword(false);
         setError('');
     };
 
@@ -54,17 +57,27 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                     <div className="space-y-4">
                         <div>
                             <label className="text-[10px] font-black uppercase text-white-dark tracking-widest mb-1 block">New Password</label>
-                            <input
-                                type="password"
-                                className={`form-input rounded-xl border-2 py-3 ${error ? 'border-danger bg-danger/5' : 'border-gray-100 dark:border-white/10 dark:bg-black/20 focus:border-primary'}`}
-                                placeholder="Min 6 characters"
-                                value={password}
-                                onChange={(e) => {
-                                    setPassword(e.target.value);
-                                    if (error) setError('');
-                                }}
-                                autoFocus
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    className={`form-input ps-4 pe-12 rounded-xl border-2 py-3 ${error ? 'border-danger bg-danger/5' : 'border-gray-100 dark:border-white/10 dark:bg-black/20 focus:border-primary'}`}
+                                    placeholder="Min 6 characters"
+                                    value={password}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (error) setError('');
+                                    }}
+                                    autoFocus
+                                />
+                                <button
+                                    type="button"
+                                    className="absolute end-4 top-1/2 -translate-y-1/2 text-primary hover:text-primary-dark transition-colors"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    title={showPassword ? 'Hide Password' : 'Show Password'}
+                                >
+                                    <IconEye fill={showPassword} className="h-5 w-5" />
+                                </button>
+                            </div>
                             {error && <p className="text-danger text-[10px] font-bold mt-1 uppercase tracking-wider">{error}</p>}
                         </div>
                     </div>

@@ -80,9 +80,11 @@ const SalesDetailsView = () => {
                     <h2 className="text-2xl font-bold dark:text-white-light">Sales Details: {sale.invoiceNumber}</h2>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Link href={`/sales-billing/invoices?id=${sale._id}`} target="_blank" className="btn btn-primary">
-                        <IconPrinter className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Billing Format (Invoice)
-                    </Link>
+                    {currentUser?.role?.toLowerCase() === 'owner' && (
+                        <Link href={`/sales-billing/invoices?id=${sale._id}`} target="_blank" className="btn btn-primary">
+                            <IconPrinter className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Billing Format (Invoice)
+                        </Link>
+                    )}
                 </div>
             </div>
 
