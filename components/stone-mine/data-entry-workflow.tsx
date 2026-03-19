@@ -1,5 +1,7 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 
 interface WorkflowStep {
     stepNo: number;
@@ -19,6 +21,7 @@ interface WorkflowSection {
     gradient: string;
     overviewTamil: string;
     steps: WorkflowStep[];
+    roles: string[];
 }
 
 const workflowData: WorkflowSection[] = [
@@ -94,6 +97,7 @@ const workflowData: WorkflowSection[] = [
                 ],
             },
         ],
+        roles: ['owner', 'admin', 'manager', 'supervisor', 'accountant'],
     },
     {
         id: 'masters',
@@ -118,7 +122,8 @@ const workflowData: WorkflowSection[] = [
                 ],
                 tips: ['இவற்றை ஒருமுறை மட்டும் பதிவு செய்தால் போதுமானது.'],
             }
-        ]
+        ],
+        roles: ['owner', 'admin', 'manager'],
     },
     {
         id: 'expenses',
@@ -145,6 +150,7 @@ const workflowData: WorkflowSection[] = [
                 tips: ['உதாரணமாக Diesel பக்கத்தில் வாகன எண்ணை தேர்வு செய்து டீசல் அளவை பதிவிடலாம்.'],
             }
         ],
+        roles: ['owner', 'manager', 'supervisor'],
     },
     {
         id: 'sales',
@@ -173,6 +179,7 @@ const workflowData: WorkflowSection[] = [
                 ],
             }
         ],
+        roles: ['owner', 'manager', 'accountant'],
     },
     {
         id: 'assets',
@@ -198,6 +205,7 @@ const workflowData: WorkflowSection[] = [
                 ],
             }
         ],
+        roles: ['owner', 'manager', 'supervisor'],
     },
     {
         id: 'labour',
@@ -225,6 +233,7 @@ const workflowData: WorkflowSection[] = [
                 ],
             }
         ],
+        roles: ['owner', 'manager', 'supervisor'],
     },
     {
         id: 'transport',
@@ -243,12 +252,14 @@ const workflowData: WorkflowSection[] = [
                 fields: [
                     { name: 'Vehicle Trip Management', tamil: 'டிரிப் பதிவு செய்தல் மற்றும் "Convert to Sale" மூலம் நேரடியாக Sales Entry ஆக்குதல்', required: true },
                     { name: 'Driver Payment', tamil: 'டிரைவர்களுக்கு செய்த கட்டணம்', required: true },
+                    { name: 'Permit Management', tamil: 'வண்டி பாஸ் மற்றும் பெர்மிட் மேலாண்மை', required: false },
                 ],
                 tips: [
                     'டிரிப் பதிவில் Customer பெயர் இருந்தால், அதை ஒரே கிளிக்கில் Sales Invoice-ஆக மாற்றிவிடலாம்!',
                 ],
             }
         ],
+        roles: ['owner', 'manager', 'supervisor'],
     },
     {
         id: 'vendors',
@@ -274,6 +285,7 @@ const workflowData: WorkflowSection[] = [
                 tips: ['Vendor Payment செய்யும் போது Outstanding Balance தானாகக் குறையும்.'],
             }
         ],
+        roles: ['owner', 'manager', 'accountant'],
     },
     {
         id: 'reports',
@@ -298,12 +310,34 @@ const workflowData: WorkflowSection[] = [
                 tips: ['Date Filter பயன்படுத்தி தேவைப்படும் நாட்களுக்கான அறிக்கையை PDF ஆக பதிவிறக்கலாம்.'],
             }
         ],
+        roles: ['owner', 'accountant'],
     },
 ];
 
 const DataEntryWorkflow = () => {
     const [activeSection, setActiveSection] = useState<string>('system-flow');
     const [expandedStep, setExpandedStep] = useState<number | null>(null);
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const userRole = currentUser?.role?.toLowerCase() || 'all';
+    const isAdmin = userRole === 'owner' || userRole === 'admin';
+
+    useEffect(() => {
+        if (userRole && userRole !== 'all') {
+            // Default to first visible section for this role
+            // Skip 'system-flow' as default for specific roles to get them straight to their modules
+            const firstVisible = workflowData.find(s => s.id !== 'system-flow' && s.roles.includes(userRole));
+            if (firstVisible) {
+                setActiveSection(firstVisible.id);
+            } else {
+                const anyVisible = workflowData.find(s => s.roles.includes(userRole));
+                if (anyVisible) setActiveSection(anyVisible.id);
+            }
+        }
+    }, [userRole]);
+
+    const filteredSections = workflowData.filter((s: any) =>
+        isAdmin || s.roles.includes(userRole)
+    );
 
     const activeData = workflowData.find((s) => s.id === activeSection);
 
@@ -319,17 +353,19 @@ const DataEntryWorkflow = () => {
                     <p className="text-sm text-white/75">கார்த்திக் எர்த் மூவர்ஸ் - கல் குவாரி மேலாண்மை அமைப்பு</p>
                     <p className="mt-3 text-sm leading-relaxed text-white/80">
                         இந்த பக்கத்தில் ஒவ்வொரு Data Entry செயல்முறையும் படிப்படியாக தமிழில் விளக்கப்பட்டுள்ளது.
-                        இடது பக்கத்தில் உள்ள பிரிவுகளை கிளிக் செய்து, ஒவ்வொரு பிரிவின் விரிவான வழிமுறைகளை படிக்கவும்.
+                        உங்கள் பொறுப்பை (Role) தேர்வு செய்து உங்களுக்கு தேவையான வழிமுறைகளை மட்டும் பார்க்கலாம்.
                     </p>
                 </div>
             </div>
+
+
 
             {/* Visual Workflow Path */}
             <div className="mb-8 overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-gray-100 dark:border-gray-700 dark:bg-gray-800">
                 <h3 className="mb-6 text-lg font-black text-gray-800 dark:text-white flex items-center gap-2">
                     <span className="text-2xl">🔗</span> Module Connection Flow (தரவு ஓட்டம்)
                 </h3>
-                
+
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 relative">
                     {/* Background connecting line for desktop */}
                     <div className="hidden md:block absolute top-[45%] left-10 right-10 h-1 bg-gray-200 dark:bg-gray-700 z-0 rounded-full"></div>
@@ -341,7 +377,7 @@ const DataEntryWorkflow = () => {
                         <p className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-2">அடிப்படை தரவு</p>
                         <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">Vehicles, Labours, Customers, Vendors, Stone Types, Lease Owners</p>
                     </div>
-                    
+
                     <div className="md:hidden text-2xl text-gray-300 font-black">⬇</div>
 
                     {/* Step 2 */}
@@ -372,18 +408,18 @@ const DataEntryWorkflow = () => {
                         <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">Vendor Payments, Day Book, Cash Flow, Pending Payment Collections</p>
                     </div>
                 </div>
-                
+
                 <div className="mt-8 rounded-2xl border-2 border-gray-100 p-5 dark:border-gray-700 dark:bg-gray-800/50 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
                     <p className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2 mb-4">
-                        <span className="w-2 h-6 bg-primary rounded-full block"></span> 
+                        <span className="w-2 h-6 bg-primary rounded-full block"></span>
                         Connected Modules (இணைக்கப்பட்ட பகுதிகள் எப்படி இயங்குகிறது):
                     </p>
                     <div className="grid md:grid-cols-2 gap-4 relative z-10">
                         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                             <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wide mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Labour To Wages To Payment</p>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
-                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Master (Labour)</span> 
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Master (Labour)</span>
                                 <span>➔</span>
                                 <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Daily Attendance</span>
                                 <span>➔</span>
@@ -395,7 +431,7 @@ const DataEntryWorkflow = () => {
                         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                             <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wide mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div> Transport To Sales Generation</p>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
-                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Transport Trips Entry</span> 
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Transport Trips Entry</span>
                                 <span>➔</span>
                                 <span className="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-1 rounded font-bold border border-emerald-100 dark:border-emerald-800">Convert to Sale Button</span>
                                 <span>➔</span>
@@ -407,7 +443,7 @@ const DataEntryWorkflow = () => {
                         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                             <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wide mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Machine/Vehicle To Expenses</p>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
-                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Master (Machine/Vehicle)</span> 
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Master (Machine/Vehicle)</span>
                                 <span>➔</span>
                                 <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Diesel Used</span>
                                 <span>&amp;</span>
@@ -419,7 +455,7 @@ const DataEntryWorkflow = () => {
                         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                             <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] uppercase tracking-wide mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div> Sales To Payment Lifecycle</p>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
-                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Master (Customer)</span> 
+                                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Master (Customer)</span>
                                 <span>➔</span>
                                 <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Credit Sales Entry</span>
                                 <span>➔</span>
@@ -434,7 +470,7 @@ const DataEntryWorkflow = () => {
 
             {/* Quick Navigation Cards */}
             <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-                {workflowData.map((section) => (
+                {filteredSections.map((section: any) => (
                     <button
                         key={section.id}
                         onClick={() => { setActiveSection(section.id); setExpandedStep(null); }}
