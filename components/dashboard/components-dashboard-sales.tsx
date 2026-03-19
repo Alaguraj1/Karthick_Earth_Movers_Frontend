@@ -18,7 +18,7 @@ import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import { useSelector } from 'react-redux';
-import axios from 'axios';
+import api from '@/utils/api';
 
 const ComponentsDashboardSales = () => {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
@@ -33,13 +33,10 @@ const ComponentsDashboardSales = () => {
         setIsMounted(true);
     }, []);
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, [chartPeriod]);
-
     const fetchDashboardData = async () => {
+        setLoading(true);
         try {
-            const { data: res } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/dashboard-summary?chartPeriod=${chartPeriod}`);
+            const { data: res } = await api.get(`/reports/dashboard-summary?chartPeriod=${chartPeriod}`);
             if (res.success) {
                 setData(res.data);
             }
@@ -49,6 +46,11 @@ const ComponentsDashboardSales = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [chartPeriod]);
+
 
     // Revenue Chart Data Processing - Synchronized Alignment
     const monthsLabel = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

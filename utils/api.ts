@@ -27,7 +27,7 @@ api.interceptors.response.use(
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                // Optional: window.location.href = '/auth/cover-login';
+                window.location.href = '/login';
             }
         }
         return Promise.reject(error);

@@ -6,7 +6,7 @@ import IconPlus from '@/components/icon/icon-plus';
 import IconEdit from '@/components/icon/icon-edit';
 
 import { useToast } from '@/components/stone-mine/toast-notification';
-import axios from 'axios';
+import api from '@/utils/api';
 
 const ExpenseForm = () => {
     const { showToast } = useToast();
@@ -31,8 +31,8 @@ const ExpenseForm = () => {
         const fetchMasterData = async () => {
             try {
                 const [catRes, vehRes] = await Promise.all([
-                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/expense-categories`),
-                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`)
+                    api.get('/master/expense-categories'),
+                    api.get('/master/vehicles')
                 ]);
 
                 if (catRes.data.success) {
@@ -73,7 +73,7 @@ const ExpenseForm = () => {
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         try {
-            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, formData);
+            const { data } = await api.post('/expenses', formData);
             if (data.success) {
                 showToast('Expense added successfully!', 'success');
                 setFormData({

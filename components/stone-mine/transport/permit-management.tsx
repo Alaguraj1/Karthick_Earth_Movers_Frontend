@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import IconPlus from '@/components/icon/icon-plus';
@@ -13,7 +13,7 @@ import IconX from '@/components/icon/icon-x';
 import IconSave from '@/components/icon/icon-save';
 import IconLayoutGrid from '@/components/icon/icon-layout-grid';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+
 
 const PermitManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -31,6 +31,9 @@ const PermitManagement = () => {
     // Filter states
     const [search, setSearch] = useState('');
     const [filterVehicle, setFilterVehicle] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
 
     const initialForm = {
         permitNumber: '',
@@ -47,9 +50,9 @@ const PermitManagement = () => {
         try {
             setLoading(true);
             const [permitRes, vehicleRes, tripRes] = await Promise.all([
-                axios.get(`${API}/permits`),
-                axios.get(`${API}/master/vehicles`),
-                axios.get(`${API}/trips`),
+                api.get('/permits'),
+                api.get('/master/vehicles'),
+                api.get('/trips'),
             ]);
 
             if (permitRes.data.success) setPermits(permitRes.data.data);
@@ -98,10 +101,10 @@ const PermitManagement = () => {
         try {
             const payload = { ...formData };
             if (editId) {
-                await axios.put(`${API}/permits/${editId}`, payload);
+                await api.put(`/permits/${editId}`, payload);
                 showToast('Permit updated successfully!', 'success');
             } else {
-                await axios.post(`${API}/permits`, payload);
+                await api.post('/permits', payload);
                 showToast('Permit added successfully!', 'success');
             }
             resetForm();
@@ -133,7 +136,7 @@ const PermitManagement = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await axios.delete(`${API}/permits/${deleteId}`);
+            await api.delete(`/permits/${deleteId}`);
             showToast('Permit deleted successfully!', 'success');
             fetchData();
         } catch (error) {
@@ -154,6 +157,7 @@ const PermitManagement = () => {
         const pNum = p.permitNumber || '';
         const vNum = p.vehicleId?.vehicleNumber || p.vehicleId?.registrationNumber || '';
         const vName = p.vehicleId?.name || '';
+        const pDate = p.date ? new Date(p.date).toISOString().split('T')[0] : '';
 
         const matchesSearch = !search ||
             pNum.toLowerCase().includes(search.toLowerCase()) ||
@@ -162,7 +166,18 @@ const PermitManagement = () => {
 
         const matchesVehicle = !filterVehicle || (p.vehicleId?._id || p.vehicleId) === filterVehicle;
 
-        return matchesSearch && matchesVehicle;
+        const matchesStartDate = !startDate || pDate >= startDate;
+        const matchesEndDate = !endDate || pDate <= endDate;
+
+        const used = p.usedTrips || 0;
+        const total = p.totalTripsAllowed || 1;
+        const isExhausted = used >= total;
+
+        let matchesStatus = true;
+        if (filterStatus === 'active') matchesStatus = !isExhausted;
+        if (filterStatus === 'exhausted') matchesStatus = isExhausted;
+
+        return matchesSearch && matchesVehicle && matchesStartDate && matchesEndDate && matchesStatus;
     });
 
     return (
@@ -341,13 +356,43 @@ const PermitManagement = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <select className="form-select h-11 rounded-xl border-2 font-bold shadow-sm" value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)}>
-                                <option value="">Filter By Vehicle (All)</option>
+                                <option value="">Vehicle: All</option>
                                 {vehicles.map((v: any) => (
                                     <option key={v._id} value={v._id}>{v.vehicleNumber || v.registrationNumber}</option>
                                 ))}
                             </select>
+
+                            <div className="flex items-center gap-2">
+                                <label className="text-[9px] font-black uppercase text-white-dark whitespace-nowrap">From:</label>
+                                <input type="date" className="form-input h-11 rounded-xl border-2 font-bold shadow-sm" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <label className="text-[9px] font-black uppercase text-white-dark whitespace-nowrap">To:</label>
+                                <input type="date" className="form-input h-11 rounded-xl border-2 font-bold shadow-sm" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                            </div>
+
+                            <select className="form-select h-11 rounded-xl border-2 font-bold shadow-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                                <option value="all">Status: All</option>
+                                <option value="active">Active (Available)</option>
+                                <option value="exhausted">Exhausted (Completed)</option>
+                            </select>
+                        </div>
+                        <div className="flex justify-end">
+                            <button
+                                className="text-[10px] font-black uppercase text-primary hover:underline"
+                                onClick={() => {
+                                    setSearch('');
+                                    setFilterVehicle('');
+                                    setStartDate('');
+                                    setEndDate('');
+                                    setFilterStatus('all');
+                                }}
+                            >
+                                Clear All Filters
+                            </button>
                         </div>
                     </div>
 

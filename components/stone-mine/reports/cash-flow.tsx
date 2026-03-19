@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconDownload from '@/components/icon/icon-download';
 import IconSearch from '@/components/icon/icon-search';
@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+
 
 const CashFlow = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -27,7 +27,7 @@ const CashFlow = () => {
     const fetchCashFlow = async () => {
         try {
             setLoading(true);
-            const { data: res } = await axios.get(`${API}/reports/cash-flow`, { params: filters });
+            const { data: res } = await api.get('/reports/cash-flow', { params: filters });
             if (res.success) {
                 setReportData(res.data);
             }

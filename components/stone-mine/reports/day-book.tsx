@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconDownload from '@/components/icon/icon-download';
 import IconSearch from '@/components/icon/icon-search';
@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+
 
 const DayBook = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -25,7 +25,7 @@ const DayBook = () => {
     const fetchDayBook = async () => {
         try {
             setLoading(true);
-            const { data: res } = await axios.get(`${API}/reports/day-book`, { params: { date } });
+            const { data: res } = await api.get('/reports/day-book', { params: { date } });
             if (res.success) {
                 setData(res.data);
                 setSummary(res.summary);

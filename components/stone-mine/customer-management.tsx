@@ -10,10 +10,10 @@ import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
 import Link from 'next/link';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+
 
 const CustomerManagement = () => {
     const { showToast } = useToast();
@@ -39,7 +39,7 @@ const CustomerManagement = () => {
     const fetchCustomers = async () => {
         try {
             setLoading(true);
-            const { data } = await axios.get(`${API}/customers`, { params: { search } });
+            const { data } = await api.get('/customers', { params: { search } });
             if (data.success) setCustomers(data.data);
         } catch (error) {
             console.error('Error fetching customers:', error);
@@ -62,10 +62,10 @@ const CustomerManagement = () => {
         e.preventDefault();
         try {
             if (editId) {
-                await axios.put(`${API}/customers/${editId}`, formData);
+                await api.put(`/customers/${editId}`, formData);
                 showToast('Customer updated successfully!', 'success');
             } else {
-                await axios.post(`${API}/customers`, formData);
+                await api.post('/customers', formData);
                 showToast('Customer added successfully!', 'success');
             }
             resetForm();
@@ -94,7 +94,7 @@ const CustomerManagement = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await axios.delete(`${API}/customers/${deleteId}`);
+            await api.delete(`/customers/${deleteId}`);
             showToast('Customer deleted successfully!', 'success');
             fetchCustomers();
         } catch (error) {

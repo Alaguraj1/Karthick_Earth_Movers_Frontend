@@ -45,56 +45,55 @@ const ComponentsAuthLoginForm = () => {
     };
 
     return (
-        <form className="space-y-6 dark:text-white" onSubmit={submitForm}>
+        <form className="space-y-6 text-white" onSubmit={submitForm}>
             <div>
-                <label htmlFor="Username" className="text-[10px] font-black uppercase text-white-dark mb-1 block tracking-widest">Username or Email</label>
-                <div className="relative text-white-dark">
+                <label htmlFor="Username" className="text-[10px] font-black uppercase text-white/60 mb-2 block tracking-[0.2em] ml-1">Username or Email</label>
+                <div className="relative group text-white-dark">
                     <input
                         id="Username"
                         type="text"
                         placeholder="Enter Username or Email"
-                        className="form-input ps-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all placeholder:text-white-dark/50"
+                        className="form-input ps-12 rounded-xl h-14 font-bold border-2 border-white/10 bg-white/5 focus:bg-white/10 focus:border-primary focus:text-white text-white transition-all placeholder:text-white/30"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
                     />
-                    <span className="absolute start-4 top-1/2 -translate-y-1/2 text-primary">
+                    <span className="absolute start-4 top-1/2 -translate-y-1/2 text-primary group-focus-within:text-white transition-colors">
                         <IconUser fill={true} />
                     </span>
                 </div>
             </div>
             <div>
-                <label htmlFor="Password" className="text-[10px] font-black uppercase text-white-dark mb-1 block tracking-widest">Password</label>
-                <div className="relative text-white-dark group">
+                <label htmlFor="Password" className="text-[10px] font-black uppercase text-white/60 mb-2 block tracking-[0.2em] ml-1">Password</label>
+                <div className="relative group text-white-dark">
                     <input
                         id="Password"
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Enter Password"
-                        className="form-input ps-12 pe-12 rounded-xl h-12 font-bold border-2 focus:border-primary transition-all placeholder:text-white-dark/50"
+                        className="form-input ps-12 pe-12 rounded-xl h-14 font-bold border-2 border-white/10 bg-white/5 focus:bg-white/10 focus:border-primary focus:text-white text-white transition-all placeholder:text-white/30"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                     />
-                    <span className="absolute start-4 top-1/2 -translate-y-1/2 text-primary">
+                    <span className="absolute start-4 top-1/2 -translate-y-1/2 text-primary group-focus-within:text-white transition-colors">
                         <IconLockDots fill={true} />
                     </span>
                     <button
                         type="button"
-                        className="absolute end-4 top-1/2 -translate-y-1/2 text-primary hover:text-primary-dark transition-colors"
+                        className="absolute end-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
                         onClick={() => setShowPassword(!showPassword)}
                         title={showPassword ? 'Hide Password' : 'Show Password'}
                     >
                         <IconEye fill={showPassword} className="h-5 w-5" />
                     </button>
                 </div>
-                <div className="flex justify-end pt-3">
-                    <Link href="/auth/boxed-password-reset" className="text-primary text-[10px] font-black uppercase tracking-widest hover:underline opacity-70 hover:opacity-100 transition-all">Forgot Password?</Link>
+                <div className="flex justify-end pt-4">
+                    <Link href="/auth/boxed-password-reset" className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] hover:text-primary hover:underline transition-all">Forgot Password?</Link>
                 </div>
             </div>
-            <button type="submit" className="btn btn-primary h-12 w-full rounded-xl font-black uppercase tracking-[0.2em] text-xs shadow-[0_10px_20px_rgba(67,97,238,0.3)] transition-all transform hover:scale-[1.02]">
-                Sign in
+            <button type="submit" className="btn btn-primary h-14 w-full rounded-xl font-black uppercase tracking-[0.3em] text-xs shadow-2xl transition-all transform hover:scale-[1.01] active:scale-[0.98]">
+                Secure Sign in
             </button>
-            {/* Signup link removed as per user request */}
         </form>
     );
 };

@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
 import ReactApexChart from 'react-apexcharts';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconDownload from '@/components/icon/icon-download';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import * as XLSX from 'xlsx';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+
 
 const SummaryReports = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -22,7 +22,7 @@ const SummaryReports = () => {
     const fetchSummary = async () => {
         try {
             setLoading(true);
-            const { data: res } = await axios.get(`${API}/reports/summary`, { params: { year } });
+            const { data: res } = await api.get('/reports/summary', { params: { year } });
             if (res.success) {
                 setReportData(res.data);
             }

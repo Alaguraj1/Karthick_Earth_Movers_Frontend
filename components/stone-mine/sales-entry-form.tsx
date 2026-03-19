@@ -12,12 +12,12 @@ import IconSearch from '@/components/icon/icon-search';
 import IconEye from '@/components/icon/icon-eye';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import { useToast } from '@/components/stone-mine/toast-notification';
-import axios from 'axios';
+import api from '@/utils/api';
 import * as XLSX from 'xlsx';
 import IconDownload from '@/components/icon/icon-download';
 import IconFileUpload from '@/components/icon/icon-file-upload';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+
 
 const SalesEntryForm = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -60,7 +60,7 @@ const SalesEntryForm = () => {
 
     const fetchSales = async () => {
         try {
-            const res = await axios.get(`${API}/sales`);
+            const res = await api.get('/sales');
             if (res.data.success) setRecentSales(res.data.data);
         } catch (error) {
             console.error(error);
@@ -70,12 +70,12 @@ const SalesEntryForm = () => {
     useEffect(() => {
         const fetchMasterData = async () => {
             try {
-                const res = await axios.get(`${API}/customers`);
+                const res = await api.get('/customers');
                 if (res.data.success) setCustomers(res.data.data);
             } catch (error) { console.error('Error fetching customers:', error); }
 
             try {
-                const res = await axios.get(`${API}/master/stone-types`);
+                const res = await api.get('/master/stone-types');
                 if (res.data.success) setStoneTypes(res.data.data);
             } catch (error) { console.error('Error fetching stone types:', error); }
         };
@@ -101,7 +101,7 @@ const SalesEntryForm = () => {
 
     const handleGstSearch = async (gst: string) => {
         try {
-            const res = await axios.get(`${API}/customers?search=${gst}`);
+            const res = await api.get(`/customers?search=${gst}`);
             if (res.data.success && res.data.data.length > 0) {
                 // Find an exact match if possible, otherwise first match
                 const match = res.data.data.find((c: any) => c.gstNumber?.toLowerCase() === gst.toLowerCase()) || res.data.data[0];
@@ -121,7 +121,7 @@ const SalesEntryForm = () => {
     const handleToggleDeliveryStatus = async (sale: any) => {
         const newStatus = sale.deliveryStatus === 'completed' ? 'open' : 'completed';
         try {
-            await axios.patch(`${API}/sales/${sale._id}/delivery-status`, { deliveryStatus: newStatus });
+            await api.patch(`/sales/${sale._id}/delivery-status`, { deliveryStatus: newStatus });
             showToast(`Sale marked as ${newStatus === 'completed' ? '✅ Completed' : '🔄 Reopened'}`, 'success');
             fetchSales();
         } catch (error) {
@@ -207,7 +207,7 @@ const SalesEntryForm = () => {
 
     const handleEdit = async (saleId: string) => {
         try {
-            const { data } = await axios.get(`${API}/sales/${saleId}`);
+            const { data } = await api.get(`/sales/${saleId}`);
             if (data.success) {
                 const sale = data.data;
                 setEditId(sale._id);
@@ -246,7 +246,7 @@ const SalesEntryForm = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            const { data } = await axios.delete(`${API}/sales/${deleteId}`);
+            const { data } = await api.delete(`/sales/${deleteId}`);
             if (data.success) {
                 showToast('Sale deleted successfully!', 'success');
                 if (editId === deleteId) resetForm();
@@ -280,14 +280,14 @@ const SalesEntryForm = () => {
             };
 
             if (editId) {
-                const { data } = await axios.put(`${API}/sales/${editId}`, payload);
+                const { data } = await api.put(`/sales/${editId}`, payload);
                 if (data.success) {
                     showToast(`Sale updated! Invoice: ${data.data.invoiceNumber}`, 'success');
                     resetForm();
                     fetchSales();
                 }
             } else {
-                const { data } = await axios.post(`${API}/sales`, payload);
+                const { data } = await api.post('/sales', payload);
                 if (data.success) {
                     showToast(`Sale recorded! Invoice: ${data.data.invoiceNumber}`, 'success');
                     resetForm();
@@ -360,7 +360,7 @@ const SalesEntryForm = () => {
                     receiptFile: row['Receipt File']
                 }));
 
-                const res = await axios.post(`${API}/sales/bulk`, { salesData });
+                const res = await api.post('/sales/bulk', { salesData });
                 if (res.data.success) {
                     showToast(`✅ ${res.data.message}`, 'success');
                     fetchSales();
@@ -385,7 +385,7 @@ const SalesEntryForm = () => {
         formDataFile.append('bill', file);
 
         try {
-            const { data } = await axios.post(`${API}/upload`, formDataFile, {
+            const { data } = await api.post('/upload', formDataFile, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             if (data.success) {
@@ -498,7 +498,7 @@ const SalesEntryForm = () => {
                                     <div className="flex items-center gap-2">
                                         <input type="file" className="form-input p-1 h-10 flex-1" accept=".jpg,.jpeg,.png,.pdf" onChange={handleReceiptUpload} />
                                         {formData.receiptFile && (
-                                            <a href={`${(API || '').replace('/api', '')}${formData.receiptFile}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-info p-2" title="View Uploaded File">
+                                            <a href={`${process.env.NEXT_PUBLIC_BASE_URL || ''}${formData.receiptFile}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-info p-2" title="View Uploaded File">
                                                 <IconEye className="w-4 h-4" />
                                             </a>
                                         )}
@@ -842,7 +842,7 @@ const SalesEntryForm = () => {
                                                 {sale.receiptNumber && <div className="text-[10px] font-bold text-white-dark mb-1">{sale.receiptNumber}</div>}
                                                 {sale.receiptFile ? (
                                                     <a
-                                                        href={`${(API || '').replace('/api', '')}${sale.receiptFile}`}
+                                                        href={`${process.env.NEXT_PUBLIC_BASE_URL || ''}${sale.receiptFile}`}
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="badge bg-info/10 text-info hover:bg-info hover:text-white transition-colors"

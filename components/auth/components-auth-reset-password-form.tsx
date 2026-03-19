@@ -31,39 +31,39 @@ const ComponentsAuthResetPasswordForm = () => {
     };
 
     return (
-        <form className="space-y-5" onSubmit={submitForm}>
+        <form className="space-y-6 text-white" onSubmit={submitForm}>
             <div>
-                <label htmlFor="Email" className="dark:text-white">
-                    Email
+                <label htmlFor="Email" className="text-[10px] font-black uppercase text-white/60 mb-2 block tracking-[0.2em] ml-1">
+                    Email Address
                 </label>
-                <div className="relative text-white-dark">
+                <div className="relative group text-white-dark">
                     <input
                         id="Email"
                         type="email"
-                        placeholder="Enter Email"
-                        className="form-input ps-10 placeholder:text-white-dark"
+                        placeholder="Enter your registered email"
+                        className="form-input ps-12 rounded-xl h-14 font-bold border-2 border-white/10 bg-white/5 focus:bg-white/10 focus:border-primary focus:text-white text-white transition-all placeholder:text-white/30"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
                     />
-                    <span className="absolute start-4 top-1/2 -translate-y-1/2">
+                    <span className="absolute start-4 top-1/2 -translate-y-1/2 text-primary group-focus-within:text-white transition-colors">
                         <IconMail fill={true} />
                     </span>
                 </div>
             </div>
-            <button type="submit" className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]" disabled={loading}>
-                {loading ? 'Sending...' : 'RECOVER'}
+            <button type="submit" className="btn btn-primary h-14 w-full rounded-xl font-black uppercase tracking-[0.3em] text-xs shadow-2xl transition-all transform hover:scale-[1.01] active:scale-[0.98]" disabled={loading}>
+                {loading ? 'Sending Link...' : 'Send Recovery Link'}
             </button>
             {demoLink && (
-                <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 text-center animate-fade-in-down mt-5">
-                    <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-2 opacity-70">Demo Environment Override</p>
-                    <Link href={demoLink} className="text-sm font-bold text-primary hover:underline">
-                        RE-SET PASSWORD NOW (DEMO LINK)
+                <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 text-center animate-fade-in-down mt-6">
+                    <p className="text-[9px] font-black uppercase text-primary tracking-[0.2em] mb-2 opacity-70">Demo Environment Override</p>
+                    <Link href={demoLink} className="text-sm font-bold text-primary hover:underline uppercase tracking-wider">
+                        Reset Password Now
                     </Link>
                 </div>
             )}
-            <div className="text-center mt-4">
-                <Link href="/login" className="text-primary hover:underline font-semibold">Back to Login</Link>
+            <div className="text-center mt-6">
+                <Link href="/login" className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em] hover:text-primary hover:underline transition-all">Back to Login</Link>
             </div>
         </form>
     );
