@@ -251,7 +251,7 @@ const MachineProductionPage = () => {
         }
     };
 
-    // Filtered productions for search bar
+    // Calculated productions for search bar
     const displayedProductions = productions.filter(p => {
         const search = filters.search.toLowerCase();
         return (
@@ -261,57 +261,63 @@ const MachineProductionPage = () => {
         );
     });
 
+    const calculateHours = (start: string, end: string, breakMins: number) => {
+        if (!start || !end) return 0;
+        const [h1, m1] = start.split(':').map(Number);
+        const [h2, m2] = end.split(':').map(Number);
+        let diff = (h2 + m2 / 60) - (h1 + m1 / 60);
+        if (diff < 0) diff += 24;
+        return Math.max(0, diff - (breakMins / 60));
+    };
+
     return (
         <RoleGuard allowedRoles={['Owner', 'Accountant', 'Supervisor', 'Manager']}>
             <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center justify-between mb-5">
                     <div>
-                        <h1 className="text-2xl font-black uppercase tracking-tight text-white-dark">Machine Production</h1>
-                        <p className="text-xs font-bold text-primary uppercase tracking-widest mt-1">Daily Work & Fuel Logs</p>
+                        <h2 className="text-2xl font-bold dark:text-white-light uppercase">Machine Production</h2>
+                        <p className="text-white-dark text-sm mt-1">Daily Work & Fuel Logs — Record and track all machine operations.</p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex items-center gap-2">
                         {isOwner && (
-                            <>
-                                <button
-                                    className="btn btn-outline-success flex items-center gap-2 px-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
-                                    onClick={exportToExcel}
-                                >
+                            <div className="flex gap-2 mr-2">
+                                <button className="btn btn-outline-success btn-sm gap-2" onClick={exportToExcel}>
                                     <IconFile className="w-4 h-4" /> Excel
                                 </button>
-                                <button
-                                    className="btn btn-outline-danger flex items-center gap-2 px-5 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
-                                    onClick={exportToPDF}
-                                >
+                                <button className="btn btn-outline-danger btn-sm gap-2" onClick={exportToPDF}>
                                     <IconPrinter className="w-4 h-4" /> PDF
                                 </button>
-                            </>
+                            </div>
                         )}
                         <button
-                            className="btn btn-primary shadow-lg shadow-primary/30 flex items-center gap-2 px-6 rounded-2xl"
+                            className="btn btn-primary gap-2"
                             onClick={() => { resetForm(); setShowModal(true); }}
                         >
-                            <IconPlus className="w-5 h-5" />
+                            <IconPlus />
                             Add Log
                         </button>
                     </div>
                 </div>
 
-                {/* Filters Section */}
-                <div className="panel flex flex-wrap items-center gap-4 mb-6 rounded-3xl border-none shadow-md py-4">
-                    <div className="flex-1 min-w-[200px] relative">
-                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white-dark w-4 h-4" />
-                        <input
-                            type="text"
-                            className="form-input pl-10 rounded-xl"
-                            placeholder="Search by machine, operator or work type..."
-                            value={filters.search}
-                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                        />
+                {/* Filters Section (Expense Format) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
+                    <div>
+                        <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                placeholder="Search machine, operator..."
+                                value={filters.search}
+                                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                            />
+                            <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-black uppercase text-white-dark whitespace-nowrap">Machine:</label>
+                    <div>
+                        <label className="text-[10px] font-bold uppercase mb-1 block">Filter Machine</label>
                         <select
-                            className="form-select rounded-xl w-40"
+                            className="form-select h-10"
                             value={filters.machineId}
                             onChange={(e) => setFilters({ ...filters, machineId: e.target.value })}
                         >
@@ -319,46 +325,48 @@ const MachineProductionPage = () => {
                             {machines.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
                         </select>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-black uppercase text-white-dark whitespace-nowrap">Date From:</label>
+                    <div>
+                        <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
                         <input
                             type="date"
-                            className="form-input rounded-xl w-40"
+                            className="form-input h-10"
                             value={filters.startDate}
                             onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
                         />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-black uppercase text-white-dark whitespace-nowrap">To:</label>
+                    <div>
+                        <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
                         <input
                             type="date"
-                            className="form-input rounded-xl w-40"
+                            className="form-input h-10"
                             value={filters.endDate}
                             onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
                         />
                     </div>
-                    <button
-                        className="btn btn-outline-primary rounded-xl px-4 py-2 text-[10px] font-bold"
-                        onClick={() => setFilters({ startDate: '', endDate: '', machineId: '', search: '' })}
-                    >
-                        Reset
-                    </button>
+                    <div>
+                        <button
+                            className="btn btn-outline-primary h-10 w-full font-bold uppercase text-[10px] tracking-widest"
+                            onClick={() => setFilters({ startDate: '', endDate: '', machineId: '', search: '' })}
+                        >
+                            Reset Filters
+                        </button>
+                    </div>
                 </div>
 
-                <div className="panel border-t-4 border-primary shadow-xl rounded-3xl overflow-hidden">
+                <div className="panel">
                     <div className="table-responsive">
                         <table className="table-hover">
                             <thead>
-                                <tr className="bg-primary/5">
-                                    <th className="font-black uppercase tracking-widest text-[11px] py-4">Date</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px]">Machine</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px]">Operator</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px] text-center">Start HMR</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px] text-center">End HMR</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px] text-center">Break (Hr)</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px] text-center">Balance HR</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px]">Fuel</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px] text-center">Action</th>
+                                <tr>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Date</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Machine</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Operator</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Start Time</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">End Time</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Break (Hr)</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Working Hours</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Fuel</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -371,11 +379,11 @@ const MachineProductionPage = () => {
                                         <td className="py-4 font-black">{new Date(prod.date).toLocaleDateString()}</td>
                                         <td className="font-semibold text-primary">{prod.machine?.name}</td>
                                         <td className="italic">{prod.operator?.name || 'N/A'}</td>
-                                        <td className="text-xs font-black text-center text-primary">{prod.startHmr || '-'}</td>
-                                        <td className="text-xs font-black text-center text-primary">{prod.endHmr || '-'}</td>
+                                        <td className="text-xs font-black text-center text-primary">{prod.startTime || '-'}</td>
+                                        <td className="text-xs font-black text-center text-primary">{prod.endTime || '-'}</td>
                                         <td className="text-center text-xs font-bold text-danger">{(prod.breakTime / 60).toFixed(2)}</td>
                                         <td>
-                                            <div className="font-black text-success">{(prod.totalHours || 0).toFixed(2)} hrs</div>
+                                            <div className="font-black text-success">{calculateHours(prod.startTime, prod.endTime, prod.breakTime || 0).toFixed(2)} hrs</div>
                                             <div className="text-[10px] text-white-dark font-bold">{prod.workType}</div>
                                         </td>
                                         <td>

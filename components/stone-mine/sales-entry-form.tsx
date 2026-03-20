@@ -720,7 +720,7 @@ const SalesEntryForm = () => {
                                 <select className="form-select h-10" value={filterDelivery} onChange={(e) => setFilterDelivery(e.target.value)}>
                                     <option value="">All</option>
                                     <option value="open">🔄 Open</option>
-                                    <option value="completed">✅ Completed</option>
+                                    <option value="completed">✅ Delivered</option>
                                 </select>
                             </div>
                             <div>

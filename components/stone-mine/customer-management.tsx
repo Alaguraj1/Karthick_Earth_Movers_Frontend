@@ -12,6 +12,7 @@ import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import api from '@/utils/api';
 import Link from 'next/link';
+import { canEditRecord } from '@/utils/permissions';
 
 
 
@@ -196,12 +197,18 @@ const CustomerManagement = () => {
                                         </td>
                                         <td className="!text-center">
                                             <div className="flex items-center justify-center gap-2">
-                                                <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(cust)}>
-                                                    <IconEdit className="w-4 h-4" />
-                                                </button>
-                                                {isOwner && (<button className="btn btn-sm btn-outline-danger" onClick={() => setDeleteId(cust._id)}>
-                                                    <IconTrash className="w-4 h-4" />
-                                                </button>)}
+                                                {canEditRecord(currentUser, cust.createdAt) ? (
+                                                    <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(cust)}>
+                                                        <IconEdit className="w-4 h-4" />
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-[10px] text-white-dark italic">Locked</span>
+                                                )}
+                                                {isOwner && (
+                                                    <button className="btn btn-sm btn-outline-danger" onClick={() => setDeleteId(cust._id)}>
+                                                        <IconTrash className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

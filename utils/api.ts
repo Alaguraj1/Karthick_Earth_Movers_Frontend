@@ -82,6 +82,15 @@ const api = {
         });
         return handleResponse(response);
     },
+    patch: async (url: string, data?: any, config?: any) => {
+        const fullUrl = `${BASE_URL}${url}`;
+        const response = await fetch(fullUrl, {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+    },
 };
 
 /**

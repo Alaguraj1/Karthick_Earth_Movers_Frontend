@@ -241,6 +241,15 @@ const MachineDetails = () => {
         setLiveHours(total);
     }, [prodForm.startTime, prodForm.endTime, prodForm.breakTime]);
 
+    const calculateHours = (start: string, end: string, breakMins: number) => {
+        if (!start || !end) return 0;
+        const [h1, m1] = start.split(':').map(Number);
+        const [h2, m2] = end.split(':').map(Number);
+        let diff = (h2 + m2 / 60) - (h1 + m1 / 60);
+        if (diff < 0) diff += 24;
+        return Math.max(0, diff - (breakMins / 60));
+    };
+
     const handleExportExcel = () => {
         const dataToExport = productionHistory.map(log => ({
             Date: new Date(log.date).toLocaleDateString(),
@@ -597,10 +606,10 @@ const MachineDetails = () => {
                                                     <tr className="bg-gray-50/50 dark:bg-white-light/5">
                                                         <th className="font-black uppercase text-[10px] tracking-widest">Date</th>
                                                         <th className="font-black uppercase text-[10px] tracking-widest">Operator</th>
-                                                        <th className="font-black uppercase text-[10px] tracking-widest text-center">Start HMR</th>
-                                                        <th className="font-black uppercase text-[10px] tracking-widest text-center">End HMR</th>
+                                                        <th className="font-black uppercase text-[10px] tracking-widest text-center">Start Time</th>
+                                                        <th className="font-black uppercase text-[10px] tracking-widest text-center">End Time</th>
                                                         <th className="font-black uppercase text-[10px] tracking-widest text-center">Break (Hr)</th>
-                                                        <th className="font-black uppercase text-[10px] tracking-widest text-center">Prod. HR</th>
+                                                        <th className="font-black uppercase text-[10px] tracking-widest text-center">Working Hours</th>
                                                         <th className="font-black uppercase text-[10px] tracking-widest text-center">Diesel</th>
                                                         <th className="font-black uppercase text-[10px] tracking-widest">Work Details</th>
                                                         <th className="font-black uppercase text-[10px] tracking-widest text-center">Action</th>
@@ -627,14 +636,13 @@ const MachineDetails = () => {
                                                             .map((log: any) => (
                                                                 <tr key={log._id} className="hover:bg-primary/5 transition-colors border-b border-gray-50 dark:border-white-light/5 last:border-0 font-bold">
                                                                     <td className="text-xs py-4">{new Date(log.date).toLocaleDateString()}</td>
-                                                                    <td className="text-xs">
-                                                                        <div className="font-black text-black dark:text-white-light">{log.operator?.name}</div>
-                                                                        <div className="text-[10px] opacity-70 italic">{log.startTime} to {log.endTime}</div>
+                                                                    <td className="text-xs font-black text-black">
+                                                                        {log.operator?.name}
                                                                     </td>
-                                                                    <td className="text-xs font-black text-center text-primary">{log.startHmr || '-'}</td>
-                                                                    <td className="text-xs font-black text-center text-primary">{log.endHmr || '-'}</td>
+                                                                    <td className="text-xs font-black text-center text-primary">{log.startTime || '-'}</td>
+                                                                    <td className="text-xs font-black text-center text-primary">{log.endTime || '-'}</td>
                                                                     <td className="text-center text-xs font-bold text-danger">{(log.breakTime / 60).toFixed(2)}</td>
-                                                                    <td className="text-center"><span className="badge badge-outline-success font-black text-[10px]">{(log.totalHours || 0).toFixed(2)} Hrs</span></td>
+                                                                    <td className="text-center"><span className="badge badge-outline-success font-black text-[10px]">{calculateHours(log.startTime, log.endTime, log.breakTime || 0).toFixed(2)} Hrs</span></td>
                                                                     <td className="text-center font-black text-info text-xs">{log.dieselLiters || 0} L</td>
                                                                     <td className="text-xs">
                                                                         <div className="uppercase tracking-tight text-[10px] text-primary">{log.workType}</div>

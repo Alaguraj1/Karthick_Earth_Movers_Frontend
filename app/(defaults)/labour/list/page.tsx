@@ -43,6 +43,13 @@ const LabourListPage = () => {
         status: 'active'
     });
 
+    const [filters, setFilters] = useState({
+        search: '',
+        workType: '',
+        startDate: '',
+        endDate: ''
+    });
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -183,17 +190,68 @@ const LabourListPage = () => {
     };
 
     const filteredLabours = data.filter(item => {
-        if (activeTab === 'direct') return item.labourType === 'Direct' || !item.labourType;
-        return item.labourType === 'Vendor';
+        // Tab filter
+        const matchesTab = activeTab === 'direct'
+            ? (item.labourType === 'Direct' || !item.labourType)
+            : item.labourType === 'Vendor';
+
+        if (!matchesTab) return false;
+
+        // Search filter (Name)
+        if (filters.search && !item.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
+
+        // Work Type filter
+        if (filters.workType && item.workType !== filters.workType) return false;
+
+        // Date filter (Joining Date)
+        if (filters.startDate || filters.endDate) {
+            const joinDate = new Date(item.joiningDate).toISOString().split('T')[0];
+            if (filters.startDate && joinDate < filters.startDate) return false;
+            if (filters.endDate && joinDate > filters.endDate) return false;
+        }
+
+        return true;
     });
 
     return (
-        <div>
-            <ul className="flex space-x-2 rtl:space-x-reverse mb-6">
-                <li><a href="/" className="text-primary hover:underline font-bold">Dashboard</a></li>
-                <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2 font-bold text-white-dark uppercase tracking-widest text-[10px]"><span>Labour Management</span></li>
-                <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2 font-bold text-white-dark uppercase tracking-widest text-[10px]"><span>Labour List</span></li>
-            </ul>
+        <div className="p-6">
+            <div className="flex items-center justify-between mb-5">
+                <div>
+                    <h2 className="text-2xl font-bold dark:text-white-light uppercase">Labour Database</h2>
+                    <p className="text-white-dark text-sm mt-1">Manage and track all direct and contractor labour records.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="flex bg-gray-100 dark:bg-dark-light/5 p-1 rounded-xl">
+                        <button
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${activeTab === 'direct' ? 'bg-white dark:bg-dark text-primary shadow-sm' : 'text-white-dark hover:text-primary'}`}
+                            onClick={() => setActiveTab('direct')}
+                        >
+                            DIRECT LABOUR
+                        </button>
+                        <button
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${activeTab === 'vendor' ? 'bg-white dark:bg-dark text-primary shadow-sm' : 'text-white-dark hover:text-primary'}`}
+                            onClick={() => setActiveTab('vendor')}
+                        >
+                            CONTRACTOR
+                        </button>
+                    </div>
+                    {activeTab === 'vendor' && (
+                        <Link href="/vendors/labour" className="btn btn-outline-warning btn-sm gap-2">
+                            Manage Contractors
+                        </Link>
+                    )}
+                    <button
+                        className="btn btn-primary gap-2"
+                        onClick={() => {
+                            setFormData(prev => ({ ...prev, labourType: activeTab === 'direct' ? 'Direct' : 'Vendor' }));
+                            setFormView(true);
+                        }}
+                    >
+                        <IconPlus />
+                        Add New Labour
+                    </button>
+                </div>
+            </div>
 
             {formView ? (
                 <div className="panel shadow-2xl rounded-3xl border-none">
@@ -353,107 +411,117 @@ const LabourListPage = () => {
                     </form>
                 </div>
             ) : (
-                <div className="panel shadow-lg rounded-3xl border-none">
-                    <div className="mb-8 flex flex-wrap items-center justify-between gap-6 px-4 pt-4">
-                        <div className="flex flex-wrap items-center gap-6">
-                            <h5 className="text-2xl font-black dark:text-white-light tracking-tight uppercase">Labour Database</h5>
-                            <div className="flex items-center gap-2 bg-gray-100 dark:bg-dark-light/5 p-1.5 rounded-2xl shadow-inner">
-                                <button
-                                    className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === 'direct' ? 'bg-white dark:bg-dark text-primary shadow-lg shadow-primary/10' : 'text-white-dark hover:text-primary'}`}
-                                    onClick={() => setActiveTab('direct')}
-                                >
-                                    DIRECT LABOUR
-                                </button>
-                                <button
-                                    className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === 'vendor' ? 'bg-white dark:bg-dark text-primary shadow-lg shadow-primary/10' : 'text-white-dark hover:text-primary'}`}
-                                    onClick={() => setActiveTab('vendor')}
-                                >
-                                    CONTRACTOR
-                                </button>
-                            </div>
+                <div className="panel p-0 border-none shadow-none bg-transparent">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5 bg-primary/10 p-4 rounded-xl">
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-white-dark mb-1 block ml-1">Search Employee Name</label>
+                            <input
+                                type="text"
+                                className="form-input rounded-xl border-none shadow-sm font-bold text-xs h-10"
+                                placeholder="Start typing name..."
+                                value={filters.search}
+                                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                            />
                         </div>
-                        <div className="flex items-center gap-3">
-                            {activeTab === 'vendor' && (
-                                <Link
-                                    href="/vendors/labour"
-                                    className="btn btn-outline-warning h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:shadow-warning/20 transition-all border-2"
-                                >
-                                    <span>⚙️</span> Manage Contractors
-                                </Link>
-                            )}
-                            <button type="button" className="btn btn-primary h-11 px-8 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-[0_10px_20px_rgba(67,97,238,0.3)] transition-all transform hover:scale-105" onClick={() => {
-                                setFormData(prev => ({ ...prev, labourType: activeTab === 'direct' ? 'Direct' : 'Vendor' }));
-                                setFormView(true);
-                            }}>
-                                <IconPlus className="mr-2 w-4 h-4" /> Add New Labour
-                            </button>
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-white-dark mb-1 block ml-1">Work Category</label>
+                            <select
+                                className="form-select rounded-xl border-none shadow-sm font-bold text-xs h-10"
+                                value={filters.workType}
+                                onChange={(e) => setFilters(prev => ({ ...prev, workType: e.target.value }))}
+                            >
+                                <option value="">All Categories</option>
+                                {workTypes.map((type: any) => (
+                                    <option key={type._id} value={type.name}>{type.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-white-dark mb-1 block ml-1">Joining From</label>
+                            <input
+                                type="date"
+                                className="form-input rounded-xl border-none shadow-sm font-bold text-xs h-10"
+                                value={filters.startDate}
+                                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-white-dark mb-1 block ml-1">Joining To</label>
+                            <input
+                                type="date"
+                                className="form-input rounded-xl border-none shadow-sm font-bold text-xs h-10"
+                                value={filters.endDate}
+                                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                            />
                         </div>
                     </div>
 
-                    <div className="table-responsive">
-                        <table className="table-hover">
-                            <thead>
-                                <tr className="!bg-primary/5">
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 px-6">Labour Name</th>
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Work Type</th>
-                                    {activeTab === 'vendor' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Contractor</th>}
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Mobile</th>
-                                    {canSeeFinancials && <th className="font-black uppercase tracking-widest text-[10px] py-4">Wage Rate</th>}
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Join Date</th>
-                                    <th className="text-center font-black uppercase tracking-widest text-[10px] py-4 px-6">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="font-bold">
-                                {loading ? (
-                                    <tr><td colSpan={7} className="text-center py-24">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                            <span className="text-xs uppercase tracking-[0.2em] text-primary font-black">Synchronizing Registry...</span>
-                                        </div>
-                                    </td></tr>
-                                ) : filteredLabours.length === 0 ? (
-                                    <tr><td colSpan={7} className="text-center py-24 text-white-dark uppercase font-black tracking-widest text-sm opacity-20">No {activeTab} labours found</td></tr>
-                                ) : (
-                                    filteredLabours.map((item: any) => (
-                                        <tr key={item._id} className="group hover:bg-primary/5 transition-all">
-                                            <td className="font-black text-primary py-4 px-6 text-base tracking-tight">{item.name}</td>
-                                            <td className="py-4">
-                                                <span className="badge badge-outline-info rounded-lg font-black text-[9px] uppercase tracking-widest bg-info/5 px-2.5 py-1.5">{item.workType}</span>
-                                            </td>
-                                            {activeTab === 'vendor' && (
-                                                <td className="font-black text-warning whitespace-nowrap py-4">
-                                                    {item.contractor?.name || 'Unknown'}
-                                                    <div className="text-[9px] opacity-60 font-bold uppercase mt-1 tracking-tighter">{item.contractor?.companyName}</div>
+                    <div className="panel">
+                        <div className="table-responsive">
+                            <table className="table-hover">
+                                <thead>
+                                    <tr>
+                                        <th className="font-black uppercase tracking-widest text-[10px] py-4">Labour Name</th>
+                                        <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Work Type</th>
+                                        {activeTab === 'vendor' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Contractor</th>}
+                                        <th className="font-black uppercase tracking-widest text-[10px] py-4">Mobile</th>
+                                        {canSeeFinancials && <th className="font-black uppercase tracking-widest text-[10px] py-4">Wage Rate</th>}
+                                        <th className="font-black uppercase tracking-widest text-[10px] py-4">Join Date</th>
+                                        <th className="text-center font-black uppercase tracking-widest text-[10px] py-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="font-bold">
+                                    {loading ? (
+                                        <tr><td colSpan={7} className="text-center py-24">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                                <span className="text-xs uppercase tracking-[0.2em] text-primary font-black">Synchronizing Registry...</span>
+                                            </div>
+                                        </td></tr>
+                                    ) : filteredLabours.length === 0 ? (
+                                        <tr><td colSpan={7} className="text-center py-24 text-white-dark uppercase font-black tracking-widest text-sm opacity-20">No {activeTab} labours found</td></tr>
+                                    ) : (
+                                        filteredLabours.map((item: any) => (
+                                            <tr key={item._id} className="group hover:bg-primary/5 transition-all">
+                                                <td className="font-black text-primary py-4 text-base tracking-tight">{item.name}</td>
+                                                <td className="py-4 text-center">
+                                                    <span className="badge badge-outline-info rounded-lg font-black text-[9px] uppercase tracking-widest bg-info/5 px-2.5 py-1.5">{item.workType}</span>
                                                 </td>
-                                            )}
-                                            <td className="py-4 text-white-dark">{item.mobile || '-'}</td>
-                                            {canSeeFinancials && (
-                                                <td className="py-4">
-                                                    <div className="font-black text-black dark:text-white-light text-base">₹{item.wage}</div>
-                                                    <div className="text-[9px] text-primary uppercase font-bold tracking-widest mt-0.5">{item.wageType === 'Daily' ? 'Per Day' : 'Per Month'}</div>
+                                                {activeTab === 'vendor' && (
+                                                    <td className="font-black text-warning whitespace-nowrap py-4">
+                                                        {item.contractor?.name || 'Unknown'}
+                                                        <div className="text-[9px] opacity-60 font-bold uppercase mt-1 tracking-tighter">{item.contractor?.companyName}</div>
+                                                    </td>
+                                                )}
+                                                <td className="py-4 text-white-dark">{item.mobile || '-'}</td>
+                                                {canSeeFinancials && (
+                                                    <td className="py-4">
+                                                        <div className="font-black text-black dark:text-white-light text-base">₹{item.wage}</div>
+                                                        <div className="text-[9px] text-primary uppercase font-bold tracking-widest mt-0.5">{item.wageType === 'Daily' ? 'Per Day' : 'Per Month'}</div>
+                                                    </td>
+                                                )}
+                                                <td className="py-4">{new Date(item.joiningDate).toLocaleDateString()}</td>
+                                                <td className="text-center py-4">
+                                                    <div className="flex justify-center items-center gap-2">
+                                                        <Link href={`/labour/list/${item._id}`} className="p-2 rounded-xl text-info hover:bg-info/10 transition-all">
+                                                            <IconEye className="h-4 w-4" />
+                                                        </Link>
+                                                        {canEditRecord(currentUser, item.createdAt) && (
+                                                            <button type="button" className="p-2 rounded-xl text-primary hover:bg-primary/10 transition-all" onClick={() => handleEdit(item)}>
+                                                                <IconEdit className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                        {isOwner && (<button type="button" className="p-2 rounded-xl text-danger hover:bg-danger/10 transition-all" onClick={() => setDeleteId(item._id)}>
+                                                            <IconTrashLines className="h-4 w-4" />
+                                                        </button>)}
+                                                    </div>
                                                 </td>
-                                            )}
-                                            <td className="py-4">{new Date(item.joiningDate).toLocaleDateString()}</td>
-                                            <td className="text-center py-4 px-6">
-                                                <div className="flex justify-center items-center gap-3">
-                                                    <Link href={`/labour/list/${item._id}`} className="p-2 rounded-xl text-info hover:bg-info hover:text-white transition-all transform hover:scale-110 shadow-lg shadow-transparent hover:shadow-info/20">
-                                                        <IconEye className="h-5 w-5" />
-                                                    </Link>
-                                                    {canEditRecord(currentUser, item.createdAt) && (
-                                                        <button type="button" className="p-2 rounded-xl text-primary hover:bg-primary hover:text-white transition-all transform hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>
-                                                            <IconEdit className="h-5 w-5" />
-                                                        </button>
-                                                    )}
-                                                    {isOwner && (<button type="button" className="p-2 rounded-xl text-danger hover:bg-danger hover:text-white transition-all transform hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20" onClick={() => setDeleteId(item._id)}>
-                                                        <IconTrashLines className="h-5 w-5" />
-                                                    </button>)}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}

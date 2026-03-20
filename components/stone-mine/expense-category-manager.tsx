@@ -58,7 +58,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const [filterLabour, setFilterLabour] = useState('');
     const [filterWorkType, setFilterWorkType] = useState('');
     const [filterWageType, setFilterWageType] = useState('');
+    const [filterMaintenanceType, setFilterMaintenanceType] = useState('');
     const [filterOfficeCategory, setFilterOfficeCategory] = useState('');
+    const [filterSupplier, setFilterSupplier] = useState('');
+    const [filterSite, setFilterSite] = useState('');
+    const [filterTransportType, setFilterTransportType] = useState('');
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
     const [formData, setFormData] = useState({
@@ -759,7 +763,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
                     {/* Filter Panel (Specifically for Diesel/Fuel) */}
                     {category === 'Diesel' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
                                 <div className="relative">
@@ -782,12 +786,49 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <label className="text-[10px] font-bold uppercase mb-1 block">Asset Type</label>
-                                <select className="form-select h-10" value={filterAssetType} onChange={(e) => setFilterAssetType(e.target.value)}>
-                                    <option value="">All Types</option>
-                                    <option value="Vehicle">Vehicles Only</option>
-                                    <option value="Machine">Machines Only</option>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
+                                <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
+                                <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+                    {/* Filter Panel (Specifically for Explosive Cost) */}
+                    {category === 'Explosive Cost' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search by supplier or site..."
+                                        className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Site Location</label>
+                                <select className="form-select h-10" value={filterSite} onChange={(e) => setFilterSite(e.target.value)}>
+                                    <option value="">All Sites</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.site))).filter(Boolean).map(site => (
+                                        <option key={site} value={site}>{site}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Supplier</label>
+                                <select className="form-select h-10" value={filterSupplier} onChange={(e) => setFilterSupplier(e.target.value)}>
+                                    <option value="">All Suppliers</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.supplierName))).filter(Boolean).map(supplier => (
+                                        <option key={supplier} value={supplier}>{supplier}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
@@ -826,15 +867,69 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold uppercase mb-1 block">Asset Type</label>
-                                <select className="form-select h-10" value={filterAssetType} onChange={(e) => setFilterAssetType(e.target.value)}>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Maintenance Type</label>
+                                <select className="form-select h-10" value={filterMaintenanceType} onChange={(e) => setFilterMaintenanceType(e.target.value)}>
                                     <option value="">All Types</option>
-                                    <option value="Vehicle">Vehicles</option>
-                                    <option value="Machine">Machines</option>
+                                    {maintenanceTypes.map((type: any) => (
+                                        <option key={type._id} value={type.name}>{type.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">Vendor</label>
+                                <select className="form-select h-10" value={filterVendor} onChange={(e) => setFilterVendor(e.target.value)}>
+                                    <option value="">All Vendors</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.vendorName))).filter(Boolean).map(vendor => (
+                                        <option key={vendor} value={vendor}>{vendor}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
+                                <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
+                                <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+                    {/* Filter Panel (Specifically for Transport Charges) */}
+                    {category === 'Transport Charges' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search vehicle or location..."
+                                        className="form-input ltr:pr-10 rtl:pl-10 h-10"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Transport Type</label>
+                                <select className="form-select h-10" value={filterTransportType} onChange={(e) => setFilterTransportType(e.target.value)}>
+                                    <option value="">All Types</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.transportType))).filter(Boolean).map(type => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Vehicle</label>
+                                <select className="form-select h-10" value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)}>
+                                    <option value="">All Vehicles</option>
+                                    {Array.from(new Set(expenses.map(exp => exp.vehicleOrMachine))).filter(Boolean).map(v => (
+                                        <option key={v} value={v}>{v}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Owner/Vendor</label>
                                 <select className="form-select h-10" value={filterVendor} onChange={(e) => setFilterVendor(e.target.value)}>
                                     <option value="">All Vendors</option>
                                     {Array.from(new Set(expenses.map(exp => exp.vendorName))).filter(Boolean).map(vendor => (
@@ -1043,12 +1138,17 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         const asset = vehicles.find(v => (v.vehicleNumber === vNum || v.registrationNumber === vNum));
                                         const actualAssetType = exp.assetType || (asset ? asset.type : '');
                                         const matchesAssetType = !filterAssetType || actualAssetType === filterAssetType;
+                                        const matchesMaintenanceType = !filterMaintenanceType || exp.maintenanceType === filterMaintenanceType;
+                                        const matchesSupplier = !filterSupplier || exp.supplierName === filterSupplier;
+                                        const matchesSite = !filterSite || exp.site === filterSite;
+                                        const matchesTransportType = !filterTransportType || exp.transportType === filterTransportType;
 
                                         const expDate = exp.date ? exp.date.split('T')[0] : '';
                                         const matchesStart = !filterStartDate || expDate >= filterStartDate;
                                         const matchesEnd = !filterEndDate || expDate <= filterEndDate;
 
-                                        return matchesSearch && matchesVehicle && matchesAssetType && matchesVendor &&
+                                        return matchesSearch && matchesVehicle && matchesAssetType && matchesMaintenanceType && matchesVendor &&
+                                            matchesSupplier && matchesSite && matchesTransportType &&
                                             matchesLabour && matchesWorkType && matchesWageType && matchesOfficeCategory &&
                                             matchesStart && matchesEnd;
                                     });
