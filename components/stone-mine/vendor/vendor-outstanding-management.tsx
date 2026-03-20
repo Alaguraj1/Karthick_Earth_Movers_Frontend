@@ -1,11 +1,9 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/api';
 import IconSearch from '@/components/icon/icon-search';
 import IconTrendingDown from '@/components/icon/icon-trending-down';
 import Link from 'next/link';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 const VendorOutstandingManagement = () => {
     const [outstanding, setOutstanding] = useState<any[]>([]);
@@ -16,13 +14,13 @@ const VendorOutstandingManagement = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${API}/vendors/outstanding`);
+            const res = await api.get('/vendors/outstanding');
             if (res.data.success) {
                 const balData = res.data.data;
                 const [expRes, labRes, transRes] = await Promise.all([
-                    axios.get(`${API}/vendors/explosive`),
-                    axios.get(`${API}/vendors/labour`),
-                    axios.get(`${API}/vendors/transport`)
+                    api.get('/vendors/explosive'),
+                    api.get('/vendors/labour'),
+                    api.get('/vendors/transport')
                 ]);
 
                 const combined = balData.map((b: any) => {

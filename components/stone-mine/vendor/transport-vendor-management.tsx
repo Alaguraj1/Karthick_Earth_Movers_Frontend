@@ -1,8 +1,9 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
+import { canEditRecord } from '@/utils/permissions';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import IconPlus from '@/components/icon/icon-plus';
@@ -14,11 +15,10 @@ import IconTrash from '@/components/icon/icon-trash';
 import IconWheel from '@/components/icon/icon-wheel';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
-
 const TransportVendorManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
     const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+    const canSeeFinancials = currentUser?.role?.toLowerCase() !== 'supervisor';
 
     const { showToast } = useToast();
     const [vendors, setVendors] = useState<any[]>([]);
@@ -29,8 +29,6 @@ const TransportVendorManagement = () => {
     const [editId, setEditId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-
-
 
     const initialFormState = {
         name: '',
@@ -57,8 +55,8 @@ const TransportVendorManagement = () => {
         try {
             setLoading(true);
             const [transRes, balRes] = await Promise.all([
-                axios.get(`${API}/vendors/transport`),
-                axios.get(`${API}/vendors/outstanding`)
+                api.get('/vendors/transport'),
+                api.get('/vendors/outstanding')
             ]);
             if (transRes.data.success) setVendors(transRes.data.data);
             const balMap: any = {};
@@ -85,8 +83,6 @@ const TransportVendorManagement = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-
-
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         try {
@@ -97,10 +93,10 @@ const TransportVendorManagement = () => {
                 outstandingBalance: Number(formData.outstandingBalance)
             };
             if (editId) {
-                await axios.put(`${API}/vendors/transport/${editId}`, payload);
+                await api.put(`/vendors/transport/${editId}`, payload);
                 showToast('Transport vendor updated successfully!', 'success');
             } else {
-                await axios.post(`${API}/vendors/transport`, payload);
+                await api.post('/vendors/transport', payload);
                 showToast('Transport vendor registered successfully!', 'success');
             }
             resetForm();
@@ -158,7 +154,7 @@ const TransportVendorManagement = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await axios.delete(`${API}/vendors/transport/${deleteId}`);
+            await api.delete(`/vendors/transport/${deleteId}`);
             showToast('Vendor deleted successfully!', 'success');
             setDeleteId(null);
             setViewVendor(null);
@@ -254,8 +250,12 @@ const TransportVendorManagement = () => {
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between"><span className="text-white-dark">Mode</span><span className="font-bold">{viewVendor.paymentMode}</span></div>
                             <div className="flex justify-between"><span className="text-white-dark">Terms</span><span className="font-bold">{viewVendor.creditTerms}</span></div>
-                            <div className="flex justify-between"><span className="text-white-dark">Advance Paid</span><span className="font-bold text-success">₹{viewVendor.advancePaid?.toLocaleString() || 0}</span></div>
-                            <div className="flex justify-between pt-2 border-t border-danger/10"><span className="text-white-dark text-danger font-bold">Opening Balance</span><span className="font-black text-danger">₹{viewVendor.outstandingBalance?.toLocaleString() || 0}</span></div>
+                            {canSeeFinancials && (
+                                <>
+                                    <div className="flex justify-between"><span className="text-white-dark">Advance Paid</span><span className="font-bold text-success">₹{viewVendor.advancePaid?.toLocaleString() || 0}</span></div>
+                                    <div className="flex justify-between pt-2 border-t border-danger/10"><span className="text-white-dark text-danger font-bold">Opening Balance</span><span className="font-black text-danger">₹{viewVendor.outstandingBalance?.toLocaleString() || 0}</span></div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -361,15 +361,19 @@ const TransportVendorManagement = () => {
                                     <option value="Monthly">Monthly</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className="text-sm font-bold">Advance Paid (₹)</label>
-                                <input type="number" name="advancePaid" className="form-input" value={formData.advancePaid} onChange={handleChange} />
-                            </div>
+                            {canSeeFinancials && (
+                                <>
+                                    <div>
+                                        <label className="text-sm font-bold">Advance Paid (₹)</label>
+                                        <input type="number" name="advancePaid" className="form-input" value={formData.advancePaid} onChange={handleChange} />
+                                    </div>
 
-                            <div>
-                                <label className="text-sm font-bold text-danger">Opening Balance (₹)</label>
-                                <input type="number" name="outstandingBalance" className="form-input font-bold border-danger/20 text-danger" value={formData.outstandingBalance} onChange={handleChange} />
-                            </div>
+                                    <div>
+                                        <label className="text-sm font-bold text-danger">Opening Balance (₹)</label>
+                                        <input type="number" name="outstandingBalance" className="form-input font-bold border-danger/20 text-danger" value={formData.outstandingBalance} onChange={handleChange} />
+                                    </div>
+                                </>
+                            )}
                             <div className="md:col-span-3">
                                 <label className="text-sm font-bold">Notes / Remarks</label>
                                 <input type="text" name="notes" className="form-input" value={formData.notes} onChange={handleChange} placeholder="Any special notes..." />
@@ -419,8 +423,8 @@ const TransportVendorManagement = () => {
                         <thead>
                             <tr>
                                 <th>Vendor Info</th>
-                                <th>Payment Setup</th>
-                                <th className="!text-right text-danger">Outstanding (₹)</th>
+                                <th>Vehicle History</th>
+                                {canSeeFinancials && <th className="!text-right text-danger">Outstanding (₹)</th>}
                                 <th className="!text-center">Action</th>
                             </tr>
                         </thead>
@@ -439,18 +443,26 @@ const TransportVendorManagement = () => {
                                         </td>
 
                                         <td>
-                                            <div className="text-xs font-semibold">{v.paymentMode} | {v.creditTerms}</div>
-                                            <div className="text-[10px] text-success font-bold mt-1">Adv: ₹{v.advancePaid?.toLocaleString() || 0}</div>
+                                            <div className="text-xs font-semibold">{v.vehicles?.length || 0} Vehicles Registered</div>
+                                            <div className="text-[10px] text-white-dark">Terms: {v.paymentMode} | {v.creditTerms}</div>
                                         </td>
-                                        <td className="!text-right font-black text-danger text-base whitespace-nowrap">
-                                            ₹{(() => {
-                                                const tripTotal = v.vehicles?.reduce((acc: number, veh: any) => acc + (Number(veh.ratePerTrip || 0) + Number(veh.padiKasu || 0)), 0) || 0;
-                                                return ((tripTotal + (v.outstandingBalance || 0)) - (v.advancePaid || 0) + (balances[v._id] || 0)).toLocaleString();
-                                            })()}
-                                        </td>
+                                        {canSeeFinancials && (
+                                            <td className="!text-right font-black text-danger text-base whitespace-nowrap">
+                                                ₹{(() => {
+                                                    const tripTotal = v.vehicles?.reduce((acc: number, veh: any) => acc + (Number(veh.ratePerTrip || 0) + Number(veh.padiKasu || 0)), 0) || 0;
+                                                    return ((tripTotal + (v.outstandingBalance || 0)) - (v.advancePaid || 0) + (balances[v._id] || 0)).toLocaleString();
+                                                })()}
+                                            </td>
+                                        )}
                                         <td className="text-center">
                                             <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                                <button onClick={() => handleEdit(v)} className="btn btn-sm btn-outline-info p-1"><IconEdit className="w-4 h-4" /></button>
+                                                {canEditRecord(currentUser, v.createdAt) ? (
+                                                    <button onClick={() => handleEdit(v)} className="btn btn-sm btn-outline-info p-1">
+                                                        <IconEdit className="w-4 h-4" />
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-[10px] text-white-dark italic flex items-center">Locked</span>
+                                                )}
                                                 {isOwner && (<button onClick={() => setDeleteId(v._id)} className="btn btn-sm btn-outline-danger p-1"><IconTrashLines className="w-4 h-4" /></button>)}
                                             </div>
                                         </td>

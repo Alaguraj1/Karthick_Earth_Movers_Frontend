@@ -1,8 +1,9 @@
-'use client';
+﻿'use client';
 import React, { useEffect, useState, Fragment } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
+import { canEditRecord } from '@/utils/permissions';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
@@ -13,11 +14,10 @@ import IconSearch from '@/components/icon/icon-search';
 import IconTrash from '@/components/icon/icon-trash';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
-
 const ExplosiveCostManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
     const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+    const canSeeFinancials = currentUser?.role?.toLowerCase() !== 'supervisor';
 
     const { showToast } = useToast();
     const [expenses, setExpenses] = useState<any[]>([]);
@@ -56,9 +56,9 @@ const ExplosiveCostManagement = () => {
         try {
             setLoading(true);
             const [expRes, supRes, matRes] = await Promise.all([
-                axios.get(`${API}/expenses`, { params: { category: 'Explosive Cost' } }),
-                axios.get(`${API}/vendors/explosive`),
-                axios.get(`${API}/master/explosive-materials`)
+                api.get('/expenses', { params: { category: 'Explosive Cost' } }),
+                api.get('/vendors/explosive'),
+                api.get('/master/explosive-materials')
             ]);
 
             if (expRes.data.success) setExpenses(expRes.data.data);
@@ -185,10 +185,10 @@ const ExplosiveCostManagement = () => {
             }
 
             if (editId) {
-                await axios.put(`${API}/expenses/${editId}`, formData);
+                await api.put(`/expenses/${editId}`, formData);
                 showToast('Cost record updated successfully!', 'success');
             } else {
-                await axios.post(`${API}/expenses`, formData);
+                await api.post('/expenses', formData);
                 showToast('Cost record saved successfully!', 'success');
             }
             resetForm();
@@ -219,7 +219,7 @@ const ExplosiveCostManagement = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await axios.delete(`${API}/expenses/${deleteId}`);
+            await api.delete(`/expenses/${deleteId}`);
             showToast('Record deleted successfully!', 'success');
             setDeleteId(null);
             fetchData();
@@ -327,8 +327,12 @@ const ExplosiveCostManagement = () => {
                                             <th className="w-1/4">Material Type</th>
                                             <th className="w-[15%]">Unit</th>
                                             <th className="w-[15%]">Quantity</th>
-                                            <th className="w-[15%]">Rate (₹)</th>
-                                            <th className="w-[20%] text-right">Total (₹)</th>
+                                            {canSeeFinancials && (
+                                                <>
+                                                    <th className="w-[15%]">Rate (₹)</th>
+                                                    <th className="w-[20%] text-right">Total (₹)</th>
+                                                </>
+                                            )}
                                             <th className="w-10"></th>
                                         </tr>
                                     </thead>
@@ -373,19 +377,23 @@ const ExplosiveCostManagement = () => {
                                                         required min="0" step="any"
                                                     />
                                                 </td>
-                                                <td>
-                                                    <input
-                                                        type="number"
-                                                        className="form-input text-xs"
-                                                        name="rate"
-                                                        value={mat.rate}
-                                                        onChange={(e) => handleMaterialChange(index, e)}
-                                                        required min="0" step="any"
-                                                    />
-                                                </td>
-                                                <td className="text-right font-bold py-3 text-primary">
-                                                    ₹{mat.amount.toLocaleString()}
-                                                </td>
+                                                {canSeeFinancials && (
+                                                    <>
+                                                        <td>
+                                                            <input
+                                                                type="number"
+                                                                className="form-input text-xs"
+                                                                name="rate"
+                                                                value={mat.rate}
+                                                                onChange={(e) => handleMaterialChange(index, e)}
+                                                                required min="0" step="any"
+                                                            />
+                                                        </td>
+                                                        <td className="text-right font-bold py-3 text-primary">
+                                                            ₹{mat.amount.toLocaleString()}
+                                                        </td>
+                                                    </>
+                                                )}
                                                 <td>
                                                     <button type="button" onClick={() => removeMaterialRow(index)} className="text-danger hover:text-white dark:hover:text-danger hover:bg-danger/10 rounded p-1 transition-colors">
                                                         <IconTrash className="w-5 h-5" />
@@ -396,10 +404,18 @@ const ExplosiveCostManagement = () => {
                                     </tbody>
                                     <tfoot>
                                         <tr className="bg-primary/5">
-                                            <td colSpan={4} className="text-right font-black uppercase text-xs py-4">Grand Total (மொத்த தொகை):</td>
+                                            <td colSpan={canSeeFinancials ? 4 : 2} className="text-right font-black uppercase text-xs py-4">Quantity Total:</td>
                                             <td className="text-right font-black text-lg text-primary py-4">
-                                                ₹{formData.amount.toLocaleString()}
+                                                {formData.materials.reduce((acc: number, curr: any) => acc + (parseFloat(curr.quantity) || 0), 0)}
                                             </td>
+                                            {canSeeFinancials && (
+                                                <>
+                                                    <td className="text-right font-black uppercase text-xs py-4">Grand Total (மொத்த தொகை):</td>
+                                                    <td className="text-right font-black text-lg text-primary py-4">
+                                                        ₹{formData.amount.toLocaleString()}
+                                                    </td>
+                                                </>
+                                            )}
                                             <td></td>
                                         </tr>
                                     </tfoot>
@@ -460,7 +476,7 @@ const ExplosiveCostManagement = () => {
                                     <th>Site</th>
                                     <th>Materials Used</th>
                                     <th>Supplier</th>
-                                    <th className="!text-right">Grand Total</th>
+                                    {canSeeFinancials && <th className="!text-right text-primary uppercase text-[10px] font-black tracking-widest">Grand Total (₹)</th>}
                                     <th className="!text-center">Action</th>
                                 </tr>
                             </thead>
@@ -491,12 +507,16 @@ const ExplosiveCostManagement = () => {
                                                 <div className="text-primary font-bold">{exp.supplierName}</div>
                                                 <div className="text-[10px] opacity-60">Lic: {exp.licenseNumber}</div>
                                             </td>
-                                            <td className="!text-right font-black text-primary text-base">₹{(exp.amount || 0).toLocaleString()}</td>
+                                            {canSeeFinancials && <td className="!text-right font-black text-primary text-base">₹{(exp.amount || 0).toLocaleString()}</td>}
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => handleEdit(exp)} className="btn btn-sm btn-outline-primary p-1">
-                                                        <IconEdit className="w-4 h-4" />
-                                                    </button>
+                                                    {canEditRecord(currentUser, exp.createdAt || exp.date) ? (
+                                                        <button onClick={() => handleEdit(exp)} className="btn btn-sm btn-outline-primary p-1">
+                                                            <IconEdit className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-[10px] text-white-dark italic">Locked</span>
+                                                    )}
                                                     {isOwner && (<button onClick={() => setDeleteId(exp._id)} className="btn btn-sm btn-outline-danger p-1">
                                                         <IconTrashLines className="w-4 h-4" />
                                                     </button>)}

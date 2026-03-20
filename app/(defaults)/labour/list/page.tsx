@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -9,13 +9,15 @@ import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconEye from '@/components/icon/icon-eye';
 import Link from 'next/link';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
+import { canEditRecord } from '@/utils/permissions';
 
 const LabourListPage = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
     const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+    const canSeeFinancials = currentUser?.role?.toLowerCase() !== 'supervisor';
 
     const [data, setData] = useState<any[]>([]);
     const [contractors, setContractors] = useState<any[]>([]);
@@ -45,9 +47,9 @@ const LabourListPage = () => {
         setLoading(true);
         try {
             const [labourRes, contractorRes, workTypesRes] = await Promise.all([
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/labour`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/work-types`)
+                api.get('/labour'),
+                api.get('/vendors/labour'),
+                api.get('/master/work-types')
             ]);
             if (labourRes.data.success) setData(labourRes.data.data);
             if (contractorRes.data.success) setContractors(contractorRes.data.data);
@@ -109,13 +111,10 @@ const LabourListPage = () => {
                 payload.contractor = '';
             }
 
-            const endpoint = editItem
-                ? `${process.env.NEXT_PUBLIC_API_URL}/labour/${editItem._id}`
-                : `${process.env.NEXT_PUBLIC_API_URL}/labour`;
-
+            const endpoint = editItem ? `/labour/${editItem._id}` : '/labour';
             const method = editItem ? 'put' : 'post';
 
-            const { data: json } = await axios[method](endpoint, payload);
+            const { data: json } = await (api as any)[method](endpoint, payload);
             if (json.success) {
                 showToast(editItem ? 'Labour profile updated successfully' : 'New labour profile added successfully', 'success');
                 resetForm();
@@ -170,7 +169,7 @@ const LabourListPage = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/labour/${deleteId}`);
+            const { data: json } = await api.delete(`/labour/${deleteId}`);
             if (json.success) {
                 showToast('Labour profile has been deleted.', 'success');
                 fetchData();
@@ -300,35 +299,39 @@ const LabourListPage = () => {
                                         ))}
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Wage Amount (சம்பளம்)</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-info font-black">₹</span>
-                                        <input
-                                            type="number"
-                                            name="wage"
-                                            className={`form-input pl-8 font-black border-info rounded-xl h-11 ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
-                                            value={formData.wage}
-                                            onChange={handleChange}
-                                            required
-                                            placeholder="0.00"
-                                            readOnly={formData.labourType === 'Vendor'}
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Wage Type (சம்பள முறை)</label>
-                                    <select
-                                        name="wageType"
-                                        className={`form-select font-bold rounded-xl h-11 ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
-                                        value={formData.wageType}
-                                        onChange={handleChange}
-                                        disabled={formData.labourType === 'Vendor'}
-                                    >
-                                        <option value="Daily">Daily Wage (தினக்கூலி)</option>
-                                        <option value="Monthly">Monthly Salary (மாதச் சம்பளம்)</option>
-                                    </select>
-                                </div>
+                                {canSeeFinancials && (
+                                    <>
+                                        <div>
+                                            <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Wage Amount (சம்பளம்)</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-info font-black">₹</span>
+                                                <input
+                                                    type="number"
+                                                    name="wage"
+                                                    className={`form-input pl-8 font-black border-info rounded-xl h-11 ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                                    value={formData.wage}
+                                                    onChange={handleChange}
+                                                    required
+                                                    placeholder="0.00"
+                                                    readOnly={formData.labourType === 'Vendor'}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Wage Type (சம்பள முறை)</label>
+                                            <select
+                                                name="wageType"
+                                                className={`form-select font-bold rounded-xl h-11 ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                                value={formData.wageType}
+                                                onChange={handleChange}
+                                                disabled={formData.labourType === 'Vendor'}
+                                            >
+                                                <option value="Daily">Daily Wage (தினக்கூலி)</option>
+                                                <option value="Monthly">Monthly Salary (மாதச் சம்பளம்)</option>
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -395,7 +398,7 @@ const LabourListPage = () => {
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Work Type</th>
                                     {activeTab === 'vendor' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Contractor</th>}
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Mobile</th>
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Wage Rate</th>
+                                    {canSeeFinancials && <th className="font-black uppercase tracking-widest text-[10px] py-4">Wage Rate</th>}
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Join Date</th>
                                     <th className="text-center font-black uppercase tracking-widest text-[10px] py-4 px-6">Actions</th>
                                 </tr>
@@ -424,19 +427,23 @@ const LabourListPage = () => {
                                                 </td>
                                             )}
                                             <td className="py-4 text-white-dark">{item.mobile || '-'}</td>
-                                            <td className="py-4">
-                                                <div className="font-black text-black dark:text-white-light text-base">₹{item.wage}</div>
-                                                <div className="text-[9px] text-primary uppercase font-bold tracking-widest mt-0.5">{item.wageType === 'Daily' ? 'Per Day' : 'Per Month'}</div>
-                                            </td>
+                                            {canSeeFinancials && (
+                                                <td className="py-4">
+                                                    <div className="font-black text-black dark:text-white-light text-base">₹{item.wage}</div>
+                                                    <div className="text-[9px] text-primary uppercase font-bold tracking-widest mt-0.5">{item.wageType === 'Daily' ? 'Per Day' : 'Per Month'}</div>
+                                                </td>
+                                            )}
                                             <td className="py-4">{new Date(item.joiningDate).toLocaleDateString()}</td>
                                             <td className="text-center py-4 px-6">
                                                 <div className="flex justify-center items-center gap-3">
                                                     <Link href={`/labour/list/${item._id}`} className="p-2 rounded-xl text-info hover:bg-info hover:text-white transition-all transform hover:scale-110 shadow-lg shadow-transparent hover:shadow-info/20">
                                                         <IconEye className="h-5 w-5" />
                                                     </Link>
-                                                    <button type="button" className="p-2 rounded-xl text-primary hover:bg-primary hover:text-white transition-all transform hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>
-                                                        <IconEdit className="h-5 w-5" />
-                                                    </button>
+                                                    {canEditRecord(currentUser, item.createdAt) && (
+                                                        <button type="button" className="p-2 rounded-xl text-primary hover:bg-primary hover:text-white transition-all transform hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>
+                                                            <IconEdit className="h-5 w-5" />
+                                                        </button>
+                                                    )}
                                                     {isOwner && (<button type="button" className="p-2 rounded-xl text-danger hover:bg-danger hover:text-white transition-all transform hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20" onClick={() => setDeleteId(item._id)}>
                                                         <IconTrashLines className="h-5 w-5" />
                                                     </button>)}

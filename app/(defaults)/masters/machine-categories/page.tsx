@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -7,7 +7,7 @@ import IconSave from '@/components/icon/icon-save';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 
@@ -30,7 +30,7 @@ const MachineCategoriesMaster = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const { data: json } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}`);
+            const { data: json } = await api.get(`/master/${activeTab}`);
             if (json.success) setData(json.data);
         } catch (error) {
             console.error(error);
@@ -48,12 +48,12 @@ const MachineCategoriesMaster = () => {
         e.preventDefault();
         try {
             const endpoint = editItem
-                ? `${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}/${editItem._id}`
-                : `${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}`;
+                ? `/master/${activeTab}/${editItem._id}`
+                : `/master/${activeTab}`;
 
             const method = editItem ? 'put' : 'post';
 
-            const { data: json } = await axios[method](endpoint, newItem);
+            const { data: json } = await (api as any)[method](endpoint, newItem);
             if (json.success) {
                 showToast(editItem ? 'Updated successfully!' : 'Added successfully!', 'success');
                 setNewItem({
@@ -86,7 +86,7 @@ const MachineCategoriesMaster = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            const { data: json } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/${activeTab}/${deleteId}`);
+            const { data: json } = await api.delete(`/master/${activeTab}/${deleteId}`);
             if (json.success) {
                 showToast('Machine category deleted successfully!', 'success');
                 fetchData();

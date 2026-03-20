@@ -1,11 +1,9 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/api';
 import IconSearch from '@/components/icon/icon-search';
 import IconTrendingUp from '@/components/icon/icon-trending-up';
 import IconTrendingDown from '@/components/icon/icon-trending-down';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 const TripProfitability = () => {
     const [trips, setTrips] = useState<any[]>([]);
@@ -16,8 +14,8 @@ const TripProfitability = () => {
         try {
             setLoading(true);
             const [tripRes, statRes] = await Promise.all([
-                axios.get(`${API}/trips`),
-                axios.get(`${API}/trips/stats`)
+                api.get('/trips'),
+                api.get('/trips/stats')
             ]);
             if (tripRes.data.success) setTrips(tripRes.data.data);
             if (statRes.data.success) setStats(statRes.data.data);

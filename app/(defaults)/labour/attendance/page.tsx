@@ -1,15 +1,19 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import IconSave from '@/components/icon/icon-save';
 import IconUsers from '@/components/icon/menu/icon-menu-users';
 import IconCalendar from '@/components/icon/menu/icon-menu-calendar';
 import IconChecks from '@/components/icon/icon-checks';
 import IconX from '@/components/icon/icon-x';
 import IconSearch from '@/components/icon/icon-search';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 
 const AttendancePage = () => {
+    const { showToast } = useToast();
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
     const [labours, setLabours] = useState<any[]>([]);
     const [attendanceData, setAttendanceData] = useState<any>({});
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -18,12 +22,32 @@ const AttendancePage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState<'all' | 'Direct' | 'Vendor'>('all');
     const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
-    const { showToast } = useToast();
+
+    const role = currentUser?.role?.toLowerCase();
+    const isOwner = role === 'owner';
+    const isAdmin = role === 'admin';
+    const isSupervisor = role === 'supervisor';
+
+    // Check if the selected date is within the allowed edit window for supervisors
+    const isPeriodEditable = useMemo(() => {
+        if (isOwner || isAdmin) return true;
+        if (isSupervisor) {
+            const selected = new Date(selectedDate);
+            selected.setHours(0, 0, 0, 0);
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+
+            // Allow today and yesterday
+            const diffInDays = Math.floor((now.getTime() - selected.getTime()) / (1000 * 60 * 60 * 24));
+            return diffInDays <= 1;
+        }
+        return true;
+    }, [isOwner, isAdmin, isSupervisor, selectedDate]);
 
     const fetchLaboursAndAttendance = async () => {
         setLoading(true);
         try {
-            const { data: labourJson } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour`);
+            const { data: labourJson } = await api.get('/labour');
             if (labourJson.success) {
                 const activeLabours = labourJson.data.filter((l: any) => l.status === 'active');
                 setLabours(activeLabours);
@@ -33,7 +57,7 @@ const AttendancePage = () => {
                     initial[l._id] = { status: null, overtimeHours: 0 };
                 });
 
-                const { data: attJson } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/attendance?date=${selectedDate}`);
+                const { data: attJson } = await api.get(`/labour/attendance?date=${selectedDate}`);
                 if (attJson.success && attJson.data.length > 0) {
                     attJson.data.forEach((record: any) => {
                         // Extract labour ID from populated object or ID string
@@ -68,6 +92,10 @@ const AttendancePage = () => {
     };
 
     const handleStatusChange = (labourId: string, status: string) => {
+        if (!isPeriodEditable) {
+            showToast('Locked! Supervisors can only change today or yesterday.', 'warning');
+            return;
+        }
         setAttendanceData((prev: any) => ({
             ...prev,
             [labourId]: { ...prev[labourId], status }
@@ -75,6 +103,10 @@ const AttendancePage = () => {
     };
 
     const handleOvertimeChange = (labourId: string, hours: number) => {
+        if (!isPeriodEditable) {
+            showToast('Locked! Supervisors can only change today or yesterday.', 'warning');
+            return;
+        }
         setAttendanceData((prev: any) => ({
             ...prev,
             [labourId]: { ...prev[labourId], overtimeHours: hours }
@@ -82,6 +114,7 @@ const AttendancePage = () => {
     };
 
     const handleBulkMarkPresent = () => {
+        if (!isPeriodEditable) return;
         const updated = { ...attendanceData };
         filteredLabours.forEach(l => {
             if (isJoined(l)) {
@@ -92,6 +125,7 @@ const AttendancePage = () => {
     };
 
     const handleBulkMarkAbsent = () => {
+        if (!isPeriodEditable) return;
         const updated = { ...attendanceData };
         filteredLabours.forEach(l => {
             if (isJoined(l)) {
@@ -102,6 +136,10 @@ const AttendancePage = () => {
     };
 
     const handleSave = async () => {
+        if (!isPeriodEditable) {
+            showToast('Time limit exceeded! Supervisors can only record or edit attendance within 24 hours.', 'error');
+            return;
+        }
         setSaving(true);
         try {
             const dataToSave = Object.keys(attendanceData)
@@ -120,7 +158,7 @@ const AttendancePage = () => {
                 return;
             }
 
-            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/attendance`, {
+            const { data } = await api.post('/labour/attendance', {
                 date: selectedDate,
                 attendanceData: dataToSave
             });
@@ -681,9 +719,9 @@ const AttendancePage = () => {
             <div className="fixed bottom-8 right-8 z-50">
                 <button
                     type="button"
-                    className="group relative overflow-hidden bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-[0_10px_40px_rgba(79,70,229,0.45)] px-8 py-4 rounded-2xl flex items-center gap-3 transform hover:scale-105 active:scale-95 transition-all duration-300 font-black uppercase tracking-widest text-sm"
+                    className={`group relative overflow-hidden bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-[0_10px_40px_rgba(79,70,229,0.45)] px-8 py-4 rounded-2xl flex items-center gap-3 transform hover:scale-105 active:scale-95 transition-all duration-300 font-black uppercase tracking-widest text-sm ${(!isPeriodEditable || saving || loading) ? 'grayscale opacity-70 cursor-not-allowed' : ''}`}
                     onClick={handleSave}
-                    disabled={saving || loading}
+                    disabled={!isPeriodEditable || saving || loading}
                 >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                     {saving ? (

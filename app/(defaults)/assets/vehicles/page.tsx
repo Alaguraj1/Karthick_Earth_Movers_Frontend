@@ -7,7 +7,7 @@ import IconEdit from '@/components/icon/icon-edit';
 import IconSave from '@/components/icon/icon-save';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
-import axios from 'axios';
+import api from '@/utils/api';
 import Link from 'next/link';
 import IconMenuWidgets from '@/components/icon/menu/icon-menu-widgets';
 import { useToast } from '@/components/stone-mine/toast-notification';
@@ -16,10 +16,12 @@ import IconFile from '@/components/icon/icon-file';
 import IconDownload from '@/components/icon/icon-download';
 import * as XLSX from 'xlsx';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
+import { canEditRecord } from '@/utils/permissions';
 
 const VehicleDetails = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
     const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+    const canSeeFinancials = currentUser?.role?.toLowerCase() !== 'supervisor';
 
     const { showToast } = useToast();
     const [assets, setAssets] = useState<any[]>([]);
@@ -61,10 +63,10 @@ const VehicleDetails = () => {
         setLoading(true);
         try {
             const [vehicleRes, vendorRes, categoryRes, reportRes] = await Promise.all([
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/transport`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicle-categories`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/vehicle-cost`)
+                api.get('/master/vehicles'),
+                api.get('/vendors/transport'),
+                api.get('/master/vehicle-categories'),
+                api.get('/reports/vehicle-cost')
             ]);
 
             if (vehicleRes.data.success) {
@@ -132,12 +134,12 @@ const VehicleDetails = () => {
             };
 
             const endpoint = editItem
-                ? `${process.env.NEXT_PUBLIC_API_URL}/master/vehicles/${editItem._id}`
-                : `${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`;
+                ? `/master/vehicles/${editItem._id}`
+                : '/master/vehicles';
 
             const method = editItem ? 'put' : 'post';
 
-            const { data: json } = await axios[method](endpoint, payload);
+            const { data: json } = await (api as any)[method](endpoint, payload);
             if (json.success) {
                 showToast(editItem ? 'Vehicle updated successfully!' : 'Vehicle registered successfully!', 'success');
                 resetForm();
@@ -179,9 +181,9 @@ const VehicleDetails = () => {
             const dateQuery = filterDates.start && filterDates.end ? `&startDate=${filterDates.start}&endDate=${filterDates.end}` : '';
 
             const [dieselRes, maintenanceRes, statsRes] = await Promise.all([
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/fuel-tracking?vehicleOrMachine=${encodeURIComponent(displayName)}${dateQuery}`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/maintenance-history?vehicleOrMachine=${encodeURIComponent(displayName)}${dateQuery}`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/vehicle-cost?${dateQuery.replace('&', '')}`)
+                api.get(`/reports/fuel-tracking?vehicleOrMachine=${encodeURIComponent(displayName)}${dateQuery}`),
+                api.get(`/reports/maintenance-history?vehicleOrMachine=${encodeURIComponent(displayName)}${dateQuery}`),
+                api.get(`/reports/vehicle-cost?${dateQuery.replace('&', '')}`)
             ]);
 
             setExpenseHistory({
@@ -281,7 +283,7 @@ const VehicleDetails = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            const { data } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles/${deleteId}`);
+            const { data } = await api.delete(`/master/vehicles/${deleteId}`);
             if (data.success) {
                 showToast('Vehicle deleted successfully!', 'success');
                 fetchData();
@@ -451,36 +453,38 @@ const VehicleDetails = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-6 bg-success/5 p-6 rounded-2xl border border-success/10">
-                            <div className="flex items-center gap-2 text-success font-black uppercase text-xs tracking-[0.2em] border-b border-success/10 pb-3 mb-4">
-                                <IconPlus className="w-4 h-4" />
-                                3. Financials & Condition (நிதி மற்றும் நிலை)
+                        {canSeeFinancials && (
+                            <div className="space-y-6 bg-success/5 p-6 rounded-2xl border border-success/10">
+                                <div className="flex items-center gap-2 text-success font-black uppercase text-xs tracking-[0.2em] border-b border-success/10 pb-3 mb-4">
+                                    <IconPlus className="w-4 h-4" />
+                                    3. Financials & Condition (நிதி மற்றும் நிலை)
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Cost (₹)</label>
+                                        <input type="number" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseCost} onChange={(e) => setNewItem({ ...newItem, purchaseCost: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Mileage / Stats</label>
+                                        <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.mileageDetails} onChange={(e) => setNewItem({ ...newItem, mileageDetails: e.target.value })} placeholder="Kmpl information" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Date</label>
+                                        <input type="date" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseDate} onChange={(e) => setNewItem({ ...newItem, purchaseDate: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-6 pt-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Notes</label>
+                                        <textarea
+                                            className="form-textarea border-2 font-bold rounded-xl min-h-[100px]"
+                                            value={newItem.description}
+                                            onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                                        ></textarea>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Cost (₹)</label>
-                                    <input type="number" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseCost} onChange={(e) => setNewItem({ ...newItem, purchaseCost: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Mileage / Stats</label>
-                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.mileageDetails} onChange={(e) => setNewItem({ ...newItem, mileageDetails: e.target.value })} placeholder="Kmpl information" />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Purchase Date</label>
-                                    <input type="date" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseDate} onChange={(e) => setNewItem({ ...newItem, purchaseDate: e.target.value })} />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 gap-6 pt-4">
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Notes</label>
-                                    <textarea
-                                        className="form-textarea border-2 font-bold rounded-xl min-h-[100px]"
-                                        value={newItem.description}
-                                        onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                                    ></textarea>
-                                </div>
-                            </div>
-                        </div>
+                        )}
 
                         <div className="flex items-center justify-end gap-4 pt-10 border-t-2 border-primary/5">
                             <button type="button" className="btn btn-outline-danger px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-[10px]" onClick={resetForm}>
@@ -548,9 +552,11 @@ const VehicleDetails = () => {
                                     >
                                         <IconDownload className="w-4 h-4 mr-2" /> Export XL
                                     </button>
-                                    <button onClick={() => handleEdit(detailsView)} className="btn btn-info rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest h-10">
-                                        <IconEdit className="w-4 h-4 mr-2" /> Edit Profile
-                                    </button>
+                                    {canEditRecord(currentUser, detailsView.createdAt) && (
+                                        <button onClick={() => handleEdit(detailsView)} className="btn btn-info rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest h-10">
+                                            <IconEdit className="w-4 h-4 mr-2" /> Edit Profile
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -584,7 +590,7 @@ const VehicleDetails = () => {
                                         const displayName = detailsView.category ? `${detailsView.category} (${plateNum})` : (plateNum ? `${detailsView.name} (${plateNum})` : detailsView.name);
                                         const vehicleStats = stats.find(s => s._id === displayName);
 
-                                        return (
+                                        return canSeeFinancials && (
                                             <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10">
                                                 <h6 className="text-xs font-black uppercase text-primary tracking-widest mb-4">Cost Analytics</h6>
                                                 <div className="space-y-4">
@@ -760,9 +766,11 @@ const VehicleDetails = () => {
                                                 <button onClick={() => handleViewDetails(asset)} className="p-2 bg-white/50 dark:bg-white/10 rounded-lg hover:text-primary transition-colors shadow-sm" title="View Details">
                                                     <IconEye className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => handleEdit(asset)} className="p-2 bg-white/50 dark:bg-white/10 rounded-lg hover:text-info transition-colors shadow-sm">
-                                                    <IconEdit className="w-4 h-4" />
-                                                </button>
+                                                {canEditRecord(currentUser, asset.createdAt) && (
+                                                    <button onClick={() => handleEdit(asset)} className="p-2 bg-white/50 dark:bg-white/10 rounded-lg hover:text-info transition-colors shadow-sm">
+                                                        <IconEdit className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                                 {isOwner && (<button onClick={() => handleDelete(asset._id)} className="p-2 bg-white/50 dark:bg-white/10 rounded-lg hover:text-danger transition-colors shadow-sm">
                                                     <IconTrashLines className="w-4 h-4" />
                                                 </button>)}

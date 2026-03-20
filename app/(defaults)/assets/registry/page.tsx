@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import IconPlus from '@/components/icon/icon-plus';
 import IconSearch from '@/components/icon/icon-search';
 import IconSettings from '@/components/icon/icon-settings';
 import IconEdit from '@/components/icon/icon-edit';
 import IconMenuWidgets from '@/components/icon/menu/icon-menu-widgets';
-import axios from 'axios';
+import api from '@/utils/api';
 import Link from 'next/link';
 
 const AssetRegistry = () => {
@@ -16,7 +16,7 @@ const AssetRegistry = () => {
     const fetchAssets = async () => {
         setLoading(true);
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`);
+            const { data } = await api.get('/master/vehicles');
             if (data.success) setAssets(data.data);
         } catch (error) {
             console.error(error);

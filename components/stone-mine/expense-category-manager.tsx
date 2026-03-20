@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useEffect, useState, Fragment } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -11,8 +11,9 @@ import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconSearch from '@/components/icon/icon-search';
 import { Transition, Dialog, DialogPanel, TransitionChild } from '@headlessui/react';
 
-import axios from 'axios';
+import api, { BASE_URL } from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
+import { canEditRecord } from '@/utils/permissions';
 
 interface ExpenseCategoryManagerProps {
     category: string;
@@ -122,7 +123,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                 params.month = listMonth;
                 params.year = listYear;
             }
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, { params });
+            const { data } = await api.get('/expenses', { params });
             if (data.success) {
                 setExpenses(data.data);
             }
@@ -135,7 +136,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const fetchVehicles = async () => {
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`);
+            const { data } = await api.get('/master/vehicles');
             if (data.success) setVehicles(data.data);
         } catch (error) {
             console.error('Error fetching vehicles:', error);
@@ -144,7 +145,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const fetchLabours = async () => {
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/labours`);
+            const { data } = await api.get('/master/labours');
             if (data.success) setLabours(data.data);
         } catch (error) {
             console.error('Error fetching labours:', error);
@@ -153,7 +154,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const fetchContractors = async () => {
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/vendors/labour`);
+            const { data } = await api.get('/vendors/labour');
             if (data.success) setContractors(data.data);
         } catch (error) {
             console.error('Error fetching contractors:', error);
@@ -162,7 +163,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const fetchWorkTypes = async () => {
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/work-types`);
+            const { data } = await api.get('/master/work-types');
             if (data.success) setWorkTypes(data.data);
         } catch (error) {
             console.error('Error fetching work types:', error);
@@ -171,7 +172,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const fetchExpenseCategories = async () => {
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/expense-categories`);
+            const { data } = await api.get('/master/expense-categories');
             if (data.success) setExpenseCategories(data.data);
         } catch (error) {
             console.error('Error fetching expense categories:', error);
@@ -180,7 +181,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const fetchMaintenanceTypes = async () => {
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/maintenance-types`);
+            const { data } = await api.get('/master/maintenance-types');
             if (data.success) setMaintenanceTypes(data.data);
         } catch (error) {
             console.error('Error fetching maintenance types:', error);
@@ -191,7 +192,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         if (category === 'Labour Wages' && formData.labourName && (labours.length > 0 || contractors.length > 0)) {
             const fetchLabourSummary = async () => {
                 try {
-                    const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/wages-summary`, {
+                    const { data } = await api.get('/labour/wages-summary', {
                         params: { month: lookupMonth, year: lookupYear }
                     });
 
@@ -453,7 +454,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         const uploadData = new FormData();
         uploadData.append('bill', file);
         try {
-            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/upload`, uploadData, {
+            const { data } = await api.post('/upload', uploadData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             return data.filePath;
@@ -500,7 +501,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         }
 
         try {
-            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, payload);
+            const { data } = await api.post('/expenses', payload);
             if (data.success) {
                 showToast('Record saved successfully!', 'success');
                 resetForm();
@@ -544,7 +545,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         }
 
         try {
-            const { data } = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${selectedExpense._id}`, payload);
+            const { data } = await api.put(`/expenses/${selectedExpense._id}`, payload);
             if (data.success) {
                 showToast('Record updated successfully!', 'success');
                 resetForm();
@@ -558,7 +559,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const handleDelete = async () => {
         try {
-            const { data } = await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${selectedExpense._id}`);
+            const { data } = await api.delete(`/expenses/${selectedExpense._id}`);
             if (data.success) {
                 showToast('Record deleted successfully!', 'success');
                 setDeleteModal(false);
@@ -1156,31 +1157,35 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </td>
                                             <td className="text-center py-2 flex flex-col items-center gap-1 justify-center">
                                                 {expense.billUrl && (
-                                                    <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${expense.billUrl}`} target="_blank" className="text-primary hover:underline text-[10px]">
+                                                    <a href={`${(BASE_URL || '').replace('/api', '')}${expense.billUrl}`} target="_blank" className="text-primary hover:underline text-[10px]">
                                                         View Bill
                                                     </a>
                                                 )}
                                                 {expense.inputBillUrl && (
-                                                    <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${expense.inputBillUrl}`} target="_blank" className="text-info hover:underline text-[10px] font-bold">
+                                                    <a href={`${(BASE_URL || '').replace('/api', '')}${expense.inputBillUrl}`} target="_blank" className="text-info hover:underline text-[10px] font-bold">
                                                         Input Bill
                                                     </a>
                                                 )}
                                                 {expense.outputBillUrl && (
-                                                    <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${expense.outputBillUrl}`} target="_blank" className="text-success hover:underline text-[10px] font-bold">
+                                                    <a href={`${(BASE_URL || '').replace('/api', '')}${expense.outputBillUrl}`} target="_blank" className="text-success hover:underline text-[10px] font-bold">
                                                         Output Bill
                                                     </a>
                                                 )}
                                                 <div className="flex justify-center items-center gap-2 mt-1">
-                                                    {expense.sourceModel === 'Manual' ? (
+                                                    {(expense.sourceModel === 'Manual' || !expense.sourceModel) && canEditRecord(currentUser, expense.createdAt || expense.date) ? (
                                                         <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditModal(expense)}>
                                                             <IconEdit className="h-4 w-4" />
                                                         </button>
                                                     ) : (
-                                                        <span className="text-[10px] text-white-dark italic">System Entry</span>
+                                                        <span className="text-[10px] text-white-dark italic">
+                                                            {expense.sourceModel === 'Trip' ? 'System Entry' : 'Locked'}
+                                                        </span>
                                                     )}
-                                                    {isOwner && (<button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
-                                                        <IconTrashLines className="h-4 w-4" />
-                                                    </button>)}
+                                                    {isOwner && (
+                                                        <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
+                                                            <IconTrashLines className="h-4 w-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -1691,12 +1696,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={(e) => setSelectedInputFile(e.target.files ? e.target.files[0] : null)} accept=".jpg,.jpeg,.png,.pdf" />
                                                 {formData.inputBillUrl && (
                                                     <a
-                                                        href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${formData.inputBillUrl}`}
+                                                        href={`${(BASE_URL || '').replace('/api', '')}${formData.inputBillUrl}`}
                                                         target="_blank"
-                                                        className="btn btn-outline-info p-2"
-                                                        title="View Input Bill"
+                                                        className="text-primary hover:underline text-[10px] font-bold"
                                                     >
-                                                        <IconEdit className="w-4 h-4" />
+                                                        View Bill <IconEdit className="w-4 h-4" />
                                                     </a>
                                                 )}
                                             </div>
@@ -1707,12 +1711,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={(e) => setSelectedOutputFile(e.target.files ? e.target.files[0] : null)} accept=".jpg,.jpeg,.png,.pdf" />
                                                 {formData.outputBillUrl && (
                                                     <a
-                                                        href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${formData.outputBillUrl}`}
+                                                        href={`${(BASE_URL || '').replace('/api', '')}${formData.outputBillUrl}`}
                                                         target="_blank"
-                                                        className="btn btn-outline-info p-2"
-                                                        title="View Output Bill"
+                                                        className="text-success hover:underline text-[10px] font-bold"
                                                     >
-                                                        <IconEdit className="w-4 h-4" />
+                                                        View Output Bill <IconEdit className="w-4 h-4" />
                                                     </a>
                                                 )}
                                             </div>
@@ -1725,9 +1728,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={handleFileChange} accept=".jpg,.jpeg,.png,.pdf" />
                                             {formData.billUrl && (
                                                 <a
-                                                    href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}${formData.billUrl}`}
+                                                    href={`${(BASE_URL || '').replace('/api', '')}${formData.billUrl}`}
                                                     target="_blank"
-                                                    className="btn btn-outline-info p-2"
+                                                    className="btn btn-outline-primary btn-sm rounded-xl py-2 px-6"
                                                     title="View Bill"
                                                 >
                                                     <IconEdit className="w-4 h-4" />

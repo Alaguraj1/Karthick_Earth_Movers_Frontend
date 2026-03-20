@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import IconSave from '@/components/icon/icon-save';
 import IconX from '@/components/icon/icon-x';
@@ -6,7 +6,7 @@ import IconEdit from '@/components/icon/icon-edit';
 import IconPlus from '@/components/icon/icon-plus';
 
 import { useToast } from '@/components/stone-mine/toast-notification';
-import axios from 'axios';
+import api from '@/utils/api';
 
 const SalesForm = () => {
     const { showToast } = useToast();
@@ -30,10 +30,10 @@ const SalesForm = () => {
         const fetchMasterData = async () => {
             try {
                 const [srcRes, custRes, vehRes, catRes] = await Promise.all([
-                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/income-sources`),
-                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/customers`),
-                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicles`),
-                    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/master/vehicle-categories`)
+                    api.get('/master/income-sources'),
+                    api.get('/master/customers'),
+                    api.get('/master/vehicles'),
+                    api.get('/master/vehicle-categories')
                 ]);
 
                 if (srcRes.data.success) {
@@ -78,7 +78,7 @@ const SalesForm = () => {
             // Combine type and number for description or status if needed, 
             // but for income we might just store the number.
             // Let's stick to the current schema but offer better selection.
-            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/income`, formData);
+            const { data } = await api.post('/income', formData);
             if (data.success) {
                 showToast('Income recorded successfully!', 'success');
                 setFormData({

@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import IconPlus from '@/components/icon/icon-plus';
 import IconSave from '@/components/icon/icon-save';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import RoleGuard from '@/components/stone-mine/role-guard';
 
@@ -24,8 +24,8 @@ const AdvancePage = () => {
         setLoading(true);
         try {
             const [labourRes, advanceRes] = await Promise.all([
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour`),
-                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/advance`)
+                api.get('/labour'),
+                api.get('/labour/advance')
             ]);
             if (labourRes.data.success) setLabours(labourRes.data.data);
             if (advanceRes.data.success) setAdvances(advanceRes.data.data);
@@ -49,7 +49,7 @@ const AdvancePage = () => {
         e.preventDefault();
         setSaving(true);
         try {
-            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/advance`, formData);
+            const { data } = await api.post('/labour/advance', formData);
             if (data.success) {
                 showToast('Advance payment recorded successfully', 'success');
                 setFormData({

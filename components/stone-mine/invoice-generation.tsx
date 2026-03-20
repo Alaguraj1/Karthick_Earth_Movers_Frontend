@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
@@ -6,9 +6,7 @@ import { IRootState } from '@/store';
 import IconSearch from '@/components/icon/icon-search';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconX from '@/components/icon/icon-x';
-import axios from 'axios';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
+import api from '@/utils/api';
 
 const InvoiceGeneration = () => {
     const searchParams = useSearchParams();
@@ -32,7 +30,7 @@ const InvoiceGeneration = () => {
             const params: any = {};
             if (filters.startDate) params.startDate = filters.startDate;
             if (filters.endDate) params.endDate = filters.endDate;
-            const { data } = await axios.get(`${API}/sales`, { params });
+            const { data } = await api.get('/sales', { params });
             if (data.success) setSales(data.data);
         } catch (error) {
             console.error(error);
@@ -43,7 +41,7 @@ const InvoiceGeneration = () => {
 
     const viewInvoice = async (id: string) => {
         try {
-            const { data } = await axios.get(`${API}/sales/${id}`);
+            const { data } = await api.get(`/sales/${id}`);
             if (data.success) {
                 setSelectedSale(data.data);
                 setShowInvoice(true);

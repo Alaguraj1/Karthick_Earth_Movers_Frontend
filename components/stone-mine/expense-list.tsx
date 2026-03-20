@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import IconEdit from '@/components/icon/icon-edit';
+import api from '@/utils/api';
+import { canEditRecord } from '@/utils/permissions';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 
 const ExpenseList = () => {
@@ -14,8 +16,7 @@ const ExpenseList = () => {
 
     const fetchExpenses = async () => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/expenses`);
-            const data = await res.json();
+            const { data } = await api.get('/expenses');
             if (data.success) {
                 setExpenses(data.data);
             }
@@ -73,12 +74,18 @@ const ExpenseList = () => {
                                     <td>{expense.paymentMode}</td>
                                     <td className="text-center">
                                         <div className="flex justify-center gap-2">
-                                            <button type="button" className="btn btn-sm btn-outline-primary">
-                                                <IconEdit className="h-4 w-4" />
-                                            </button>
-                                            {isOwner && (<button type="button" className="btn btn-sm btn-outline-danger">
-                                                <IconTrashLines className="h-4 w-4" />
-                                            </button>)}
+                                            {canEditRecord(currentUser, expense.createdAt || expense.date) ? (
+                                                <button type="button" className="btn btn-sm btn-outline-primary">
+                                                    <IconEdit className="h-4 w-4" />
+                                                </button>
+                                            ) : (
+                                                <span className="text-[10px] text-white-dark italic">Locked</span>
+                                            )}
+                                            {isOwner && (
+                                                <button type="button" className="btn btn-sm btn-outline-danger">
+                                                    <IconTrashLines className="h-4 w-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

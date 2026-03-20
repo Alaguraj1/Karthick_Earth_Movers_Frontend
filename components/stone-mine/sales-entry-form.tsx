@@ -13,6 +13,7 @@ import IconEye from '@/components/icon/icon-eye';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import api from '@/utils/api';
+import { canEditRecord } from '@/utils/permissions';
 import * as XLSX from 'xlsx';
 import IconDownload from '@/components/icon/icon-download';
 import IconFileUpload from '@/components/icon/icon-file-upload';
@@ -21,8 +22,10 @@ import IconFileUpload from '@/components/icon/icon-file-upload';
 
 const SalesEntryForm = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
-    const canSeeFinancials = currentUser?.role?.toLowerCase() === 'owner' || currentUser?.role?.toLowerCase() === 'manager';
-    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
+    const role = currentUser?.role?.toLowerCase();
+    const canSeeFinancials = role === 'owner' || role === 'manager' || role === 'accountant';
+    const isOwner = role === 'owner';
+    const isSupervisor = role === 'supervisor';
 
     const { showToast } = useToast();
     const [customers, setCustomers] = useState<any[]>([]);
@@ -268,10 +271,10 @@ const SalesEntryForm = () => {
                 items: items.map(item => ({
                     item: item.item,
                     stoneType: item.stoneType || undefined,
-                    quantity: parseFloat(item.quantity),
+                    quantity: parseFloat(item.quantity) || 0,
                     unit: item.unit,
-                    rate: parseFloat(item.rate),
-                    amount: item.amount
+                    rate: parseFloat(item.rate) || 0,
+                    amount: item.amount || 0
                 })),
                 subtotal,
                 gstAmount,
@@ -477,9 +480,9 @@ const SalesEntryForm = () => {
                                 {canSeeFinancials && (
                                     <div>
                                         <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Payment Type *</label>
-                                        <select name="paymentType" className="form-select" value={formData.paymentType} onChange={handleChange}>
-                                            <option value="Cash">💵 Cash Sale</option>
-                                            <option value="Credit">📒 Credit Sale</option>
+                                        <select name="paymentType" className="form-select border-warning" value={formData.paymentType} onChange={handleChange}>
+                                            <option value="Cash">💵 Cash Sale (பணம்)</option>
+                                            <option value="Credit">📒 Credit Sale (கடன்)</option>
                                         </select>
                                     </div>
                                 )}
@@ -558,7 +561,7 @@ const SalesEntryForm = () => {
                                                 </td>
                                                 {canSeeFinancials && (
                                                     <td>
-                                                        <input type="number" name="rate" className="form-input text-sm w-28" placeholder="0.00" value={item.rate} onChange={(e) => handleItemChange(idx, e)} required />
+                                                        <input type="number" name="rate" className="form-input text-sm w-28 border-primary/20" placeholder="0.00" value={item.rate} onChange={(e) => handleItemChange(idx, e)} required={canSeeFinancials} />
                                                     </td>
                                                 )}
                                                 {canSeeFinancials && (
@@ -855,13 +858,17 @@ const SalesEntryForm = () => {
                                             </td>
                                             <td className="!text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        className="btn btn-sm btn-outline-primary"
-                                                        onClick={() => handleEdit(sale._id)}
-                                                        title="Edit Sale"
-                                                    >
-                                                        <IconEdit className="w-4 h-4" />
-                                                    </button>
+                                                    {canEditRecord(currentUser, sale.createdAt || sale.invoiceDate) ? (
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            onClick={() => handleEdit(sale._id)}
+                                                            title="Edit Sale"
+                                                        >
+                                                            <IconEdit className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-[10px] text-white-dark italic">Locked</span>
+                                                    )}
                                                     <Link
                                                         href={`/sales-billing/sales-entry/details?id=${sale._id}`}
                                                         className="btn btn-sm btn-outline-info"
@@ -869,13 +876,15 @@ const SalesEntryForm = () => {
                                                     >
                                                         <IconEye className="w-4 h-4" />
                                                     </Link>
-                                                    {isOwner && (<button
-                                                        className="btn btn-sm btn-outline-danger"
-                                                        onClick={() => setDeleteId(sale._id)}
-                                                        title="Delete Sale"
-                                                    >
-                                                        <IconTrash className="w-4 h-4" />
-                                                    </button>)}
+                                                    {isOwner && (
+                                                        <button
+                                                            className="btn btn-sm btn-outline-danger"
+                                                            onClick={() => setDeleteId(sale._id)}
+                                                            title="Delete Sale"
+                                                        >
+                                                            <IconTrash className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

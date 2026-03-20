@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import IconSearch from '@/components/icon/icon-search';
 import IconSave from '@/components/icon/icon-save';
@@ -7,9 +7,7 @@ import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { IRootState } from '@/store';
 import { useToast } from '@/components/stone-mine/toast-notification';
-import axios from 'axios';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
+import api from '@/utils/api';
 
 const PendingPayments = () => {
     const router = useRouter();
@@ -34,7 +32,7 @@ const PendingPayments = () => {
     const fetchReport = async () => {
         try {
             setLoading(true);
-            const { data } = await axios.get(`${API}/sales/pending-payments`);
+            const { data } = await api.get('/sales/pending-payments');
             if (data.success) {
                 setReport(data.data);
                 setTotalPending(data.totalPending);
@@ -66,7 +64,7 @@ const PendingPayments = () => {
         e.preventDefault();
         if (!selectedInvoice) return;
         try {
-            const { data } = await axios.post(`${API}/sales/${selectedInvoice._id}/payment`, {
+            const { data } = await api.post(`/sales/${selectedInvoice._id}/payment`, {
                 amount: parseFloat(paymentData.amount),
                 paymentDate: paymentData.paymentDate,
                 paymentMode: paymentData.paymentMode,

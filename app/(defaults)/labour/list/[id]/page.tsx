@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import axios from 'axios';
+import api from '@/utils/api';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconCalendar from '@/components/icon/icon-calendar';
 import IconUser from '@/components/icon/icon-user';
@@ -35,7 +35,7 @@ const LabourDetailsPage = () => {
 
     const fetchDetails = async () => {
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/report/${params.id}`);
+            const { data } = await api.get(`/labour/report/${params.id}`);
             if (data.success) {
                 setLabour(data.data.labour);
                 setAttendance(data.data.attendance);

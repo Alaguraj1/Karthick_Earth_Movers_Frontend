@@ -1,12 +1,10 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { IRootState } from '@/store';
 import IconSearch from '@/components/icon/icon-search';
-import axios from 'axios';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
+import api from '@/utils/api';
 
 const CashCreditSales = () => {
     const router = useRouter();
@@ -25,7 +23,7 @@ const CashCreditSales = () => {
             if (filters.startDate) params.startDate = filters.startDate;
             if (filters.endDate) params.endDate = filters.endDate;
             if (activeTab !== 'all') params.paymentType = activeTab;
-            const { data } = await axios.get(`${API}/sales`, { params });
+            const { data } = await api.get('/sales', { params });
             if (data.success) setSales(data.data);
         } catch (error) {
             console.error(error);

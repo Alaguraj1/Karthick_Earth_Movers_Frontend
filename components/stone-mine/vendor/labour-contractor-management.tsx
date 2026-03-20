@@ -1,8 +1,9 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
+import { canEditRecord } from '@/utils/permissions';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import IconPlus from '@/components/icon/icon-plus';
@@ -12,8 +13,6 @@ import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrash from '@/components/icon/icon-trash';
 import Link from 'next/link';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 const LabourContractorManagement = () => {
   const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -60,9 +59,9 @@ const LabourContractorManagement = () => {
     try {
       setLoading(true);
       const [labRes, balRes, workTypesRes] = await Promise.all([
-        axios.get(`${API}/vendors/labour`),
-        axios.get(`${API}/vendors/outstanding`),
-        axios.get(`${API}/master/work-types`)
+        api.get('/vendors/labour'),
+        api.get('/vendors/outstanding'),
+        api.get('/master/work-types')
       ]);
 
       if (labRes.data.success) setContractors(labRes.data.data);
@@ -159,10 +158,10 @@ const LabourContractorManagement = () => {
         outstandingBalance: Number(formData.outstandingBalance || 0)
       };
       if (editId) {
-        await axios.put(`${API}/vendors/labour/${editId}`, data);
+        await api.put(`/vendors/labour/${editId}`, data);
         showToast('Contractor updated successfully!', 'success');
       } else {
-        await axios.post(`${API}/vendors/labour`, data);
+        await api.post('/vendors/labour', data);
         showToast('Contractor registered successfully!', 'success');
       }
       resetForm();
@@ -204,7 +203,7 @@ const LabourContractorManagement = () => {
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
-      await axios.delete(`${API}/vendors/labour/${deleteId}`);
+      await api.delete(`/vendors/labour/${deleteId}`);
       showToast('Contractor deleted successfully!', 'success');
       setDeleteId(null);
       fetchData();
@@ -541,8 +540,18 @@ const LabourContractorManagement = () => {
                       </td>
                       <td className="text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => handleEdit(c)} className="btn btn-sm btn-outline-primary p-1"><IconEdit className="w-4 h-4" /></button>
-                          {isOwner && (<button onClick={() => setDeleteId(c._id)} className="btn btn-sm btn-outline-danger p-1"><IconTrashLines className="w-4 h-4" /></button>)}
+                          {canEditRecord(currentUser, c.createdAt) ? (
+                            <button onClick={() => handleEdit(c)} className="btn btn-sm btn-outline-primary p-1">
+                              <IconEdit className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-white-dark italic">Locked</span>
+                          )}
+                          {isOwner && (
+                            <button onClick={() => setDeleteId(c._id)} className="btn btn-sm btn-outline-danger p-1">
+                              <IconTrashLines className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

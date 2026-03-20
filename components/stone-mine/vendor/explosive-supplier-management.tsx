@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import Link from 'next/link';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import IconPlus from '@/components/icon/icon-plus';
@@ -11,8 +11,7 @@ import IconSave from '@/components/icon/icon-save';
 import IconSearch from '@/components/icon/icon-search';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconEdit from '@/components/icon/icon-edit';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
+import { canEditRecord } from '@/utils/permissions';
 
 const ExplosiveSupplierManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -51,9 +50,9 @@ const ExplosiveSupplierManagement = () => {
         try {
             setLoading(true);
             const [supRes, matRes, balRes] = await Promise.all([
-                axios.get(`${API}/vendors/explosive`),
-                axios.get(`${API}/master/explosive-materials`),
-                axios.get(`${API}/vendors/outstanding`)
+                api.get('/vendors/explosive'),
+                api.get('/master/explosive-materials'),
+                api.get('/vendors/outstanding')
             ]);
 
             if (supRes.data.success) setSuppliers(supRes.data.data);
@@ -112,10 +111,10 @@ const ExplosiveSupplierManagement = () => {
                 openingBalance: Number(formData.openingBalance)
             };
             if (editId) {
-                await axios.put(`${API}/vendors/explosive/${editId}`, data);
+                await api.put(`/vendors/explosive/${editId}`, data);
                 showToast('Supplier updated successfully!', 'success');
             } else {
-                await axios.post(`${API}/vendors/explosive`, data);
+                await api.post('/vendors/explosive', data);
                 showToast('Supplier registered successfully!', 'success');
             }
             resetForm();
@@ -152,7 +151,7 @@ const ExplosiveSupplierManagement = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await axios.delete(`${API}/vendors/explosive/${deleteId}`);
+            await api.delete(`/vendors/explosive/${deleteId}`);
             showToast('Supplier deleted successfully!', 'success');
             setDeleteId(null);
             fetchData();
@@ -437,9 +436,13 @@ const ExplosiveSupplierManagement = () => {
                                             </td>
                                             <td className="py-4">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => handleEdit(s)} className="p-2.5 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm">
-                                                        <IconEdit className="w-4 h-4" />
-                                                    </button>
+                                                    {canEditRecord(currentUser, s.createdAt) ? (
+                                                        <button onClick={() => handleEdit(s)} className="p-2.5 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm">
+                                                            <IconEdit className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-[10px] text-white-dark italic flex items-center">Locked</span>
+                                                    )}
                                                     {isOwner && (<button onClick={() => setDeleteId(s._id)} className="p-2.5 rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all shadow-sm">
                                                         <IconTrashLines className="w-4 h-4" />
                                                     </button>)}

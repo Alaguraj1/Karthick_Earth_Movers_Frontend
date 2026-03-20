@@ -1,10 +1,11 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
+import { canEditRecord } from '@/utils/permissions';
 import IconPlus from '@/components/icon/icon-plus';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
@@ -12,8 +13,6 @@ import IconSearch from '@/components/icon/icon-search';
 import IconX from '@/components/icon/icon-x';
 import IconSave from '@/components/icon/icon-save';
 import IconCashBanknotes from '@/components/icon/icon-cash-banknotes';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 const DriverPaymentManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -47,9 +46,9 @@ const DriverPaymentManagement = () => {
         try {
             setLoading(true);
             const [payRes, driverRes, vehicleRes] = await Promise.all([
-                axios.get(`${API}/driver-payments`),
-                axios.get(`${API}/labour`),
-                axios.get(`${API}/master/vehicles`)
+                api.get('/driver-payments'),
+                api.get('/labour'),
+                api.get('/master/vehicles')
             ]);
 
             if (payRes.data.success) setPayments(payRes.data.data);
@@ -91,8 +90,8 @@ const DriverPaymentManagement = () => {
     const fetchTripsForDate = async (date: string, currentEditTripId?: string) => {
         try {
             const [tripsRes, paymentsRes] = await Promise.all([
-                axios.get(`${API}/trips?date=${date}`),
-                axios.get(`${API}/driver-payments`)
+                api.get(`/trips?date=${date}`),
+                api.get('/driver-payments')
             ]);
 
             if (tripsRes.data.success) {
@@ -166,7 +165,7 @@ const DriverPaymentManagement = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await axios.delete(`${API}/driver-payments/${deleteId}`);
+            await api.delete(`/driver-payments/${deleteId}`);
             showToast('Payment record deleted', 'success');
             fetchData();
         } catch (error) {
@@ -187,10 +186,10 @@ const DriverPaymentManagement = () => {
                 tripCount: Number(formData.tripCount || 1),
             };
             if (editId) {
-                await axios.put(`${API}/driver-payments/${editId}`, payload);
+                await api.put(`/driver-payments/${editId}`, payload);
                 showToast('Payment updated successfully!', 'success');
             } else {
-                await axios.post(`${API}/driver-payments`, payload);
+                await api.post('/driver-payments', payload);
                 showToast('Payment recorded successfully!', 'success');
             }
             resetForm();
@@ -483,9 +482,13 @@ const DriverPaymentManagement = () => {
                                             <td className="text-center font-bold">x {pay.tripCount || 1}</td>
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => handleEdit(pay)} className="btn btn-sm btn-outline-primary p-1">
-                                                        <IconEdit className="w-4 h-4" />
-                                                    </button>
+                                                    {canEditRecord(currentUser, pay.createdAt || pay.date) ? (
+                                                        <button onClick={() => handleEdit(pay)} className="btn btn-sm btn-outline-primary p-1">
+                                                            <IconEdit className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-[10px] text-white-dark italic">Locked</span>
+                                                    )}
                                                     {isOwner && (<button onClick={() => setDeleteId(pay._id)} className="btn btn-sm btn-outline-danger p-1">
                                                         <IconTrashLines className="w-4 h-4" />
                                                     </button>)}

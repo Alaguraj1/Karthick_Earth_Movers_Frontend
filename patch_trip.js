@@ -11,8 +11,8 @@ content = content.replace(
 
 // Fetch sales
 content = content.replace(
-    `axios.get(\`\${API}/master/vehicle-categories\`),`,
-    `axios.get(\`\${API}/master/vehicle-categories\`),\n                axios.get(\`\${API}/sales\`),`
+    `api.get('/master/vehicle-categories'),`,
+    `api.get('/master/vehicle-categories'),\n                api.get('/sales'),`
 );
 content = content.replace(
     `const [tripRes, vehicleRes, labourRes, customerRes, stoneRes, categoryRes] = await Promise.all([`,
@@ -112,7 +112,7 @@ content = content.replace(
 content = content.replace(
     `const handleConvertToSale = async (tripId: string) => {
         try {
-            const { data } = await axios.post(\`\${API}/trips/\${tripId}/convert-to-sale\`);
+            const { data } = await api.post(\`/trips/\${tripId}/convert-to-sale\`);
             if (data.success) {
                 showToast('Trip converted to Sale successfully!', 'success');
                 fetchData();

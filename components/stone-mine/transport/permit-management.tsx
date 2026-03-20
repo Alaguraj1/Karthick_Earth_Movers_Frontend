@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import api from '@/utils/api';
+import { canEditRecord } from '@/utils/permissions';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import IconPlus from '@/components/icon/icon-plus';
@@ -448,9 +449,13 @@ const PermitManagement = () => {
 
                                         <td className="text-center py-4">
                                             <div className="flex items-center justify-center gap-3">
-                                                <button onClick={() => handleEdit(permit)} className="p-2.5 rounded-xl text-primary hover:bg-primary hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20">
-                                                    <IconEdit className="w-4.5 h-4.5" />
-                                                </button>
+                                                {canEditRecord(currentUser, permit.createdAt || permit.date) ? (
+                                                    <button onClick={() => handleEdit(permit)} className="p-2.5 rounded-xl text-primary hover:bg-primary hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20">
+                                                        <IconEdit className="w-4.5 h-4.5" />
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-[10px] text-white-dark italic">Locked</span>
+                                                )}
                                                 {isOwner && (
                                                     <button onClick={() => setDeleteId(permit._id)} className="p-2.5 rounded-xl text-danger hover:bg-danger hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-danger/20">
                                                         <IconTrashLines className="w-4.5 h-4.5" />

@@ -1,18 +1,17 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
+import { canEditRecord } from '@/utils/permissions';
 import IconPlus from '@/components/icon/icon-plus';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconSearch from '@/components/icon/icon-search';
 import IconX from '@/components/icon/icon-x';
 import IconSave from '@/components/icon/icon-save';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 const TripManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -69,14 +68,14 @@ const TripManagement = () => {
         try {
             setLoading(true);
             const [tripRes, vehicleRes, labourRes, customerRes, stoneRes, categoryRes, salesRes, permitRes] = await Promise.all([
-                axios.get(`${API}/trips`),
-                axios.get(`${API}/master/vehicles`),
-                axios.get(`${API}/labour`),
-                axios.get(`${API}/master/customers`),
-                axios.get(`${API}/master/stone-types`),
-                axios.get(`${API}/master/vehicle-categories`),
-                axios.get(`${API}/sales`),
-                axios.get(`${API}/permits`),
+                api.get('/trips'),
+                api.get('/master/vehicles'),
+                api.get('/labour'),
+                api.get('/master/customers'),
+                api.get('/master/stone-types'),
+                api.get('/master/vehicle-categories'),
+                api.get('/sales'),
+                api.get('/permits'),
             ]);
 
             if (tripRes.data.success) setTrips(tripRes.data.data);
@@ -183,14 +182,14 @@ const TripManagement = () => {
         }
 
         if (name === 'driverName') {
-            const worker = labours.find((l: any) => l.name.trim().toLowerCase() === value.trim().toLowerCase());
+            const worker = labours.find((l: any) => l.name?.trim().toLowerCase() === value.trim().toLowerCase());
             setFormData(prev => ({ ...prev, driverId: worker ? worker._id : '' }));
         }
     };
 
     const handleConvertToSale = async (tripId: string) => {
         try {
-            const { data } = await axios.post(`${API}/trips/${tripId}/convert-to-sale`);
+            const { data } = await api.post(`/trips/${tripId}/convert-to-sale`);
             if (data.success) {
                 showToast('Trip converted to Sale successfully!', 'success');
                 fetchData();
@@ -219,10 +218,10 @@ const TripManagement = () => {
         try {
             const payload = { ...formData };
             if (editId) {
-                await axios.put(`${API}/trips/${editId}`, payload);
+                await api.put(`/trips/${editId}`, payload);
                 showToast('Record updated successfully!', 'success');
             } else {
-                await axios.post(`${API}/trips`, payload);
+                await api.post('/trips', payload);
                 showToast('Record recorded successfully!', 'success');
             }
             resetForm();
@@ -267,7 +266,7 @@ const TripManagement = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await axios.delete(`${API}/trips/${deleteId}`);
+            await api.delete(`/trips/${deleteId}`);
             showToast('Record deleted successfully!', 'success');
             fetchData();
         } catch (error) {
@@ -569,7 +568,7 @@ const TripManagement = () => {
                                 <select className="form-select h-10" value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)}>
                                     <option value="">All Customers</option>
                                     {customers.map((c: any) => (
-                                        <option key={c._id} value={c.name}>{c.name}</option>
+                                        <option key={c._id} value={c._id}>{c.name}</option>
                                     ))}
                                 </select>
                             </div>
@@ -680,12 +679,18 @@ const TripManagement = () => {
                                             </td>
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => handleEdit(trip)} className="btn btn-sm btn-outline-primary p-1">
-                                                        <IconEdit className="w-4 h-4" />
-                                                    </button>
-                                                    {isOwner && (<button onClick={() => setDeleteId(trip._id)} className="btn btn-sm btn-outline-danger p-1">
-                                                        <IconTrashLines className="w-4 h-4" />
-                                                    </button>)}
+                                                    {canEditRecord(currentUser, trip.createdAt || trip.date) ? (
+                                                        <button onClick={() => handleEdit(trip)} className="btn btn-sm btn-outline-primary p-1">
+                                                            <IconEdit className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-[10px] text-white-dark italic">Locked</span>
+                                                    )}
+                                                    {isOwner && (
+                                                        <button onClick={() => setDeleteId(trip._id)} className="btn btn-sm btn-outline-danger p-1">
+                                                            <IconTrashLines className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

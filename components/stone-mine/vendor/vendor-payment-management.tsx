@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import IconPlus from '@/components/icon/icon-plus';
@@ -10,8 +10,6 @@ import IconSave from '@/components/icon/icon-save';
 import IconSearch from '@/components/icon/icon-search';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import Link from 'next/link';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 const VendorPaymentManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -41,11 +39,11 @@ const VendorPaymentManagement = () => {
         try {
             setLoading(true);
             const [payRes, balRes, expRes, labRes, transRes] = await Promise.all([
-                axios.get(`${API}/vendors/payments`),
-                axios.get(`${API}/vendors/outstanding`),
-                axios.get(`${API}/vendors/explosive`),
-                axios.get(`${API}/vendors/labour`),
-                axios.get(`${API}/vendors/transport`)
+                api.get('/vendors/payments'),
+                api.get('/vendors/outstanding'),
+                api.get('/vendors/explosive'),
+                api.get('/vendors/labour'),
+                api.get('/vendors/transport')
             ]);
 
             if (payRes.data.success) setPayments(payRes.data.data);
@@ -129,7 +127,7 @@ const VendorPaymentManagement = () => {
                 paidAmount: Number(formData.paidAmount || 0)
             };
 
-            await axios.post(`${API}/vendors/payments`, data);
+            await api.post('/vendors/payments', data);
             showToast('Payment recorded successfully!', 'success');
 
             resetForm();
@@ -156,7 +154,7 @@ const VendorPaymentManagement = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await axios.delete(`${API}/vendors/payments/${deleteId}`);
+            await api.delete(`/vendors/payments/${deleteId}`);
             showToast('Payment history deleted!', 'success');
             setDeleteId(null);
             fetchData();

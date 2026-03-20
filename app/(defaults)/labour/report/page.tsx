@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/api';
 import IconMenuUsers from '@/components/icon/menu/icon-menu-users';
 
 const LabourReportPage = () => {
@@ -12,7 +12,7 @@ const LabourReportPage = () => {
     useEffect(() => {
         const fetchLabours = async () => {
             try {
-                const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour`);
+                const { data } = await api.get('/labour');
                 if (data.success) setLabours(data.data);
             } catch (error) {
                 console.error(error);
@@ -28,7 +28,7 @@ const LabourReportPage = () => {
         }
         setLoading(true);
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/report/${labourId}`);
+            const { data } = await api.get(`/labour/report/${labourId}`);
             if (data.success) setReportData(data.data);
         } catch (error) {
             console.error(error);
@@ -144,7 +144,7 @@ const LabourReportPage = () => {
                                                 <td>{new Date(att.date).toLocaleDateString()}</td>
                                                 <td>
                                                     <span className={`badge badge-sm ${att.status === 'Present' ? 'badge-outline-success' :
-                                                            att.status === 'Half Day' ? 'badge-outline-warning' : 'badge-outline-danger'
+                                                        att.status === 'Half Day' ? 'badge-outline-warning' : 'badge-outline-danger'
                                                         }`}>
                                                         {att.status}
                                                     </span>

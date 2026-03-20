@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import { useSearchParams, useRouter } from 'next/navigation';
-import axios from 'axios';
+import api, { BASE_URL } from '@/utils/api';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconCalendar from '@/components/icon/icon-calendar';
@@ -15,8 +15,6 @@ import IconInfoCircle from '@/components/icon/icon-info-circle';
 import Link from 'next/link';
 import IconFile from '@/components/icon/icon-file';
 import IconEye from '@/components/icon/icon-eye';
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 const SalesDetailsView = () => {
     const searchParams = useSearchParams();
@@ -34,7 +32,7 @@ const SalesDetailsView = () => {
         if (!saleId) return;
         try {
             setLoading(true);
-            const { data } = await axios.get(`${API}/sales/${saleId}`);
+            const { data } = await api.get(`/sales/${saleId}`);
             if (data.success) {
                 setSale(data.data);
                 setTrips(data.trips || []);
@@ -273,7 +271,7 @@ const SalesDetailsView = () => {
                                     <IconFile className="w-5 h-5 text-primary" /> Receipt Copy
                                 </h5>
                                 <a
-                                    href={`${(API || '').replace('/api', '')}${sale.receiptFile}`}
+                                    href={`${(BASE_URL || '').replace('/api', '')}${sale.receiptFile}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="btn btn-xs btn-outline-primary"
@@ -284,14 +282,14 @@ const SalesDetailsView = () => {
                             <div className="bg-white-light/30 dark:bg-white-dark/5 rounded-lg border border-white-light dark:border-white-dark/10 overflow-hidden">
                                 {sale.receiptFile.toLowerCase().endsWith('.pdf') ? (
                                     <iframe
-                                        src={`${(API || '').replace('/api', '')}${sale.receiptFile}`}
+                                        src={`${(BASE_URL || '').replace('/api', '')}${sale.receiptFile}`}
                                         className="w-full h-[400px]"
                                         title="Receipt PDF"
                                     ></iframe>
                                 ) : (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
-                                        src={`${(API || '').replace('/api', '')}${sale.receiptFile}`}
+                                        src={`${(BASE_URL || '').replace('/api', '')}${sale.receiptFile}`}
                                         alt="Receipt"
                                         className="w-full h-auto object-contain max-h-[500px] mx-auto"
                                     />

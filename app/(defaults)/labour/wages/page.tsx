@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import RoleGuard from '@/components/stone-mine/role-guard';
 import PaymentConfirmModal from '@/components/stone-mine/payment-confirm-modal';
@@ -26,7 +26,7 @@ const WagesCalculationPage = () => {
     const fetchWagesSummary = async () => {
         setLoading(true);
         try {
-            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/labour/wages-summary?month=${selectedMonth}&year=${selectedYear}`);
+            const { data } = await api.get(`/labour/wages-summary?month=${selectedMonth}&year=${selectedYear}`);
             if (data.success) setSummaries(data.data);
         } catch (error) {
             console.error(error);
@@ -40,7 +40,7 @@ const WagesCalculationPage = () => {
     const confirmSettle = async (mode: string) => {
         if (!payoutItem) return;
         try {
-            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses`, {
+            await api.post('/expenses', {
                 category: 'Labour Wages',
                 amount: parseFloat(payoutItem.totalWages) + parseFloat(payoutItem.otAmount || 0),
                 date: new Date(),
@@ -58,7 +58,7 @@ const WagesCalculationPage = () => {
                 salaryYear: selectedYear
             });
 
-            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/mark-wages-paid`, {
+            await api.post('/labour/mark-wages-paid', {
                 month: selectedMonth,
                 year: selectedYear,
                 labourId: payoutItem.labourId
@@ -78,7 +78,7 @@ const WagesCalculationPage = () => {
     const confirmVendorSettle = async (mode: string) => {
         if (!vendorPayoutItem) return;
         try {
-            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/vendors/payments`, {
+            await api.post('/vendors/payments', {
                 date: new Date(),
                 vendorId: vendorPayoutItem.contractorId,
                 vendorType: 'LabourContractor',
@@ -90,7 +90,7 @@ const WagesCalculationPage = () => {
                 notes: `Wages payout for ${selectedMonth}/${selectedYear} based on actual attendance of ${vendorPayoutItem.labourCount} vendor labours.`
             });
 
-            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/labour/mark-wages-paid`, {
+            await api.post('/labour/mark-wages-paid', {
                 month: selectedMonth,
                 year: selectedYear,
                 contractorId: vendorPayoutItem.contractorId

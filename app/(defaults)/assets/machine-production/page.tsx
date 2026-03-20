@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import api from '@/utils/api';
+import { canEditRecord } from '@/utils/permissions';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import IconPlus from '@/components/icon/icon-plus';
 import IconEdit from '@/components/icon/icon-edit';
@@ -27,6 +28,7 @@ const MachineProductionPage = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
     const isOwner = currentUser?.role?.toLowerCase() === 'owner';
     const { showToast } = useToast();
+    const [liveHours, setLiveHours] = useState(0);
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -140,7 +142,21 @@ const MachineProductionPage = () => {
             endHmr: 0,
             remarks: ''
         });
+        setLiveHours(8); // Default for 8-18 (10h) with 0 break was 10, wait let's calculate
     };
+
+    useEffect(() => {
+        if (!formData.startTime || !formData.endTime) {
+            setLiveHours(0);
+            return;
+        }
+        const [h1, m1] = formData.startTime.split(':').map(Number);
+        const [h2, m2] = formData.endTime.split(':').map(Number);
+        let diff = (h2 + m2 / 60) - (h1 + m1 / 60);
+        if (diff < 0) diff += 24;
+        const total = Math.max(0, diff - (formData.breakTime / 60));
+        setLiveHours(total);
+    }, [formData.startTime, formData.endTime, formData.breakTime]);
 
     const handleEdit = (prod: any) => {
         setEditId(prod._id);
@@ -337,48 +353,46 @@ const MachineProductionPage = () => {
                                     <th className="font-black uppercase tracking-widest text-[11px] py-4">Date</th>
                                     <th className="font-black uppercase tracking-widest text-[11px]">Machine</th>
                                     <th className="font-black uppercase tracking-widest text-[11px]">Operator</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px]">Work Timings</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px]">Production (HMR)</th>
-                                    <th className="font-black uppercase tracking-widest text-[11px]">Fuel (Lts)</th>
+                                    <th className="font-black uppercase tracking-widest text-[11px] text-center">Start HMR</th>
+                                    <th className="font-black uppercase tracking-widest text-[11px] text-center">End HMR</th>
+                                    <th className="font-black uppercase tracking-widest text-[11px] text-center">Break (Hr)</th>
+                                    <th className="font-black uppercase tracking-widest text-[11px] text-center">Balance HR</th>
+                                    <th className="font-black uppercase tracking-widest text-[11px]">Fuel</th>
                                     <th className="font-black uppercase tracking-widest text-[11px] text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan={7} className="text-center py-10 font-bold uppercase tracking-widest text-white-dark opacity-50">Loading Production Data...</td></tr>
+                                    <tr><td colSpan={9} className="text-center py-10 font-bold uppercase tracking-widest text-white-dark opacity-50">Loading Production Data...</td></tr>
                                 ) : displayedProductions.length === 0 ? (
-                                    <tr><td colSpan={7} className="text-center py-10 font-bold uppercase tracking-widest text-white-dark opacity-50">No production logs found</td></tr>
+                                    <tr><td colSpan={9} className="text-center py-10 font-bold uppercase tracking-widest text-white-dark opacity-50">No production logs found</td></tr>
                                 ) : displayedProductions.map((prod) => (
                                     <tr key={prod._id} className="group hover:bg-primary/5 transition-all">
                                         <td className="py-4 font-black">{new Date(prod.date).toLocaleDateString()}</td>
                                         <td className="font-semibold text-primary">{prod.machine?.name}</td>
                                         <td className="italic">{prod.operator?.name || 'N/A'}</td>
+                                        <td className="text-xs font-black text-center text-primary">{prod.startHmr || '-'}</td>
+                                        <td className="text-xs font-black text-center text-primary">{prod.endHmr || '-'}</td>
+                                        <td className="text-center text-xs font-bold text-danger">{(prod.breakTime / 60).toFixed(2)}</td>
                                         <td>
-                                            <div className="text-[11px] font-black uppercase tracking-tighter">
-                                                {prod.startTime} - {prod.endTime}
-                                            </div>
-                                            {prod.breakTime > 0 && (
-                                                <div className="text-[9px] text-danger font-bold uppercase tracking-widest mt-0.5">
-                                                    Break: {prod.breakTime} mins
-                                                </div>
-                                            )}
+                                            <div className="font-black text-success">{(prod.totalHours || 0).toFixed(2)} hrs</div>
                                             <div className="text-[10px] text-white-dark font-bold">{prod.workType}</div>
                                         </td>
                                         <td>
-                                            <div className="font-black text-info">{prod.totalHours ? `${prod.totalHours} hrs` : 'N/A'}</div>
-                                            <div className="text-[9px] text-white-dark uppercase font-bold tracking-widest">
-                                                HMR: {prod.startHmr} ➔ {prod.endHmr}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="badge bg-warning/10 text-warning font-black rounded-lg py-1.5 px-3">
+                                            <div className="badge bg-warning/10 text-warning font-black rounded-lg py-1.5 px-3 whitespace-nowrap">
                                                 {prod.dieselLiters} L
                                             </div>
                                         </td>
                                         <td className="text-center">
                                             <div className="flex justify-center gap-2">
-                                                <button onClick={() => handleEdit(prod)} className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-all"><IconEdit className="w-4 h-4" /></button>
-                                                <button onClick={() => setDeleteId(prod._id)} className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-all"><IconTrashLines className="w-4 h-4" /></button>
+                                                {canEditRecord(currentUser, prod.createdAt || prod.date) ? (
+                                                    <button onClick={() => handleEdit(prod)} className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-all"><IconEdit className="w-4 h-4" /></button>
+                                                ) : (
+                                                    <span className="text-[10px] text-white-dark italic flex items-center">Locked</span>
+                                                )}
+                                                {isOwner && (
+                                                    <button onClick={() => setDeleteId(prod._id)} className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-all"><IconTrashLines className="w-4 h-4" /></button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -436,6 +450,11 @@ const MachineProductionPage = () => {
                                         <label className="text-[11px] font-black uppercase tracking-widest text-white-dark ml-1">End Time *</label>
                                         <input type="time" className="form-input rounded-xl border-white-dark/20" required value={formData.endTime} onChange={(e) => setFormData({ ...formData, endTime: e.target.value })} />
                                     </div>
+                                </div>
+
+                                <div className="bg-success/5 p-4 rounded-2xl border border-success/10 flex items-center justify-between">
+                                    <div className="text-[10px] font-black uppercase text-white-dark tracking-widest">Calculated Production</div>
+                                    <div className="text-lg font-black text-success tracking-tight">{liveHours.toFixed(2)} Hrs</div>
                                 </div>
 
                                 {/* Row 4: Break Time & Work Type */}
