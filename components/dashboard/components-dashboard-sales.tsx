@@ -16,7 +16,8 @@ import IconAlertTriangle from '@/components/icon/icon-info-triangle';
 import { IRootState } from '@/store';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
-import ReactApexChart from 'react-apexcharts';
+import dynamic from 'next/dynamic';
+const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 import { useSelector } from 'react-redux';
 import api from '@/utils/api';
 
