@@ -124,7 +124,7 @@ const InvoiceGeneration = () => {
                         {/* ===== TOP HEADER: Company Logo + Address ===== */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                             <div>
-                                <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#4361ee', margin: 0 }}>INVOICE</h1>
+                                <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#e79b21', margin: 0 }}>INVOICE</h1>
                                 <p style={{ fontSize: '13px', color: '#555', marginTop: '4px', fontWeight: 'bold' }}>invoice no: {selectedSale.invoiceNumber}</p>
                             </div>
                             <div style={{ textAlign: 'right' }}>
@@ -159,7 +159,7 @@ const InvoiceGeneration = () => {
                                         {selectedSale.customer?.gstNumber && (
                                             <tr>
                                                 <td style={{ padding: '4px 0', color: '#888' }}>GST:</td>
-                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', color: '#4361ee' }}>{selectedSale.customer.gstNumber}</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', color: '#e79b21' }}>{selectedSale.customer.gstNumber}</td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -223,12 +223,12 @@ const InvoiceGeneration = () => {
                         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '25px' }}>
                             <thead>
                                 <tr>
-                                    <th style={{ background: '#4361ee', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>S.No</th>
-                                    <th style={{ background: '#4361ee', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item Description</th>
-                                    <th style={{ background: '#4361ee', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Qty</th>
-                                    <th style={{ background: '#4361ee', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unit</th>
-                                    <th style={{ background: '#4361ee', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rate (₹)</th>
-                                    <th style={{ background: '#4361ee', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount (₹)</th>
+                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>S.No</th>
+                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item Description</th>
+                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Qty</th>
+                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unit</th>
+                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rate (₹)</th>
+                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount (₹)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -268,7 +268,7 @@ const InvoiceGeneration = () => {
                                         <span style={{ fontWeight: 'bold', color: '#e7515a' }}>₹{selectedSale.balanceAmount?.toLocaleString()}</span>
                                     </div>
                                 )}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 6px 0', fontSize: '18px', fontWeight: 'bold', color: '#4361ee', borderTop: '2px solid #4361ee', marginTop: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 6px 0', fontSize: '18px', fontWeight: 'bold', color: '#e79b21', borderTop: '2px solid #e79b21', marginTop: '8px' }}>
                                     <span>Grand Total</span>
                                     <span>₹{selectedSale.grandTotal?.toLocaleString()}</span>
                                 </div>

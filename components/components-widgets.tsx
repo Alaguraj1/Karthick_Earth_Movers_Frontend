@@ -618,7 +618,7 @@ const ComponentsWidgets = () => {
                 curve: 'smooth',
                 width: 2,
             },
-            colors: ['#4361ee'],
+            colors: ['#e79b21'],
             grid: {
                 padding: {
                     top: 5,
@@ -1122,7 +1122,7 @@ const ComponentsWidgets = () => {
                     </div>
 
                     <div className="panel h-full overflow-hidden border-0 p-0">
-                        <div className="min-h-[190px] bg-gradient-to-r from-[#4361ee] to-[#160f6b] p-6">
+                        <div className="min-h-[190px] bg-gradient-to-r from-[#e79b21] to-[#160f6b] p-6">
                             <div className="mb-6 flex items-center justify-between">
                                 <div className="flex items-center rounded-full bg-black/50 p-1 font-semibold text-white ltr:pr-3 rtl:pl-3">
                                     <img className="block h-8 w-8 rounded-full border-2 border-white/50 object-cover ltr:mr-1 rtl:ml-1" src="/assets/images/profile-34.jpeg" alt="avatar" />
@@ -1494,7 +1494,7 @@ const ComponentsWidgets = () => {
                         <div className="flex items-center justify-between">
                             <div className="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
                                 <div
-                                    className="relative h-full w-full rounded-full bg-gradient-to-r from-[#4361ee] to-[#805dca] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5"
+                                    className="relative h-full w-full rounded-full bg-gradient-to-r from-[#e79b21] to-[#805dca] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5"
                                     style={{ width: '65%' }}
                                 ></div>
                             </div>
@@ -1513,7 +1513,7 @@ const ComponentsWidgets = () => {
 
                             <div className="relative whitespace-nowrap text-xl">
                                 $ 41,741.42
-                                <span className="mt-1 table rounded bg-[#4361ee] p-1 text-xs text-[#d3d3d3] ltr:ml-auto rtl:mr-auto">+ 2453</span>
+                                <span className="mt-1 table rounded bg-[#e79b21] p-1 text-xs text-[#d3d3d3] ltr:ml-auto rtl:mr-auto">+ 2453</span>
                             </div>
                         </div>
                         <div className="z-10 flex items-center justify-between">
@@ -1525,7 +1525,7 @@ const ComponentsWidgets = () => {
                                     <IconCreditCard />
                                 </button>
                             </div>
-                            <button type="button" className="z-10 rounded p-1 text-white-light shadow-[0_0_2px_0_#bfc9d4] hover:bg-[#4361ee]">
+                            <button type="button" className="z-10 rounded p-1 text-white-light shadow-[0_0_2px_0_#bfc9d4] hover:bg-[#e79b21]">
                                 Upgrade
                             </button>
                         </div>

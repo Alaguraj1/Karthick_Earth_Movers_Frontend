@@ -17,14 +17,14 @@ module.exports = {
         extend: {
             colors: {
                 primary: {
-                    DEFAULT: '#3b3fa5',
-                    light: '#eff0fa',
-                    'dark-light': 'rgba(59, 63, 165, .15)',
+                    DEFAULT: '#e79b21',
+                    light: '#fdf5e8',
+                    'dark-light': 'rgba(231, 155, 33, .15)',
                 },
                 secondary: {
-                    DEFAULT: '#c79d32',
-                    light: '#f9f4e6',
-                    'dark-light': 'rgb(199 157 50 / 15%)',
+                    DEFAULT: '#032237',
+                    light: '#e6e9eb',
+                    'dark-light': 'rgba(3, 34, 55, .15)',
                 },
                 success: {
                     DEFAULT: '#00ab55',

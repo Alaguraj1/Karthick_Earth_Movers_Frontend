@@ -327,7 +327,7 @@ hover:text-primary hover:before:!bg-primary ltr:before:mr-2 rtl:before:ml-2 dark
     }
 
     .btn-gradient {
-        @apply bg-gradient-to-r from-[#EF1262] to-[#4361EE] text-white hover:from-[#4361EE] hover:to-[#EF1262];
+        @apply bg-gradient-to-r from-[#EF1262] to-[#e79b21] text-white hover:from-[#e79b21] hover:to-[#EF1262];
     }
 
     /* Badge */
