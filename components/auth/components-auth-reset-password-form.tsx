@@ -10,7 +10,6 @@ const ComponentsAuthResetPasswordForm = () => {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
-    const [demoLink, setDemoLink] = useState('');
     const { showToast } = useToast();
 
     const submitForm = async (e: any) => {
@@ -20,7 +19,6 @@ const ComponentsAuthResetPasswordForm = () => {
             const { data } = await api.post('/auth/forgotpassword', { email });
             if (data.success) {
                 showToast('Please check your email for the password reset link.', 'success');
-                setDemoLink(`/auth/boxed-reset-password/${data.resetToken}`);
                 setEmail('');
             }
         } catch (error: any) {
@@ -54,14 +52,7 @@ const ComponentsAuthResetPasswordForm = () => {
             <button type="submit" className="btn btn-primary h-14 w-full rounded-xl font-black uppercase tracking-[0.3em] text-xs shadow-2xl transition-all transform hover:scale-[1.01] active:scale-[0.98]" disabled={loading}>
                 {loading ? 'Sending Link...' : 'Send Recovery Link'}
             </button>
-            {demoLink && (
-                <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 text-center animate-fade-in-down mt-6">
-                    <p className="text-[9px] font-black uppercase text-primary tracking-[0.2em] mb-2 opacity-70">Demo Environment Override</p>
-                    <Link href={demoLink} className="text-sm font-bold text-primary hover:underline uppercase tracking-wider">
-                        Reset Password Now
-                    </Link>
-                </div>
-            )}
+
             <div className="text-center mt-6">
                 <Link href="/login" className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em] hover:text-primary hover:underline transition-all">Back to Login</Link>
             </div>
