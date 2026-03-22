@@ -5,6 +5,9 @@ import IconSave from '@/components/icon/icon-save';
 import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import RoleGuard from '@/components/stone-mine/role-guard';
+import IconEdit from '@/components/icon/icon-edit';
+import IconTrashLines from '@/components/icon/icon-trash-lines';
+import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 
 const AdvancePage = () => {
     const [labours, setLabours] = useState<any[]>([]);
@@ -19,6 +22,8 @@ const AdvancePage = () => {
         paymentMode: 'Cash',
         remarks: ''
     });
+    const [editItem, setEditItem] = useState<any>(null);
+    const [deleteId, setDeleteId] = useState<any>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -49,9 +54,15 @@ const AdvancePage = () => {
         e.preventDefault();
         setSaving(true);
         try {
-            const { data } = await api.post('/labour/advance', formData);
-            if (data.success) {
-                showToast('Advance payment recorded successfully', 'success');
+            let response;
+            if (editItem) {
+                response = await api.put(`/labour/advance/${editItem._id}`, formData);
+            } else {
+                response = await api.post('/labour/advance', formData);
+            }
+
+            if (response.data.success) {
+                showToast(editItem ? 'Advance payment updated successfully' : 'Advance payment recorded successfully', 'success');
                 setFormData({
                     labour: '',
                     date: new Date().toISOString().split('T')[0],
@@ -59,6 +70,7 @@ const AdvancePage = () => {
                     paymentMode: 'Cash',
                     remarks: ''
                 });
+                setEditItem(null);
                 fetchData();
             }
         } catch (error: any) {
@@ -66,6 +78,34 @@ const AdvancePage = () => {
             showToast(error.response?.data?.message || 'Error recording advance', 'error');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleEdit = (item: any) => {
+        setEditItem(item);
+        setFormData({
+            labour: item.labour?._id || '',
+            date: new Date(item.date).toISOString().split('T')[0],
+            amount: item.amount.toString(),
+            paymentMode: item.paymentMode,
+            remarks: item.remarks || ''
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDelete = async () => {
+        if (!deleteId) return;
+        try {
+            const { data } = await api.delete(`/labour/advance/${deleteId}`);
+            if (data.success) {
+                showToast('Record deleted successfully', 'success');
+                fetchData();
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Error deleting record', 'error');
+        } finally {
+            setDeleteId(null);
         }
     };
 
@@ -82,8 +122,25 @@ const AdvancePage = () => {
                     {/* Form Section */}
                     <div className="lg:col-span-1">
                         <div className="panel shadow-lg rounded-2xl border-none">
-                            <h5 className="text-lg font-black mb-5 border-b pb-3 uppercase text-primary tracking-tight">Record Advance (முன்பணம்)</h5>
+                            <h5 className="text-lg font-black mb-5 border-b pb-3 uppercase text-primary tracking-tight">
+                                {editItem ? 'Edit Advance Payment' : 'Record Advance (முன்பணம்)'}
+                            </h5>
                             <form onSubmit={handleSave} className="space-y-4">
+                                {editItem && (
+                                    <div className="flex justify-between items-center bg-primary/5 p-3 rounded-xl mb-4">
+                                        <span className="text-[10px] font-black uppercase text-primary">Editing Mode</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEditItem(null);
+                                                setFormData({ labour: '', date: new Date().toISOString().split('T')[0], amount: '', paymentMode: 'Cash', remarks: '' });
+                                            }}
+                                            className="text-[10px] font-black uppercase text-danger hover:underline"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                )}
                                 <div>
                                     <label className="text-[10px] font-black uppercase text-white-dark mb-1 block">Select Labour (தொழிலாளர்)</label>
                                     <select name="labour" className="form-select font-bold rounded-xl" value={formData.labour} onChange={handleChange} required>
@@ -118,7 +175,7 @@ const AdvancePage = () => {
                                 </div>
                                 <button type="submit" className="btn btn-primary w-full shadow-[0_10px_20px_rgba(67,97,238,0.3)] h-11 rounded-xl font-black uppercase tracking-widest text-xs" disabled={saving}>
                                     <IconSave className="mr-2 w-4 h-4" />
-                                    {saving ? 'Saving...' : 'Record Payment'}
+                                    {saving ? 'Saving...' : editItem ? 'Update Payment' : 'Record Payment'}
                                 </button>
                             </form>
                         </div>
@@ -137,6 +194,7 @@ const AdvancePage = () => {
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Amount</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Mode</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Remarks</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="font-bold">
@@ -157,6 +215,26 @@ const AdvancePage = () => {
                                                     <td className="py-4 text-danger font-black text-lg">₹{adv.amount.toLocaleString()}</td>
                                                     <td className="py-4"><span className="badge badge-outline-info rounded-lg font-black text-[10px] uppercase tracking-widest">{adv.paymentMode}</span></td>
                                                     <td className="py-4 text-xs pt-1 italic opacity-70">{adv.remarks || '-'}</td>
+                                                    <td className="py-4">
+                                                        <div className="flex justify-center items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleEdit(adv)}
+                                                                className="p-2 rounded-xl text-primary hover:bg-primary/10 transition-all"
+                                                                title="Edit"
+                                                            >
+                                                                <IconEdit className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setDeleteId(adv._id)}
+                                                                className="p-2 rounded-xl text-danger hover:bg-danger/10 transition-all "
+                                                                title="Delete"
+                                                            >
+                                                                <IconTrashLines className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             ))
                                         )}
@@ -167,6 +245,13 @@ const AdvancePage = () => {
                     </div>
                 </div>
             </div>
+            <DeleteConfirmModal
+                show={!!deleteId}
+                onCancel={() => setDeleteId(null)}
+                onConfirm={handleDelete}
+                title="Delete Advance Payment Record"
+                message="Are you sure you want to delete this advance payment record? This action cannot be undone."
+            />
         </RoleGuard>
     );
 };
