@@ -38,9 +38,10 @@ const PermitManagement = () => {
 
     const initialForm = {
         permitNumber: '',
-        vehicleId: '',
+        vehicleIds: [] as string[],
         date: new Date().toISOString().split('T')[0],
-        totalTripsAllowed: 0,
+        time: new Date().toTimeString().slice(0, 5),
+        totalTripsAllowed: 1,
         selectedTripIds: [] as string[],
         notes: ''
     };
@@ -57,7 +58,11 @@ const PermitManagement = () => {
             ]);
 
             if (permitRes.data.success) setPermits(permitRes.data.data);
-            if (vehicleRes.data.success) setVehicles(vehicleRes.data.data);
+            if (vehicleRes.data.success) {
+                // Filter out MACHINES (JCBs, etc.) from Transport Permit selection
+                const transportVehicles = vehicleRes.data.data.filter((v: any) => v.type === 'Vehicle');
+                setVehicles(transportVehicles);
+            }
             if (tripRes.data.success) setTrips(tripRes.data.data);
         } catch (error) {
             console.error(error);
@@ -76,14 +81,16 @@ const PermitManagement = () => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: value,
-            // Reset selected trips if date or vehicle changes
-            selectedTripIds: (name === 'date' || name === 'vehicleId') ? [] : prev.selectedTripIds,
-            totalTripsAllowed: (name === 'date' || name === 'vehicleId') ? 0 : prev.totalTripsAllowed
+            [name]: value
         }));
     };
 
-    const handleTripToggle = (tripId: string) => {
+    const handleTripToggle = (tripId: string, isUsed: boolean, pNo?: string) => {
+        if (isUsed && !formData.selectedTripIds.includes(tripId)) {
+            if (!window.confirm(`This trip is already linked to Permit #${pNo}. Do you want to move it to this permit?`)) {
+                return;
+            }
+        }
         setFormData(prev => {
             const isSelected = prev.selectedTripIds.includes(tripId);
             const newSelected = isSelected
@@ -117,17 +124,16 @@ const PermitManagement = () => {
     };
 
     const handleEdit = (permit: any) => {
-        // Find trips that belong to this permit
-        const linkedTrips = trips
-            .filter(t => (t.permitId?._id || t.permitId) === permit._id)
-            .map(t => t._id);
+        // IDs are already in permit.vehicleIds as populated objects or strings
+        const vIds = permit.vehicleIds?.map((v: any) => v._id || v) || [];
 
         setFormData({
             permitNumber: permit.permitNumber || '',
-            vehicleId: permit.vehicleId?._id || permit.vehicleId || '',
+            vehicleIds: vIds,
             date: permit.date ? new Date(permit.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            totalTripsAllowed: permit.totalTripsAllowed || 0,
-            selectedTripIds: linkedTrips,
+            time: permit.time || '',
+            totalTripsAllowed: permit.totalTripsAllowed || 1,
+            selectedTripIds: [], // not used anymore for selection
             notes: permit.notes || ''
         });
         setEditId(permit._id);
@@ -156,16 +162,24 @@ const PermitManagement = () => {
 
     const filteredPermits = permits.filter((p: any) => {
         const pNum = p.permitNumber || '';
-        const vNum = p.vehicleId?.vehicleNumber || p.vehicleId?.registrationNumber || '';
-        const vName = p.vehicleId?.name || '';
+        const vNums = (p.vehicleIds || []).map((v: any) => v.vehicleNumber || v.registrationNumber || '').join(' ');
+
+        // Also check vehicles from linked trips
+        const tripVehicles = trips
+            .filter(t => (t.permitId?._id || t.permitId) === p._id)
+            .map(t => t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || '')
+            .join(' ');
+
         const pDate = p.date ? new Date(p.date).toISOString().split('T')[0] : '';
 
         const matchesSearch = !search ||
             pNum.toLowerCase().includes(search.toLowerCase()) ||
-            vNum.toLowerCase().includes(search.toLowerCase()) ||
-            vName.toLowerCase().includes(search.toLowerCase());
+            vNums.toLowerCase().includes(search.toLowerCase()) ||
+            tripVehicles.toLowerCase().includes(search.toLowerCase());
 
-        const matchesVehicle = !filterVehicle || (p.vehicleId?._id || p.vehicleId) === filterVehicle;
+        const matchesVehicle = !filterVehicle ||
+            (p.vehicleIds || []).some((v: any) => (v._id || v) === filterVehicle) ||
+            trips.some(t => (t.permitId?._id || t.permitId) === p._id && (t.vehicleId?._id || t.vehicleId) === filterVehicle);
 
         const matchesStartDate = !startDate || pDate >= startDate;
         const matchesEndDate = !endDate || pDate <= endDate;
@@ -221,100 +235,64 @@ const PermitManagement = () => {
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-3 block">Vehicle (வாகனம்) *</label>
-                                <select name="vehicleId" className="form-select border-2 font-bold rounded-xl h-12" value={formData.vehicleId} onChange={handleChange} required>
-                                    <option value="">Select Vehicle</option>
-                                    {vehicles.map((v: any) => (
-                                        <option key={v._id} value={v._id}>
-                                            {v.vehicleNumber || v.registrationNumber} ({v.name})
-                                        </option>
-                                    ))}
-                                </select>
+                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-3 block">Authorized Vehicles (ஒற்றை/பல வாகனங்கள்)</label>
+                                <div className="panel bg-white dark:bg-dark border-2 border-white-light dark:border-[#1b2e4b] rounded-xl p-3 max-h-[160px] overflow-y-auto custom-scrollbar shadow-inner">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {vehicles.map((v: any) => (
+                                            <div key={v._id} className="flex items-center gap-3 group cursor-pointer"
+                                                onClick={() => {
+                                                    const isChecked = formData.vehicleIds.includes(v._id);
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        vehicleIds: isChecked
+                                                            ? prev.vehicleIds.filter(id => id !== v._id)
+                                                            : [...prev.vehicleIds, v._id]
+                                                    }));
+                                                }}
+                                            >
+                                                <div className={`w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${formData.vehicleIds.includes(v._id) ? 'bg-primary border-primary' : 'border-white-dark/30'}`}>
+                                                    {formData.vehicleIds.includes(v._id) && <IconX className="w-3 h-3 text-white transform rotate-45" />}
+                                                </div>
+                                                <span className={`text-[11px] font-black uppercase tracking-tight ${formData.vehicleIds.includes(v._id) ? 'text-primary' : 'text-white-dark group-hover:text-primary'}`}>
+                                                    {v.vehicleNumber || v.registrationNumber}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {vehicles.length === 0 && <div className="text-center py-5 text-[10px] uppercase font-black opacity-20">No vehicles available</div>}
+                                </div>
+                                <div className="mt-2 text-[9px] font-black text-white-dark/50 uppercase italic tracking-widest">
+                                    Checked: {formData.vehicleIds.length} Vehicles
+                                </div>
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-info uppercase tracking-widest mb-3 block">Trips Authorized</label>
+                                <label className="text-[10px] font-black text-info uppercase tracking-widest mb-3 block">Trips Authorized (அனுமதி எண்ணிக்கை) *</label>
                                 <div className="relative">
                                     <input
                                         type="number"
                                         name="totalTripsAllowed"
-                                        className="form-input border-2 border-info/30 bg-info/5 text-info font-black text-xl rounded-xl h-12 pl-4 cursor-default"
+                                        className="form-input border-2 border-info/30 bg-info/5 text-info font-black text-xl rounded-xl h-12 pl-4"
                                         value={formData.totalTripsAllowed}
-                                        readOnly
+                                        onChange={handleChange}
+                                        required
+                                        min="1"
                                     />
-                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-info tracking-wider">AUTO-CALC</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-1 gap-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-3 block">Issue Date (தேதி)</label>
                                 <input type="date" name="date" className="form-input border-2 font-bold rounded-xl h-12" value={formData.date} onChange={handleChange} required />
                             </div>
+                            <div>
+                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-3 block">Issue Time (நேரம்)</label>
+                                <input type="time" name="time" className="form-input border-2 font-bold rounded-xl h-12" value={formData.time} onChange={handleChange} required />
+                            </div>
                         </div>
 
-                        {/* Trips Selection List */}
-                        {formData.date && formData.vehicleId && (
-                            <div className="panel bg-primary/5 dark:bg-dark/20 border-2 border-primary/20 rounded-2xl p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h6 className="font-black text-sm uppercase tracking-widest text-primary flex items-center gap-2">
-                                        <IconLayoutGrid className="w-4 h-4" />
-                                        Select Trips from {new Date(formData.date).toLocaleDateString('en-GB')}
-                                    </h6>
-                                    <span className="badge badge-outline-primary font-black py-1 px-3 rounded-lg text-xs">
-                                        {formData.selectedTripIds.length} TRIPS SELECTED
-                                    </span>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[350px] overflow-y-auto pr-3 custom-scrollbar">
-                                    {trips
-                                        .filter(t => {
-                                            const tDate = new Date(t.date).toISOString().split('T')[0];
-                                            const tVehicle = t.vehicleId?._id || t.vehicleId;
-                                            return tDate === formData.date && tVehicle === formData.vehicleId;
-                                        })
-                                        .map((trip) => {
-                                            const hasPermit = trip.permitId && !formData.selectedTripIds.includes(trip._id);
-                                            return (
-                                                <div
-                                                    key={trip._id}
-                                                    className={`group relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${hasPermit
-                                                        ? 'bg-gray-100 dark:bg-dark/40 border-gray-200 opacity-60 cursor-not-allowed'
-                                                        : formData.selectedTripIds.includes(trip._id)
-                                                            ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5'
-                                                            : 'bg-white dark:bg-dark border-white-light dark:border-[#1b2e4b] hover:border-primary/50 cursor-pointer shadow-sm'
-                                                        }`}
-                                                    onClick={() => !hasPermit && handleTripToggle(trip._id)}
-                                                >
-                                                    <div className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-all ${formData.selectedTripIds.includes(trip._id) ? 'bg-primary border-primary' : 'border-white-dark/30'}`}>
-                                                        {formData.selectedTripIds.includes(trip._id) && <IconX className="w-3 h-3 text-white transform rotate-45" />}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <div className="font-black text-sm uppercase tracking-tight flex justify-between items-center">
-                                                            <span>To: {trip.toLocation}</span>
-                                                            {hasPermit && <span className="text-[10px] text-danger bg-danger/10 px-2 py-0.5 rounded uppercase font-black">Used Elsewhere</span>}
-                                                        </div>
-                                                        <div className="text-[11px] font-bold text-white-dark flex items-center gap-3 mt-1 uppercase tracking-widest">
-                                                            <span className="text-secondary">{trip.loadQuantity} {trip.loadUnit}</span>
-                                                            <span className="w-1 h-1 rounded-full bg-white-dark/30" />
-                                                            <span>{trip.stoneTypeId?.name}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    }
-                                    {trips.filter(t => {
-                                        const tDate = new Date(t.date).toISOString().split('T')[0];
-                                        const tVehicle = t.vehicleId?._id || t.vehicleId;
-                                        return tDate === formData.date && tVehicle === formData.vehicleId;
-                                    }).length === 0 && (
-                                            <div className="col-span-2 text-center py-10">
-                                                <div className="text-white-dark/30 uppercase font-black tracking-[0.2em] text-sm italic">No journey logs found for this vehicle on {new Date(formData.date).toLocaleDateString('en-GB')}</div>
-                                            </div>
-                                        )}
-                                </div>
-                            </div>
-                        )}
+                        {/* Trip selection list removed as per request */}
 
                         <div>
                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-3 block">Remarks / Notes</label>
@@ -401,9 +379,9 @@ const PermitManagement = () => {
                         <table className="table-hover">
                             <thead>
                                 <tr className="!bg-primary/5">
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Date</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Issue Date & Time</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Permit #</th>
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Vehicle Identity</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Linked Activity & Vehicles</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Utility Status</th>
                                     <th className="!text-center font-black uppercase tracking-widest text-[10px] py-4 text-warning">Management</th>
                                 </tr>
@@ -421,7 +399,8 @@ const PermitManagement = () => {
                                 ) : filteredPermits.map((permit) => (
                                     <tr key={permit._id} className="group hover:bg-primary/5 transition-all">
                                         <td className="py-4">
-                                            <div className="text-black dark:text-white-light">{new Date(permit.date).toLocaleDateString('en-GB')}</div>
+                                            <div className="text-black dark:text-white-light font-bold">{new Date(permit.date).toLocaleDateString('en-GB')}</div>
+                                            <div className="text-[10px] text-primary font-black uppercase tracking-widest mt-0.5">{permit.time}</div>
                                         </td>
                                         <td className="py-4">
                                             <span className="badge badge-outline-primary font-black py-1 px-3 rounded-lg text-xs tracking-[0.15em] uppercase border-dashed">
@@ -429,8 +408,34 @@ const PermitManagement = () => {
                                             </span>
                                         </td>
                                         <td className="py-4">
-                                            <div className="font-black text-black dark:text-white-light uppercase tracking-tight">{permit.vehicleId?.vehicleNumber || permit.vehicleId?.registrationNumber || 'Unknown'}</div>
-                                            <div className="text-[10px] text-white-dark font-bold uppercase tracking-widest mt-0.5">{permit.vehicleId?.name}</div>
+                                            {/* Authorized Multi-Vehicles */}
+                                            <div className="flex flex-wrap gap-1 mb-2">
+                                                {(permit.vehicleIds || []).map((v: any, idx: number) => (
+                                                    <span key={idx} className="badge badge-outline-primary font-black py-0.5 px-1.5 rounded-md text-[9px] uppercase tracking-tighter">
+                                                        {v.vehicleNumber || v.registrationNumber}
+                                                    </span>
+                                                ))}
+                                                {(permit.vehicleIds || []).length === 0 && (
+                                                    <span className="text-[9px] text-white-dark/50 italic font-black uppercase tracking-widest">[ GLOBAL PASS ]</span>
+                                                )}
+                                            </div>
+
+                                            {/* Detailed Activity Logs */}
+                                            <div className="space-y-1 border-t border-white-light/10 pt-2">
+                                                {trips
+                                                    .filter(t => (t.permitId?._id || t.permitId) === permit._id)
+                                                    .map((t, idx) => (
+                                                        <div key={idx} className="flex items-center gap-2 text-[9px] leading-tight text-white-dark uppercase tracking-tighter">
+                                                            <span className="w-1 h-1 rounded-full bg-primary/40 shrink-0" />
+                                                            <span className="font-black dark:text-white-light shrink-0">{t.vehicleId?.vehicleNumber || '??'}:</span>
+                                                            <span className="truncate max-w-[100px]">{t.toLocation}</span>
+                                                        </div>
+                                                    ))
+                                                }
+                                                {trips.filter(t => (t.permitId?._id || t.permitId) === permit._id).length === 0 && (
+                                                    <div className="text-[10px] text-white-dark italic">No trips assigned yet</div>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="py-4">
                                             <div className="flex flex-col gap-2 max-w-[120px]">

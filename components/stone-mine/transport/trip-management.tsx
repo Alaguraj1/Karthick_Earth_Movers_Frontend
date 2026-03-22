@@ -80,8 +80,10 @@ const TripManagement = () => {
 
             if (tripRes.data.success) setTrips(tripRes.data.data);
             if (vehicleRes.data.success) {
-                setVehicles(vehicleRes.data.data);
-                setFilteredVehicles(vehicleRes.data.data); // Show all by default
+                // Filter out MACHINES (JCBs, etc.) from Transport Trip Management
+                const transportOnly = vehicleRes.data.data.filter((v: any) => v.type === 'Vehicle');
+                setVehicles(transportOnly);
+                setFilteredVehicles(transportOnly); // Show all transport by default
             }
             if (labourRes.data.success) setLabours(labourRes.data.data);
             if (customerRes.data.success) setCustomers(customerRes.data.data);
@@ -113,6 +115,37 @@ const TripManagement = () => {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Reactive Remaining Qty Logic (Per material in Sale)
+    useEffect(() => {
+        if (!formData.saleId || !selectedSale || !formData.stoneTypeId) {
+            setRemainingQty(null);
+            return;
+        }
+
+        // Calc trips already done for this specific sale AND this specific material
+        // We exclude the current editId trip to get the other delivered quantities
+        const linkedTrips = trips.filter((t: any) => {
+            const tSaleId = t.saleId?._id || t.saleId;
+            const tStoneId = t.stoneTypeId?._id || t.stoneTypeId;
+            return tSaleId === formData.saleId && tStoneId === formData.stoneTypeId && t._id !== editId;
+        });
+
+        const deliveredQty = linkedTrips.reduce((sum: number, t: any) => sum + (parseFloat(t.loadQuantity) || 0), 0);
+
+        // Find the specific item in the sale order that matches the selected material
+        const saleItem = (selectedSale.items || []).find((it: any) => {
+            const itStoneId = it.stoneType?._id || it.stoneType;
+            return itStoneId === formData.stoneTypeId;
+        });
+
+        if (saleItem) {
+            const remaining = (saleItem.quantity || 0) - deliveredQty;
+            setRemainingQty(remaining);
+        } else {
+            setRemainingQty(0);
+        }
+    }, [formData.saleId, formData.stoneTypeId, selectedSale, trips, editId]);
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
@@ -160,15 +193,6 @@ const TripManagement = () => {
             const sale = sales.find((s: any) => s._id === value);
             if (sale) {
                 setSelectedSale(sale);
-                // Calc trips already done for this sale
-                const linkedTrips = trips.filter((t: any) => {
-                    const tSaleId = t.saleId?._id || t.saleId;
-                    return tSaleId === value;
-                });
-                const deliveredQty = linkedTrips.reduce((sum: number, t: any) => sum + (parseFloat(t.loadQuantity) || 0), 0);
-                const totalSaleQty = (sale.items || []).reduce((s: number, it: any) => s + (it.quantity || 0), 0);
-                const remaining = totalSaleQty - deliveredQty;
-                setRemainingQty(remaining);
                 setFormData(prev => ({
                     ...prev,
                     saleId: value,
@@ -184,6 +208,34 @@ const TripManagement = () => {
         if (name === 'driverName') {
             const worker = labours.find((l: any) => l.name?.trim().toLowerCase() === value.trim().toLowerCase());
             setFormData(prev => ({ ...prev, driverId: worker ? worker._id : '' }));
+        }
+
+        // When permit is selected → auto-fill vehicle & driver IF unique
+        if (name === 'permitId') {
+            if (!value) return;
+            const permit = permits.find(p => p._id === value);
+            if (permit) {
+                // Only auto-fill vehicle if it's a single-vehicle permit and currently unselected
+                if (permit.vehicleIds?.length === 1 && !formData.vehicleId) {
+                    const vObj = permit.vehicleIds[0];
+                    const vId = vObj._id || vObj;
+                    const vType = vObj.category || 'Lorry';
+                    const dName = vObj.driverName || vObj.operatorName || '';
+
+                    setFormData(prev => ({
+                        ...prev,
+                        vehicleId: vId,
+                        vehicleType: vType,
+                        driverName: dName
+                    }));
+
+                    if (dName) {
+                        const worker = labours.find((l: any) => l.name?.trim().toLowerCase() === dName.trim().toLowerCase());
+                        setFormData(prev => ({ ...prev, driverId: worker ? worker._id : '' }));
+                    }
+                    filterVehiclesBy(vehicles, vType);
+                }
+            }
         }
     };
 
@@ -237,12 +289,6 @@ const TripManagement = () => {
         filterVehiclesBy(vehicles, vType);
         const saleObj = sales.find((s: any) => s._id === (trip.saleId?._id || trip.saleId));
         setSelectedSale(saleObj || null);
-        if (saleObj) {
-            const linkedTrips = trips.filter((t: any) => (t.saleId?._id || t.saleId) === saleObj._id && t._id !== trip._id);
-            const deliveredQty = linkedTrips.reduce((sum: number, t: any) => sum + (parseFloat(t.loadQuantity) || 0), 0);
-            const totalSaleQty = (saleObj.items || []).reduce((s: number, it: any) => s + (it.quantity || 0), 0);
-            setRemainingQty(totalSaleQty - deliveredQty);
-        }
         setFormData({
             date: trip.date ? new Date(trip.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             vehicleId: trip.vehicleId?._id || trip.vehicleId || '',
@@ -419,16 +465,28 @@ const TripManagement = () => {
                                     className="form-select border-warning"
                                     value={formData.permitId}
                                     onChange={handleChange}
-                                    disabled={!formData.vehicleId}
                                 >
                                     <option value="">-- No Permit --</option>
                                     {permits
-                                        .filter(p => (p.vehicleId?._id || p.vehicleId) === formData.vehicleId && (p.status === 'Active' || p._id === formData.permitId))
-                                        .map((p: any) => (
-                                            <option key={p._id} value={p._id}>
-                                                {p.permitNumber} ({p.remainingTrips ?? (p.totalTripsAllowed - (p.usedTrips || 0))} trips left)
-                                            </option>
-                                        ))}
+                                        .filter(p => {
+                                            const isActive = p.status === 'Active' || p._id === formData.permitId;
+                                            if (!isActive) return false;
+                                            // Handle multi-vehicle check
+                                            if (!p.vehicleIds || p.vehicleIds.length === 0) return true; // Global
+                                            if (!formData.vehicleId) return true; // Show all if vehicle not picked yet
+                                            return p.vehicleIds.some((v: any) => (v._id || v) === formData.vehicleId);
+                                        })
+                                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                        .map((p: any) => {
+                                            const isToday = new Date(p.date).toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
+                                            const rem = p.remainingTrips ?? (p.totalTripsAllowed - (p.usedTrips || 0));
+                                            const vInfo = (p.vehicleIds || []).map((v: any) => v.vehicleNumber || v.registrationNumber).join(', ');
+                                            return (
+                                                <option key={p._id} value={p._id}>
+                                                    {isToday ? '🆕 ' : ''}{p.permitNumber} — {vInfo || 'GLOBAL'} ({rem} left) {isToday ? '[TODAY]' : ''}
+                                                </option>
+                                            );
+                                        })}
                                 </select>
                             </div>
                         </div>

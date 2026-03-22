@@ -281,6 +281,9 @@ const Sidebar = () => {
                                         <AnimateHeight duration={300} height={currentMenu === 'transport-mgmt' ? 'auto' : 0}>
                                             <ul className="sub-menu text-gray-500">
                                                 <li>
+                                                    <Link href="/transport/permits">Permit Management</Link>
+                                                </li>
+                                                <li>
                                                     <Link href="/transport/trips">Vehicle Trip Management</Link>
                                                 </li>
                                                 {isManagement && (
@@ -288,9 +291,6 @@ const Sidebar = () => {
                                                         <Link href="/transport/driver-payments">Driver Payment</Link>
                                                     </li>
                                                 )}
-                                                <li>
-                                                    <Link href="/transport/permits">Permit Management</Link>
-                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>
