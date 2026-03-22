@@ -127,6 +127,7 @@ const Sidebar = () => {
                                             </Link>
                                         </li>
                                     )}
+                                    {/* 1. Expenses */}
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'expense-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('expense-mgmt')}>
                                             <div className="flex items-center">
@@ -164,6 +165,8 @@ const Sidebar = () => {
                                             </ul>
                                         </AnimateHeight>
                                     </li>
+
+                                    {/* 2. Sales & Billing */}
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'sales-billing' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('sales-billing')}>
                                             <div className="flex items-center">
@@ -201,71 +204,7 @@ const Sidebar = () => {
                                         </AnimateHeight>
                                     </li>
 
-
-                                    <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'asset-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('asset-mgmt')}>
-                                            <div className="flex items-center">
-                                                <IconMenuWidgets className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Machine & Vehicle</span>
-                                            </div>
-
-                                            <div className={currentMenu !== 'asset-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
-                                                <IconCaretDown />
-                                            </div>
-                                        </button>
-
-                                        <AnimateHeight duration={300} height={currentMenu === 'asset-mgmt' ? 'auto' : 0}>
-                                            <ul className="sub-menu text-gray-500">
-                                                <li>
-                                                    <Link href="/assets/machines">Machine Details</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/assets/machine-production">Machine Production</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/assets/vehicles">Vehicle Details</Link>
-                                                </li>
-                                            </ul>
-                                        </AnimateHeight>
-                                    </li>
-
-                                    <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'labour-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('labour-mgmt')}>
-                                            <div className="flex items-center">
-                                                <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Labour Management</span>
-                                            </div>
-
-                                            <div className={currentMenu !== 'labour-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
-                                                <IconCaretDown />
-                                            </div>
-                                        </button>
-
-                                        <AnimateHeight duration={300} height={currentMenu === 'labour-mgmt' ? 'auto' : 0}>
-                                            <ul className="sub-menu text-gray-500">
-                                                <li>
-                                                    <Link href="/labour/list">Labour List</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/labour/attendance">Daily Attendance</Link>
-                                                </li>
-                                                {isManagement && (
-                                                    <li>
-                                                        <Link href="/labour/wages">Wages Calculation</Link>
-                                                    </li>
-                                                )}
-                                                {isManagement && (
-                                                    <li>
-                                                        <Link href="/labour/advance">Advance Payment</Link>
-                                                    </li>
-                                                )}
-                                                <li>
-                                                    <Link href="/labour/report">Labour Report</Link>
-                                                </li>
-                                            </ul>
-                                        </AnimateHeight>
-                                    </li>
-
+                                    {/* 3. Transport Management */}
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'transport-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('transport-mgmt')}>
                                             <div className="flex items-center">
@@ -295,6 +234,69 @@ const Sidebar = () => {
                                         </AnimateHeight>
                                     </li>
 
+                                    {/* 4. Labour Management */}
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'labour-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('labour-mgmt')}>
+                                            <div className="flex items-center">
+                                                <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Labour Management</span>
+                                            </div>
+
+                                            <div className={currentMenu !== 'labour-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'labour-mgmt' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/labour/list">Labour List</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/labour/attendance">Daily Attendance</Link>
+                                                </li>
+
+                                                {isManagement && (
+                                                    <li>
+                                                        <Link href="/labour/advance">Advance Payment</Link>
+                                                    </li>
+                                                )}
+                                                <li>
+                                                    <Link href="/labour/report">Labour Report</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
+                                    </li>
+
+                                    {/* 5. Machine & Vehicle */}
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'asset-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('asset-mgmt')}>
+                                            <div className="flex items-center">
+                                                <IconMenuWidgets className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Machine & Vehicle</span>
+                                            </div>
+
+                                            <div className={currentMenu !== 'asset-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'asset-mgmt' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/assets/machines">Machine Details</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/assets/machine-production">Machine Production</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/assets/vehicles">Vehicle Details</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
+                                    </li>
+
+                                    {/* 6. Vendor Management */}
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'vendor-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('vendor-mgmt')}>
                                             <div className="flex items-center">
@@ -332,6 +334,7 @@ const Sidebar = () => {
                                         </AnimateHeight>
                                     </li>
 
+                                    {/* 7. Accounts & Reports */}
                                     {isOwner && (
                                         <li className="menu nav-item">
                                             <button type="button" className={`${currentMenu === 'accounts-reports' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('accounts-reports')}>
@@ -364,6 +367,7 @@ const Sidebar = () => {
                                         </li>
                                     )}
 
+                                    {/* 8. Masters */}
                                     {isManagement && (
                                         <li className="menu nav-item">
                                             <button type="button" className={`${currentMenu === 'masters-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('masters-mgmt')}>
@@ -410,6 +414,7 @@ const Sidebar = () => {
                                         </li>
                                     )}
 
+                                    {/* 9. User Management */}
                                     {isOwner && (
                                         <li className="nav-item">
                                             <Link href="/users/management" className="group">
@@ -421,6 +426,7 @@ const Sidebar = () => {
                                         </li>
                                     )}
 
+                                    {/* 10. Workflow Guide */}
                                     <li className="nav-item">
                                         <Link href="/workflow" className="group">
                                             <div className="flex items-center">

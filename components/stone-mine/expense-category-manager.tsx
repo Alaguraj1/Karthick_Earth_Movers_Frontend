@@ -100,6 +100,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         otAmount: '',
         salaryMonth: '',
         salaryYear: '',
+        totalWorkingDays: '',
         // Explosive specialized fields
         site: '',
         explosiveType: '',
@@ -194,11 +195,16 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     };
 
     useEffect(() => {
+        const daysInMonth = new Date(lookupYear, lookupMonth, 0).getDate();
         if (category === 'Labour Wages' && formData.labourName && (labours.length > 0 || contractors.length > 0)) {
             const fetchLabourSummary = async () => {
                 try {
                     const { data } = await api.get('/labour/wages-summary', {
-                        params: { month: lookupMonth, year: lookupYear }
+                        params: {
+                            month: lookupMonth,
+                            year: lookupYear,
+                            workingDays: formData.totalWorkingDays
+                        }
                     });
 
                     if (data.success) {
@@ -230,7 +236,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     quantity: summary.attendance.total.toString(),
                                     perDaySalary: '',
                                     rate: '', // No fixed single rate, it's aggregated
-                                    amount: (parseFloat(summary.totalWages) + parseFloat(summary.otAmount || '0')).toFixed(2),
+                                    amount: summary.netPayable.toString(),
                                     advanceDeduction: summary.totalAdvance.toString(),
                                     netPay: summary.netPayable.toString(),
                                     otAmount: (summary.otAmount || 0).toString()
@@ -242,10 +248,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     quantity: summary.attendance.total.toString(),
                                     perDaySalary: summary.dailyRate.toString(),
                                     rate: summary.dailyWage.toString(),
-                                    amount: (parseFloat(summary.totalWages) + parseFloat(summary.otAmount || '0')).toFixed(2),
+                                    amount: summary.netPayable.toString(),
                                     advanceDeduction: summary.totalAdvance.toString(),
                                     netPay: summary.netPayable.toString(),
-                                    otAmount: (summary.otAmount || 0).toString()
+                                    otAmount: (summary.otAmount || 0).toString(),
+                                    totalWorkingDays: daysInMonth.toString()
                                 }));
                             }
                         }
@@ -379,9 +386,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     updated.perDaySalary = '';
                     updated.advanceDeduction = '';
                     updated.otAmount = '';
-                    if (name === 'labourType') {
-                        updated.workType = ''; // Reset to "All Work Types" value
-                    }
+
                     setSelectedContractorSummary(null); // Reset summary on type change
                 }
 
@@ -413,18 +418,20 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                 const daysInMonth = new Date(lookupYear, lookupMonth, 0).getDate();
                 const qtyVal = name === 'quantity' ? value : updated.quantity;
                 const rateVal = name === 'rate' ? value : updated.rate;
+                const workingDaysVal = name === 'totalWorkingDays' ? value : updated.totalWorkingDays;
                 const advanceVal = name === 'advanceDeduction' ? value : updated.advanceDeduction;
                 const otVal = name === 'otAmount' ? value : updated.otAmount;
 
                 const qty = parseFloat(qtyVal) || 0;
                 const rate = parseFloat(rateVal) || 0;
+                const workingDays = parseFloat(workingDaysVal) || daysInMonth || 30;
                 const advance = parseFloat(advanceVal) || 0;
                 const ot = parseFloat(otVal) || 0;
 
                 let total = 0;
                 if (updated.wageType === 'Monthly Salary') {
-                    // Precise Daily Rate based on calendar days (28/29/30/31)
-                    const daily = rate / (daysInMonth || 30);
+                    // Use totalWorkingDays as denominator if provided
+                    const daily = rate / workingDays;
                     updated.perDaySalary = daily.toFixed(2);
                     total = qty * daily;
                 } else if (updated.wageType === 'Contract Payment') {
@@ -438,7 +445,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     total = qty * rate;
                 }
 
-                updated.amount = (total + ot).toFixed(2);
+                updated.amount = (total + ot - advance).toFixed(2);
                 updated.netPay = (total + ot - advance).toFixed(2);
             }
             return updated;
@@ -604,6 +611,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             otAmount: '',
             salaryMonth: '',
             salaryYear: '',
+            totalWorkingDays: '',
             site: '',
             explosiveType: '',
             unit: 'Nos',
@@ -702,6 +710,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             officeExpenseType: expense.officeExpenseType || '',
             paidTo: expense.paidTo || '',
             billNumber: expense.billNumber || '',
+            totalWorkingDays: expense.totalWorkingDays?.toString() || '',
             nextServiceDate: expense.nextServiceDate ? expense.nextServiceDate.split('T')[0] : '',
         });
         setSelectedFile(null);
@@ -1366,13 +1375,13 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                         </a>
                                                     )}
                                                     <div className="flex justify-center items-center gap-2 mt-1">
-                                                        {(expense.sourceModel === 'Manual' || !expense.sourceModel) && canEditRecord(currentUser, expense.createdAt || expense.date) ? (
+                                                        {(expense.sourceModel === 'Manual' || !expense.sourceModel) && category !== 'Labour Wages' && canEditRecord(currentUser, expense.createdAt || expense.date) ? (
                                                             <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditModal(expense)}>
                                                                 <IconEdit className="h-4 w-4" />
                                                             </button>
                                                         ) : (
                                                             <span className="text-[10px] text-white-dark italic">
-                                                                {expense.sourceModel === 'Trip' ? 'System Entry' : 'Locked'}
+                                                                {expense.category === 'Labour Wages' ? 'Finalized' : (expense.sourceModel === 'Trip' ? 'System Entry' : 'Locked')}
                                                             </span>
                                                         )}
                                                         {isOwner && (
@@ -1699,6 +1708,10 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             <input type="number" name="quantity" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10" value={formData.quantity} onChange={handleChange} readOnly />
                                         </div>
                                         <div>
+                                            <label className="text-[10px] font-black text-secondary uppercase tracking-widest mb-2 block font-black">Total Monthly Working Days</label>
+                                            <input type="number" name="totalWorkingDays" className="form-input border-2 focus:border-secondary transition-all font-bold rounded-xl h-12 border-secondary/20" value={formData.totalWorkingDays} onChange={handleChange} min="1" placeholder="e.g. 20 (Office) or 30" />
+                                        </div>
+                                        <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Rate (Monthly/Daily)</label>
                                             <input type="number" name="rate" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10" value={formData.rate} onChange={handleChange} readOnly />
                                         </div>
@@ -1715,7 +1728,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             <input type="number" name="advanceDeduction" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10 border-danger/20" value={formData.advanceDeduction} onChange={handleChange} readOnly />
                                         </div>
                                         <div className="bg-success/5 p-3 rounded-lg border border-success/20 sm:col-span-2 lg:col-span-1 border-2 border-success/40">
-                                            <label className="text-[10px] font-black text-success uppercase tracking-widest mb-1 block">Net Payable (ஆணைத்தொகை)</label>
+                                            <label className="text-[10px] font-black text-success uppercase tracking-widest mb-1 block font-black border-b border-success/20 pb-1 mb-2">Net Payable (ஆணைத்தொகை) - Pay This Total:</label>
                                             <div className="text-xl font-bold text-success animate-pulse">₹ {parseFloat(formData.netPay || '0').toLocaleString()}</div>
                                         </div>
                                     </>
