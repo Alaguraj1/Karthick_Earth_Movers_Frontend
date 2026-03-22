@@ -572,7 +572,7 @@ const VehicleDetails = () => {
                                             </div>
                                             <div>
                                                 <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Owner</span>
-                                                <span className="text-sm font-black">{detailsView.ownerName || 'N/A'}</span>
+                                                <span className="text-sm font-black">{detailsView.ownershipType === 'Own' ? (detailsView.ownerName || 'Internal') : (detailsView.contractor?.name || 'Contractor')}</span>
                                             </div>
                                             <div>
                                                 <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Condition</span>

@@ -90,26 +90,13 @@ const LabourListPage = () => {
             if (name === 'contractor') {
                 const vendor = contractors.find(c => c._id === value);
                 setSelectedContractor(vendor);
-                if (vendor && vendor.contracts && vendor.contracts.length > 0) {
-                    const firstContract = vendor.contracts[0];
-                    updated.workType = firstContract.workType;
-                    updated.wage = firstContract.agreedRate;
-                    updated.wageType = firstContract.rateType === 'Per Month' || firstContract.rateType === 'Monthly Contract' ? 'Monthly' : 'Daily';
-                }
             }
 
             return updated;
         });
     };
 
-    const handleContractChange = (contract: any) => {
-        setFormData(prev => ({
-            ...prev,
-            workType: contract.workType,
-            wage: contract.agreedRate,
-            wageType: contract.rateType === 'Per Month' || contract.rateType === 'Monthly Contract' ? 'Monthly' : 'Daily'
-        }));
-    };
+
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
@@ -317,24 +304,7 @@ const LabourListPage = () => {
                                 )}
                             </div>
 
-                            {formData.labourType === 'Vendor' && selectedContractor && (
-                                <div className="mt-4 p-4 bg-warning/5 rounded-2xl border border-warning/20">
-                                    <label className="text-[10px] font-black text-warning uppercase mb-2 block">Available Contracts for this Vendor</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {selectedContractor.contracts?.map((c: any, idx: number) => (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${formData.workType === c.workType ? 'bg-warning text-white border-warning shadow-lg shadow-warning/20' : 'bg-white text-warning border-warning/30 hover:bg-warning/10'}`}
-                                                onClick={() => handleContractChange(c)}
-                                            >
-                                                {c.workType} (₹{c.agreedRate}/{c.rateType})
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <p className="text-[9px] text-white-dark mt-3 font-bold uppercase tracking-wider opacity-60">Selecting a contract will automatically fetch details and make them non-editable to prevent mismatch.</p>
-                                </div>
-                            )}
+
                         </div>
 
                         {/* Section 2: Personal & Work Info */}
@@ -364,10 +334,9 @@ const LabourListPage = () => {
                                     <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Work Type (வேலை வகை)</label>
                                     <select
                                         name="workType"
-                                        className={`form-select font-bold rounded-xl h-11 ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                        className="form-select font-bold rounded-xl h-11"
                                         value={formData.workType}
                                         onChange={handleChange}
-                                        disabled={formData.labourType === 'Vendor'}
                                     >
                                         <option value="">Select Work Type</option>
                                         {workTypes.map((type: any) => (
@@ -384,12 +353,11 @@ const LabourListPage = () => {
                                                 <input
                                                     type="number"
                                                     name="wage"
-                                                    className={`form-input pl-8 font-black border-info rounded-xl h-11 ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                                    className="form-input pl-8 font-black border-info rounded-xl h-11"
                                                     value={formData.wage}
                                                     onChange={handleChange}
                                                     required
                                                     placeholder="0.00"
-                                                    readOnly={formData.labourType === 'Vendor'}
                                                 />
                                             </div>
                                         </div>
@@ -397,10 +365,9 @@ const LabourListPage = () => {
                                             <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Wage Type (சம்பள முறை)</label>
                                             <select
                                                 name="wageType"
-                                                className={`form-select font-bold rounded-xl h-11 ${formData.labourType === 'Vendor' ? 'bg-gray-100 cursor-not-allowed opacity-70' : ''}`}
+                                                className="form-select font-bold rounded-xl h-11"
                                                 value={formData.wageType}
                                                 onChange={handleChange}
-                                                disabled={formData.labourType === 'Vendor'}
                                             >
                                                 <option value="Daily">Daily Wage (தினக்கூலி)</option>
                                                 <option value="Monthly">Monthly Salary (மாதச் சம்பளம்)</option>

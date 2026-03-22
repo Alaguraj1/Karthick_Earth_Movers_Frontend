@@ -50,7 +50,8 @@ const LabourContractorManagement = () => {
     paymentMode: 'Cash',
     creditTerms: '7 days',
     advancePaid: '0',
-    outstandingBalance: '0'
+    outstandingBalance: '0',
+    notes: ''
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -148,12 +149,8 @@ const LabourContractorManagement = () => {
     try {
       const data = {
         ...formData,
-        contracts: formData.contracts.map(c => ({
-          ...c,
-          agreedRate: Number(c.agreedRate),
-          labourCount: Number(c.labourCount)
-        })),
-        noOfWorkers: totalWorkers,
+        contracts: [], // Contracts removed as per requirement
+        noOfWorkers: 0,
         advancePaid: Number(formData.advancePaid || 0),
         outstandingBalance: Number(formData.outstandingBalance || 0)
       };
@@ -188,7 +185,8 @@ const LabourContractorManagement = () => {
       paymentMode: vendor.paymentMode || 'Cash',
       creditTerms: vendor.creditTerms || '7 days',
       advancePaid: vendor.advancePaid?.toString() || '0',
-      outstandingBalance: vendor.outstandingBalance?.toString() || '0'
+      outstandingBalance: vendor.outstandingBalance?.toString() || '0',
+      notes: vendor.notes || ''
     });
     setEditId(vendor._id);
     setShowForm(true);
@@ -282,95 +280,7 @@ const LabourContractorManagement = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t dark:border-[#1b2e4b]">
-              <div className="flex flex-col sm:items-center sm:justify-between sm:flex-row gap-4 mb-4">
-                <h6 className="text-info font-bold flex items-center">
-                  <span className="bg-info text-white w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">2</span>
-                  Contract Details (ஒப்பந்த விவரம்)
-                </h6>
-                <button type="button" className="btn btn-sm btn-outline-info w-fit" onClick={addContractRow}>
-                  <IconPlus className="w-4 h-4 mr-1" /> Add Work Contract
-                </button>
-              </div>
 
-              <div className="table-responsive">
-                <table className="table-hover custom-table min-w-[1000px]">
-                  <thead>
-                    <tr>
-                      <th className="w-48">Work Type</th>
-                      <th className="w-40">Rate Type</th>
-                      <th className="w-32 text-right whitespace-nowrap">Labour Count</th>
-                      <th className="w-40 text-right">Rate (Per Lab) (₹) *</th>
-                      <th className="w-40 text-right">Total Rate (₹)</th>
-                      <th className="w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {formData.contracts.map((contract: any, index: number) => (
-                      <tr key={index}>
-                        <td>
-                          <select className="form-select text-xs" name="workType" value={contract.workType} onChange={(e) => handleContractChange(index, e)} required>
-                            <option value="">Select Work Type</option>
-                            {workTypes.map((wt: any) => (
-                              <option key={wt._id} value={wt.name}>{wt.name}</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <select className="form-select text-xs" name="rateType" value={contract.rateType} onChange={(e) => handleContractChange(index, e)}>
-                            <option value="Per Day">Per Day</option>
-                            <option value="Per Ton">Per Ton</option>
-                            <option value="Per Load">Per Load</option>
-                            <option value="Monthly Contract">Monthly Contract</option>
-                          </select>
-                        </td>
-                        <td>
-                          <input type="number" className="form-input text-xs text-right" name="labourCount" value={contract.labourCount} onChange={(e) => handleContractChange(index, e)} min="0" />
-                        </td>
-                        <td>
-                          <input type="number" className="form-input text-xs text-right font-bold" name="agreedRate" value={contract.agreedRate} onChange={(e) => handleContractChange(index, e)} required min="0" step="any" />
-                        </td>
-                        <td>
-                          <div className="form-input text-xs text-right bg-dark/5 font-black text-primary">
-                            ₹{(Number(contract.labourCount || 0) * Number(contract.agreedRate || 0)).toLocaleString()}
-                          </div>
-                        </td>
-                        <td className="text-center">
-                          <button type="button" onClick={() => removeContractRow(index)} className="text-danger hover:text-white dark:hover:text-danger hover:bg-danger/10 rounded p-1 transition-colors">
-                            <IconTrash className="w-5 h-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t dark:border-[#1b2e4b]">
-              <h6 className="text-secondary font-bold mb-4 flex items-center">
-                <span className="bg-secondary text-white w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">3</span>
-                Labour Strength (தொழிலாளர் எண்ணிக்கை)
-              </h6>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div>
-                  <label className="text-sm font-bold text-info">No. of Workers (Auto-filled)</label>
-                  <input type="number" name="noOfWorkers" className="form-input bg-info/5 font-bold text-info" value={totalWorkers} readOnly />
-                </div>
-                <div>
-                  <label className="text-sm font-bold">Supervisor Name</label>
-                  <input type="text" name="supervisorName" className="form-input" value={formData.supervisorName} onChange={handleChange} />
-                </div>
-                <div>
-                  <label className="text-sm font-bold">Shift</label>
-                  <select name="shift" className="form-select" value={formData.shift} onChange={handleChange}>
-                    <option value="Day">Day</option>
-                    <option value="Night">Night</option>
-                    <option value="Both">Both</option>
-                  </select>
-                </div>
-              </div>
-            </div>
 
             <div className="pt-4 border-t dark:border-[#1b2e4b]">
               <h6 className="text-success font-bold mb-4 flex items-center">
@@ -386,6 +296,7 @@ const LabourContractorManagement = () => {
                     <option value="UPI">UPI</option>
                   </select>
                 </div>
+
                 <div>
                   <label className="text-sm font-bold">Credit Terms</label>
                   <select name="creditTerms" className="form-select" value={formData.creditTerms} onChange={handleChange}>
@@ -399,10 +310,11 @@ const LabourContractorManagement = () => {
                   <label className="text-sm font-bold">Advance Paid (₹)</label>
                   <input type="number" name="advancePaid" className="form-input" value={formData.advancePaid} onChange={handleChange} />
                 </div>
-                <div>
-                  <label className="text-sm font-bold text-primary">Total Contract Amount (₹)</label>
-                  <input type="text" className="form-input bg-primary/5 font-black text-primary" value={totalContractAmount.toLocaleString()} readOnly />
+                <div className="md:col-span-2">
+                  <label className="text-sm font-bold">Notes / Remarks (ஒப்பந்தக் குறிப்பு)</label>
+                  <textarea name="notes" className="form-textarea" rows={1} value={formData.notes || ''} onChange={handleChange} placeholder="Any specific terms or notes..."></textarea>
                 </div>
+
                 <div>
                   <label className="text-sm font-bold text-danger">Opening Balance (₹)</label>
                   <input type="number" name="outstandingBalance" className="form-input font-bold border-danger/20 text-danger" value={formData.outstandingBalance} onChange={handleChange} />
@@ -410,59 +322,7 @@ const LabourContractorManagement = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t dark:border-[#1b2e4b]">
-              <h6 className="text-secondary font-bold mb-4 flex items-center">
-                <span className="bg-secondary text-white w-6 h-6 rounded-full inline-flex items-center justify-center mr-2 text-xs">5</span>
-                Labour Details (ஒவ்வொரு பிரிவிலும் உள்ள தொழிலாளர் விவரங்கள்)
-              </h6>
-              {formData.contracts.map((contract: any, cIdx: number) => (
-                Number(contract.labourCount) > 0 && (
-                  <div key={cIdx} className="mb-6 p-4 bg-gray-50 dark:bg-dark-light/5 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                    <h6 className="font-bold text-sm mb-3 block text-primary uppercase flex items-center gap-2">
-                      <span className="badge badge-outline-primary">{contract.workType || `Contract ${cIdx + 1}`}</span>
-                      <span>Workers Details ({contract.labourCount})</span>
-                    </h6>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {contract.labourDetails?.map((labour: any, lIdx: number) => (
-                        <div key={lIdx} className="p-3 bg-white dark:bg-dark rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 space-y-3">
-                          <div className="flex items-center justify-between border-b pb-1">
-                            <span className="text-[10px] font-bold text-white-dark uppercase">Labour #{lIdx + 1}</span>
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold uppercase text-white-dark px-1">Name *</label>
-                            <input
-                              type="text"
-                              name="name"
-                              className="form-input text-xs"
-                              placeholder="Full Name"
-                              value={labour.name}
-                              onChange={(e) => handleLabourDetailChange(cIdx, lIdx, e)}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold uppercase text-white-dark px-1">Mobile</label>
-                            <input
-                              type="text"
-                              name="mobile"
-                              className="form-input text-xs"
-                              placeholder="Mobile No"
-                              value={labour.mobile}
-                              onChange={(e) => handleLabourDetailChange(cIdx, lIdx, e)}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              ))}
-              {totalWorkers === 0 && (
-                <div className="text-center py-6 bg-gray-50 dark:bg-dark-light/5 rounded-xl border border-dashed text-white-dark italic text-sm">
-                  Specify Labour Count in Contract Details to fill individual names.
-                </div>
-              )}
-            </div>
+
 
             <div className="flex justify-end pt-5 gap-3 border-t dark:border-[#1b2e4b]">
               <button type="button" className="btn btn-outline-danger" onClick={resetForm}>Cancel</button>
@@ -490,9 +350,7 @@ const LabourContractorManagement = () => {
               <thead>
                 <tr>
                   <th>Contractor Info</th>
-                  <th>Work Contracts</th>
-                  <th className="!text-center">Workers</th>
-                  <th>Payment Settings</th>
+                  <th>Address & Details</th>
                   <th className="!text-right text-danger">Outstanding (₹)</th>
                   <th className="!text-center">Action</th>
                 </tr>
@@ -508,38 +366,25 @@ const LabourContractorManagement = () => {
                       <td>
                         <div className="font-bold text-warning">{c.name}</div>
                         <div className="text-xs text-white-dark">{c.mobileNumber}</div>
+                        <div className="text-[10px] text-info font-black mt-1 uppercase italic tracking-widest">{c.paymentMode || 'Cash'} | {c.creditTerms}</div>
+                        {c.notes && <div className="text-[10px] text-white-dark/70 italic mt-0.5 line-clamp-1">{c.notes}</div>}
+                        <div className="text-[10px] text-success font-bold">Adv: ₹{c.advancePaid?.toLocaleString() || 0}</div>
                       </td>
                       <td>
-                        {c.contracts?.map((contract: any, idx: number) => (
-                          <div key={idx} className="mb-2 last:mb-0 pb-1 border-b border-white-light/10 last:border-0">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-bold text-info uppercase">{contract.workType}</span>
-                              <span className="badge bg-warning/10 text-warning text-[10px]">{contract.labourCount || 0} x ₹{contract.agreedRate}</span>
-                            </div>
-                            <div className="flex items-center justify-between mt-1 italic">
-                              <span className="text-[9px] text-white-dark uppercase">{contract.rateType}</span>
-                              <span className="text-[11px] font-black text-primary">Total: ₹{(Number(contract.labourCount || 0) * Number(contract.agreedRate || 0)).toLocaleString()}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="text-center">
-                        <div className="badge bg-dark/10 text-dark dark:text-white-light px-3">{c.noOfWorkers || 0}</div>
-                        <div className="text-[10px] mt-1 uppercase font-bold text-white-dark">{c.shift}</div>
-                      </td>
-                      <td>
-                        <div className="text-xs font-semibold">{c.paymentMode} | {c.creditTerms}</div>
-                        <div className="text-[10px] text-success font-bold mt-1">Adv: ₹{c.advancePaid?.toLocaleString() || 0}</div>
+                        <div className="text-xs">{c.address || 'No Address'}</div>
+                        <div className="text-[10px] mt-1 uppercase font-bold text-white-dark italic">PAN: {c.panNumber || 'N/A'} | GST: {c.gstNumber || 'N/A'}</div>
                       </td>
                       <td className="!text-right font-black text-danger text-base whitespace-nowrap">
                         ₹{(() => {
-                          const contractTotal = c.contracts?.reduce((acc: number, con: any) => acc + (Number(con.labourCount || 0) * Number(con.agreedRate || 0)), 0) || 0;
-                          const balance = (contractTotal + (c.outstandingBalance || 0)) - (c.advancePaid || 0) + (balances[c._id] || 0);
+                          const balance = (Number(c.outstandingBalance || 0)) - (Number(c.advancePaid || 0)) + (balances[c._id] || 0);
                           return balance.toLocaleString();
                         })()}
                       </td>
                       <td className="text-center">
                         <div className="flex items-center justify-center gap-2">
+                          <Link href={`/vendors/labour/${c._id}`} className="btn btn-sm btn-outline-info p-1">
+                            <IconSearch className="w-4 h-4" />
+                          </Link>
                           {canEditRecord(currentUser, c.createdAt) ? (
                             <button onClick={() => handleEdit(c)} className="btn btn-sm btn-outline-primary p-1">
                               <IconEdit className="w-4 h-4" />

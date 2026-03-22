@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
+import Link from 'next/link';
 import api from '@/utils/api';
 import { canEditRecord } from '@/utils/permissions';
 import { useToast } from '@/components/stone-mine/toast-notification';
@@ -13,6 +14,7 @@ import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrash from '@/components/icon/icon-trash';
 import IconWheel from '@/components/icon/icon-wheel';
+import IconEye from '@/components/icon/icon-eye';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 
 const TransportVendorManagement = () => {
@@ -456,6 +458,9 @@ const TransportVendorManagement = () => {
                                         )}
                                         <td className="text-center">
                                             <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                <Link href={`/vendors/transport/${v._id}`} className="btn btn-sm btn-outline-info p-1">
+                                                    <IconEye className="w-4 h-4" />
+                                                </Link>
                                                 {canEditRecord(currentUser, v.createdAt) ? (
                                                     <button onClick={() => handleEdit(v)} className="btn btn-sm btn-outline-info p-1">
                                                         <IconEdit className="w-4 h-4" />

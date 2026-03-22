@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import IconSettings from '@/components/icon/icon-settings';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
+import IconMenuWidgets from '@/components/icon/menu/icon-menu-widgets';
 import { canEditRecord } from '@/utils/permissions';
 import IconEye from '@/components/icon/icon-eye';
 import IconDownload from '@/components/icon/icon-download';
@@ -67,8 +68,9 @@ const MachineDetails = () => {
         permitExpiryDate: '',
         mileageDetails: '',
         ownershipType: 'Own',
-        contractName: ''
+        contractor: ''
     });
+    const [vendors, setVendors] = useState<any[]>([]);
 
     const categories = ['JCB', 'Hitachi', 'Loader', 'Generator', 'Compressor', 'Driller', 'Tractor', 'Stone Crusher', 'Other'];
 
@@ -104,7 +106,6 @@ const MachineDetails = () => {
         try {
             const { data } = await api.get('/labour');
             if (data.success) {
-                // Only show operators
                 const filtered = data.data.filter((l: any) =>
                     l.workType?.toLowerCase().includes('operator')
                 );
@@ -115,10 +116,20 @@ const MachineDetails = () => {
         }
     };
 
+    const fetchVendors = async () => {
+        try {
+            const { data } = await api.get('/vendors/transport');
+            if (data.success) setVendors(data.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchAssets();
         fetchCategories();
         fetchOperators();
+        fetchVendors();
     }, []);
 
     const handleAdd = async (e: any) => {
@@ -130,7 +141,7 @@ const MachineDetails = () => {
 
             const method = editItem ? 'put' : 'post';
 
-            const { data: json } = await (api as any)[method](endpoint, { ...newItem, type: 'Machine' });
+            const { data: json } = await (api as any)[method](endpoint, { ...newItem, type: 'Machine', contractor: newItem.contractor || null });
             if (json.success) {
                 showToast(editItem ? 'Machine details updated!' : 'Machine registered successfully!', 'success');
                 resetForm();
@@ -150,7 +161,7 @@ const MachineDetails = () => {
             currentCondition: '', operatorName: '', ownerName: '', driverName: '',
             rcInsuranceDetails: '', permitExpiryDate: '', mileageDetails: '',
             ownershipType: activeTab === 'own' ? 'Own' : 'Contract',
-            contractName: ''
+            contractor: ''
         });
         setEditItem(null);
         setFormView(false);
@@ -289,7 +300,7 @@ const MachineDetails = () => {
             permitExpiryDate: item.permitExpiryDate ? new Date(item.permitExpiryDate).toISOString().split('T')[0] : '',
             mileageDetails: item.mileageDetails || '',
             ownershipType: item.ownershipType || 'Own',
-            contractName: item.contractName || ''
+            contractor: item.contractor?._id || (typeof item.contractor === 'string' ? item.contractor : '')
         });
         setFormView(true);
         setDetailsView(null);
@@ -367,15 +378,19 @@ const MachineDetails = () => {
                                 </div>
                                 {newItem.ownershipType === 'Contract' && (
                                     <div>
-                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Contractor Name</label>
-                                        <input
-                                            type="text"
-                                            className="form-input border-2 font-bold rounded-xl h-12 border-warning/20"
-                                            value={newItem.contractName}
-                                            onChange={(e) => setNewItem({ ...newItem, contractName: e.target.value })}
-                                            placeholder="Enter vendor/company name..."
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Select Transport Vendor</label>
+                                        <select
+                                            name="contractor"
+                                            className="form-select border-2 font-bold rounded-xl h-12 border-warning/20 shadow-sm"
+                                            value={newItem.contractor}
+                                            onChange={(e) => setNewItem({ ...newItem, contractor: e.target.value })}
                                             required
-                                        />
+                                        >
+                                            <option value="">Select Vendor...</option>
+                                            {vendors.map(v => (
+                                                <option key={v._id} value={v._id}>{v.name} {v.companyName ? `(${v.companyName})` : ''}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 )}
                             </div>
@@ -571,7 +586,7 @@ const MachineDetails = () => {
                                             </div>
                                             <div>
                                                 <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Asset Owner</span>
-                                                <span className="text-sm font-black">{detailsView.ownerName || 'N/A'}</span>
+                                                <span className="text-sm font-black">{detailsView.ownershipType === 'Own' ? (detailsView.ownerName || 'Own Asset') : (detailsView.contractor?.name || 'Rental Asset')}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -739,15 +754,23 @@ const MachineDetails = () => {
                                     onClick={() => setActiveTab('own')}
                                     className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all ${activeTab === 'own' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white-dark hover:text-primary transition-colors'}`}
                                 >
-                                    Own Assets
+                                    Own Fleet
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('contract')}
                                     className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all ${activeTab === 'contract' ? 'bg-warning text-white shadow-lg shadow-warning/20' : 'text-white-dark hover:text-warning transition-colors'}`}
                                 >
-                                    Rentals
+                                    Contractor Fleet
                                 </button>
                             </div>
+                            {activeTab === 'contract' && (
+                                <Link
+                                    href="/vendors/transport"
+                                    className="btn btn-outline-warning shadow-[0_10px_20px_rgba(230,165,11,0.3)] rounded-xl py-3 px-8 font-black uppercase tracking-widest text-xs flex items-center gap-2"
+                                >
+                                    <span>⚙️</span> Transport Vendors
+                                </Link>
+                            )}
                             <button
                                 onClick={() => {
                                     resetForm();
@@ -775,12 +798,12 @@ const MachineDetails = () => {
                                         <div className={`p-5 flex items-center justify-between ${activeTab === 'own' ? 'bg-primary/10' : 'bg-warning/10'}`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`p-2 rounded-xl text-white shadow-lg ${activeTab === 'own' ? 'bg-primary shadow-primary/20' : 'bg-warning shadow-warning/20'}`}>
-                                                    <IconSettings className="w-5 h-5" />
+                                                    <IconMenuWidgets className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <span className={`font-black text-[10px] uppercase tracking-[0.2em] block leading-none ${activeTab === 'own' ? 'text-primary' : 'text-warning'}`}>{asset.category || 'Equipment'}</span>
+                                                    <span className={`font-black text-[10px] uppercase tracking-[0.2em] block leading-none ${activeTab === 'own' ? 'text-primary' : 'text-warning'}`}>{asset.category || 'Machine'}</span>
                                                     <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded mt-1 inline-block ${activeTab === 'own' ? 'bg-success text-white' : 'bg-warning text-white'}`}>
-                                                        {activeTab === 'own' ? 'Internal Asset' : asset.contractName || 'Vendor Asset'}
+                                                        {activeTab === 'own' ? 'Own Fleet' : asset.contractor?.name || 'Contractor'}
                                                     </span>
                                                 </div>
                                             </div>
