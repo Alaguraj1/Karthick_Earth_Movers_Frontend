@@ -47,7 +47,8 @@ const LabourListPage = () => {
         search: '',
         workType: '',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        status: 'active'
     });
 
     const fetchData = async () => {
@@ -173,6 +174,20 @@ const LabourListPage = () => {
         setFormView(true);
     };
 
+    const toggleStatus = async (item: any) => {
+        try {
+            const newStatus = item.status === 'active' ? 'inactive' : 'active';
+            const { data: json } = await api.put(`/labour/${item._id}`, { status: newStatus });
+            if (json.success) {
+                showToast(`Labour profile ${newStatus === 'active' ? 'activated' : 'inactivated'} successfully`, 'success');
+                fetchData();
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Error updating status', 'error');
+        }
+    };
+
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
@@ -209,6 +224,9 @@ const LabourListPage = () => {
             if (filters.startDate && joinDate < filters.startDate) return false;
             if (filters.endDate && joinDate > filters.endDate) return false;
         }
+
+        // Status filter
+        if (filters.status && item.status !== filters.status) return false;
 
         return true;
     });
@@ -390,6 +408,13 @@ const LabourListPage = () => {
                                         </div>
                                     </>
                                 )}
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Account Status (நிலை)</label>
+                                    <select name="status" className="form-select font-bold rounded-xl h-11" value={formData.status} onChange={handleChange}>
+                                        <option value="active">Active (வேலையில் உள்ளார்)</option>
+                                        <option value="inactive">Inactive (வேலையில் இல்லை)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -412,7 +437,7 @@ const LabourListPage = () => {
                 </div>
             ) : (
                 <div className="panel p-0 border-none shadow-none bg-transparent">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5 bg-primary/10 p-4 rounded-xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-5 bg-primary/10 p-4 rounded-xl items-end">
                         <div>
                             <label className="text-[10px] font-black uppercase text-white-dark mb-1 block ml-1">Search Employee Name</label>
                             <input
@@ -454,6 +479,27 @@ const LabourListPage = () => {
                                 onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
                             />
                         </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-white-dark mb-1 block ml-1">Account Status</label>
+                            <select
+                                className="form-select rounded-xl border-none shadow-sm font-bold text-xs h-10"
+                                value={filters.status}
+                                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                            >
+                                <option value="">All Status</option>
+                                <option value="active">Active (Active Only)</option>
+                                <option value="inactive">Inactive (Resigned/Left)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button
+                                className="btn btn-outline-danger btn-sm flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[10px] h-10 rounded-xl hover:bg-danger hover:text-white transition-all w-full shadow-sm bg-white dark:bg-dark"
+                                onClick={() => setFilters({ search: '', workType: '', startDate: '', endDate: '', status: 'active' })}
+                            >
+                                <IconTrashLines className="w-4 h-4" />
+                                Clear
+                            </button>
+                        </div>
                     </div>
 
                     <div className="panel">
@@ -467,6 +513,7 @@ const LabourListPage = () => {
                                         <th className="font-black uppercase tracking-widest text-[10px] py-4">Mobile</th>
                                         {canSeeFinancials && <th className="font-black uppercase tracking-widest text-[10px] py-4">Wage Rate</th>}
                                         <th className="font-black uppercase tracking-widest text-[10px] py-4">Join Date</th>
+                                        <th className="text-center font-black uppercase tracking-widest text-[10px] py-4 whitespace-nowrap">Status (நிலை)</th>
                                         <th className="text-center font-black uppercase tracking-widest text-[10px] py-4">Actions</th>
                                     </tr>
                                 </thead>
@@ -500,7 +547,16 @@ const LabourListPage = () => {
                                                         <div className="text-[9px] text-primary uppercase font-bold tracking-widest mt-0.5">{item.wageType === 'Daily' ? 'Per Day' : 'Per Month'}</div>
                                                     </td>
                                                 )}
-                                                <td className="py-4">{new Date(item.joiningDate).toLocaleDateString()}</td>
+                                                <td className="py-4 font-medium">{new Date(item.joiningDate).toLocaleDateString()}</td>
+                                                <td className="text-center py-4">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleStatus(item)}
+                                                        className={`badge rounded-lg font-black text-[9px] uppercase tracking-widest px-2.5 py-1.5 transition-all hover:scale-105 ${item.status === 'active' ? 'badge-outline-success bg-success/5' : 'badge-outline-danger bg-danger/5'}`}
+                                                    >
+                                                        {item.status === 'active' ? 'ACTIVE' : 'INACTIVE'}
+                                                    </button>
+                                                </td>
                                                 <td className="text-center py-4">
                                                     <div className="flex justify-center items-center gap-2">
                                                         <Link href={`/labour/list/${item._id}`} className="p-2 rounded-xl text-info hover:bg-info/10 transition-all">

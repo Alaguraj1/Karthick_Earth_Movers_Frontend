@@ -952,6 +952,22 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
                                 <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
                             </div>
+                            <div className="lg:col-span-6 flex justify-end">
+                                <button
+                                    className="btn btn-outline-danger btn-sm flex items-center gap-2 font-bold uppercase tracking-widest text-[10px] py-2 px-4 rounded-xl hover:bg-danger hover:text-white transition-all w-full sm:w-auto"
+                                    onClick={() => {
+                                        setFilterVehicle('');
+                                        setFilterMaintenanceType('');
+                                        setFilterVendor('');
+                                        setFilterStartDate('');
+                                        setFilterEndDate('');
+                                        setSearchTerm('');
+                                    }}
+                                >
+                                    <IconTrashLines className="w-4 h-4" />
+                                    Clear Filters
+                                </button>
+                            </div>
                         </div>
                     )}
                     {/* Filter Panel (Specifically for Transport Charges) */}
@@ -1709,11 +1725,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     <>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">Vendor / Workshop Name (பட்டறை பெயர்)</label>
-                                            <input type="text" name="vendorName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20" value={formData.vendorName} onChange={handleChange} placeholder="e.g. ABC Service Centre" />
+                                            <input type="text" name="vendorName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20" value={formData.vendorName} onChange={handleChange} />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Bill / Invoice Number</label>
-                                            <input type="text" name="billNumber" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.billNumber} onChange={handleChange} placeholder="e.g. INV-1234" />
+                                            <input type="text" name="billNumber" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.billNumber} onChange={handleChange} />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Maintenance Type</label>
@@ -1734,7 +1750,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Current Meter Reading (Hrs)</label>
-                                            <input type="text" name="meterReading" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.meterReading} onChange={handleChange} placeholder="e.g. 4500.5" />
+                                            <input type="text" name="meterReading" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.meterReading} onChange={handleChange} />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">Planned Next Service (அடுத்த சர்வீஸ்)</label>
