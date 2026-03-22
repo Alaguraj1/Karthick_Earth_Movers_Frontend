@@ -54,6 +54,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const [searchTerm, setSearchTerm] = useState('');
     const [filterVehicle, setFilterVehicle] = useState('');
     const [filterAssetType, setFilterAssetType] = useState('');
+    const [filterVehicleType, setFilterVehicleType] = useState('');
     const [filterVendor, setFilterVendor] = useState('');
     const [filterLabour, setFilterLabour] = useState('');
     const [filterWorkType, setFilterWorkType] = useState('');
@@ -278,16 +279,12 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const uniqueVehicleTypes = Array.from(new Set(vehicles
         .filter(v => {
-            // Maintenance should ONLY show Own assets (சொந்த சொத்துக்கள் மட்டும்)
             if (category === 'Machine Maintenance') {
                 const isOwn = v.ownershipType === 'Own' || !v.ownershipType;
                 if (!isOwn) return false;
-
-                if (formData.assetType === 'Machine') return v.type === 'Machine';
-                if (formData.assetType === 'Vehicle') return v.type === 'Vehicle';
-                return true;
             }
 
+            if (formData.assetType) return v.type === formData.assetType;
             if (category === 'Transport Charges') return v.type === 'Vehicle';
             return true;
         })
@@ -339,7 +336,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     const onlyMatch = matches[0];
                     const num = onlyMatch.vehicleNumber || onlyMatch.registrationNumber || '';
                     updated.vehicleNumber = num;
-                    updated.driverName = onlyMatch.driverName || '';
+                    updated.driverName = onlyMatch.driverName || onlyMatch.operatorName || '';
                     updated.vehicleOrMachine = value + (num ? ` (${num})` : '');
                 }
             }
@@ -348,7 +345,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             if (name === 'vehicleNumber') {
                 const selected = vehicles.find(v => (v.vehicleNumber === value || v.registrationNumber === value) && (prev.assetType ? v.type === prev.assetType : true));
                 if (selected) {
-                    updated.driverName = selected.driverName || '';
+                    updated.driverName = selected.driverName || selected.operatorName || '';
                 }
                 updated.vehicleOrMachine = (updated.vehicleType || prev.vehicleType) + (value ? ` (${value})` : '');
             }
@@ -761,28 +758,74 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                         </button>
                     </div>
 
-                    {/* Filter Panel (Specifically for Diesel/Fuel) */}
                     {category === 'Diesel' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end bg-primary/5 p-4 rounded-xl mb-5">
                             <div>
-                                <label className="text-[10px] font-bold uppercase mb-1 block">General Search</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Search..."
-                                        className="form-input ltr:pr-10 rtl:pl-10 h-10"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                    <IconSearch className="w-4 h-4 absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-white-dark" />
-                                </div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Asset Type</label>
+                                <select className="form-select h-10" value={filterAssetType} onChange={(e) => { setFilterAssetType(e.target.value); setFilterVehicleType(''); setFilterVehicle(''); }}>
+                                    <option value="">All Types</option>
+                                    <option value="Machine">Machine (இயந்திரம்)</option>
+                                    <option value="Vehicle">Vehicle (வாகனம்)</option>
+                                </select>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold uppercase mb-1 block">Vehicle/Machine</label>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Category Type</label>
+                                <select className="form-select h-10" value={filterVehicleType} onChange={(e) => { setFilterVehicleType(e.target.value); setFilterVehicle(''); }}>
+                                    <option value="">All Categories</option>
+                                    {Array.from(new Set(
+                                        expenses
+                                            .filter(exp => {
+                                                if (!filterAssetType) return true;
+                                                if (exp.assetType === filterAssetType) return true;
+
+                                                const vNum = exp.vehicleNumber || exp.vehicleOrMachine;
+                                                const vType = exp.vehicleType;
+
+                                                const match = vehicles.find(v =>
+                                                    (v.vehicleNumber && vNum?.includes(v.vehicleNumber)) ||
+                                                    (v.registrationNumber && vNum?.includes(v.registrationNumber)) ||
+                                                    (v.category === vType || v.name === vType)
+                                                );
+
+                                                return match ? match.type === filterAssetType : false;
+                                            })
+                                            .map(exp => {
+                                                if (exp.vehicleType) return exp.vehicleType;
+                                                const vNum = exp.vehicleNumber || exp.vehicleOrMachine;
+                                                const asset = vehicles.find(v => (v.vehicleNumber && vNum?.includes(v.vehicleNumber)) || (v.registrationNumber && vNum?.includes(v.registrationNumber)));
+                                                return asset ? (asset.category || asset.name) : (exp.vehicleOrMachine?.split(' (')[0]);
+                                            })
+                                    )).filter(Boolean).map(t => (
+                                        <option key={t as string} value={t as string}>{t as string}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Specific Number / ID</label>
                                 <select className="form-select h-10" value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)}>
-                                    <option value="">All Assets</option>
-                                    {Array.from(new Set(expenses.map(exp => exp.vehicleOrMachine))).filter(Boolean).map(v => (
-                                        <option key={v} value={v}>{v}</option>
+                                    <option value="">All Numbers</option>
+                                    {Array.from(new Set(
+                                        expenses
+                                            .filter(exp => {
+                                                const vNum = exp.vehicleNumber || exp.vehicleOrMachine;
+                                                const vType = exp.vehicleType || exp.vehicleOrMachine?.split(' (')[0];
+
+                                                const asset = vehicles.find(v =>
+                                                    (v.vehicleNumber && vNum?.includes(v.vehicleNumber)) ||
+                                                    (v.registrationNumber && vNum?.includes(v.registrationNumber)) ||
+                                                    (v.category === vType || v.name === vType)
+                                                );
+                                                const actualAssetType = exp.assetType || (asset ? asset.type : '');
+
+                                                const matchesAssetType = !filterAssetType || actualAssetType === filterAssetType;
+
+                                                const currentExpType = exp.vehicleType || exp.vehicleOrMachine?.split(' (')[0];
+                                                const matchesVehicleType = !filterVehicleType || currentExpType === filterVehicleType;
+                                                return matchesAssetType && matchesVehicleType;
+                                            })
+                                            .map(exp => exp.vehicleNumber || exp.vehicleOrMachine?.match(/\((.*?)\)/)?.[1] || exp.vehicleOrMachine)
+                                    )).filter(Boolean).map(v => (
+                                        <option key={v as string} value={v as string}>{v as string}</option>
                                     ))}
                                 </select>
                             </div>
@@ -794,6 +837,23 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
                                 <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+                            </div>
+                            <div className="flex items-center">
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-danger w-full h-10 rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2 hover:bg-danger hover:text-white transition-all transform active:scale-95"
+                                    onClick={() => {
+                                        setFilterAssetType('');
+                                        setFilterVehicleType('');
+                                        setFilterVehicle('');
+                                        setFilterStartDate('');
+                                        setFilterEndDate('');
+                                        setSearchTerm('');
+                                    }}
+                                >
+                                    <IconTrashLines className="w-4 h-4" />
+                                    Clear Filters
+                                </button>
                             </div>
                         </div>
                     )}
@@ -1045,10 +1105,12 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Date</th>
                                     {category === 'Diesel' ? (
                                         <>
-                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Vehicle/Machine</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Asset Type</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Category</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Vehicle No</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Litres</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Rate</th>
-                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Meter</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Meter</th>
                                         </>
                                     ) : category === 'Explosive Cost' ? (
                                         <>
@@ -1097,7 +1159,6 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         </>
                                     )}
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Amount</th>
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Source</th>
                                     <th className="text-center font-black uppercase tracking-widest text-[10px] py-4">Action</th>
                                 </tr>
                             </thead>
@@ -1127,7 +1188,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                             officeType.toLowerCase().includes(searchTerm.toLowerCase());
 
-                                        const matchesVehicle = !filterVehicle || vNum === filterVehicle;
+                                        const matchesVehicle = !filterVehicle || vNum.toLowerCase().includes(filterVehicle.toLowerCase());
                                         const matchesVendor = !filterVendor || vendor === filterVendor;
                                         const matchesLabour = !filterLabour || lName === filterLabour;
                                         const matchesWorkType = !filterWorkType || wType === filterWorkType;
@@ -1135,9 +1196,17 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         const matchesOfficeCategory = !filterOfficeCategory || officeType === filterOfficeCategory;
 
                                         // Try to find asset type if not directly in exp
-                                        const asset = vehicles.find(v => (v.vehicleNumber === vNum || v.registrationNumber === vNum));
+                                        const derivedType = exp.vehicleType || exp.vehicleOrMachine?.split(' (')[0];
+                                        const asset = vehicles.find(v =>
+                                            (v.vehicleNumber && vNum?.includes(v.vehicleNumber)) ||
+                                            (v.registrationNumber && vNum?.includes(v.registrationNumber)) ||
+                                            (v.category === derivedType || v.name === derivedType)
+                                        );
                                         const actualAssetType = exp.assetType || (asset ? asset.type : '');
                                         const matchesAssetType = !filterAssetType || actualAssetType === filterAssetType;
+
+                                        const currentExpType = exp.vehicleType || exp.vehicleOrMachine?.split(' (')[0];
+                                        const matchesVehicleType = !filterVehicleType || currentExpType === filterVehicleType;
                                         const matchesMaintenanceType = !filterMaintenanceType || exp.maintenanceType === filterMaintenanceType;
                                         const matchesSupplier = !filterSupplier || exp.supplierName === filterSupplier;
                                         const matchesSite = !filterSite || exp.site === filterSite;
@@ -1147,7 +1216,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         const matchesStart = !filterStartDate || expDate >= filterStartDate;
                                         const matchesEnd = !filterEndDate || expDate <= filterEndDate;
 
-                                        return matchesSearch && matchesVehicle && matchesAssetType && matchesMaintenanceType && matchesVendor &&
+                                        return matchesSearch && matchesVehicle && matchesAssetType && matchesVehicleType && matchesMaintenanceType && matchesVendor &&
                                             matchesSupplier && matchesSite && matchesTransportType &&
                                             matchesLabour && matchesWorkType && matchesWageType && matchesOfficeCategory &&
                                             matchesStart && matchesEnd;
@@ -1160,136 +1229,146 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         return <tr><td colSpan={10} className="text-center">No records found matching your filters.</td></tr>;
                                     }
 
-                                    return filtered.map((expense: any) => (
-                                        <tr key={expense._id} className="group hover:bg-primary/5 transition-all">
-                                            <td className="py-2">{new Date(expense.date).toLocaleDateString()}</td>
-                                            {category === 'Diesel' ? (
-                                                <>
-                                                    <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
-                                                    <td className="py-2">{expense.quantity || '-'}</td>
-                                                    <td className="py-2">₹{expense.rate || '-'}</td>
-                                                    <td className="py-2">{expense.meterReading || '-'}</td>
-                                                </>
-                                            ) : category === 'Explosive Cost' ? (
-                                                <>
-                                                    <td className="py-2">{expense.site || '-'}</td>
-                                                    <td className="py-2"><span className="badge badge-outline-warning">{expense.explosiveType || '-'}</span></td>
-                                                    <td className="py-2">{expense.quantity} {expense.unit} @ ₹{expense.rate}</td>
-                                                    <td className="py-2">
-                                                        <div className="font-semibold">{expense.supplierName || '-'}</div>
-                                                        {expense.licenseNumber && <div className="text-[10px] text-white-dark">Lic: {expense.licenseNumber}</div>}
-                                                    </td>
-                                                    <td className="py-2">{expense.supervisorName || '-'}</td>
-                                                </>
-                                            ) : category === 'Transport Charges' ? (
-                                                <>
-                                                    <td className="py-2"><span className="badge badge-outline-secondary">{expense.transportType || '-'}</span></td>
-                                                    <td className="text-xs py-2">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-primary font-medium">{expense.fromLocation || '-'}</span>
-                                                            <span className="text-white-dark">to {expense.toLocation || '-'}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
-                                                    <td className="text-xs italic">{expense.loadDetails || '-'}</td>
-                                                    <td className="py-2">{expense.quantity || '1'} @ ₹{expense.rate || '0'}</td>
-                                                </>
-                                            ) : category === 'Machine Maintenance' ? (
-                                                <>
-                                                    <td className="py-2">
-                                                        <div className="font-bold">{expense.vehicleOrMachine || '-'}</div>
-                                                    </td>
-                                                    <td className="py-2 text-xs">
-                                                        <div className="font-medium text-primary">{expense.vendorName || '-'}</div>
-                                                        {expense.billNumber && <div className="text-[10px] text-white-dark">Bill: {expense.billNumber}</div>}
-                                                    </td>
-                                                    <td className="py-2"><span className="badge badge-outline-info">{expense.maintenanceType || '-'}</span></td>
-                                                    <td className="py-2">₹{expense.sparePartsCost || '0'}</td>
-                                                    <td className="py-2">₹{expense.labourCharge || '0'}</td>
-                                                    <td className="py-2">{expense.meterReading || '-'} Hrs</td>
-                                                </>
-                                            ) : category === 'Labour Wages' ? (
-                                                <>
-                                                    <td className="py-2">
-                                                        <div className="font-bold flex items-center gap-2">
-                                                            {expense.labourName || '-'}
-                                                            {expense.salaryMonth && (
-                                                                <span className="badge badge-outline-primary py-0.5 px-2 text-[10px] font-black uppercase ring-1 ring-primary/20">
-                                                                    Work: {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][expense.salaryMonth - 1]} {expense.salaryYear}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-2"><span className="badge badge-outline-info">{expense.workType || 'General'}</span></td>
-                                                    <td className="py-2">{expense.wageType || '-'}</td>
-                                                    <td className="py-2">
-                                                        <div className="font-bold">{expense.quantity || '-'} Days</div>
-                                                        {expense.otAmount > 0 && <div className="text-[10px] text-info font-black">OT: ₹{expense.otAmount}</div>}
-                                                    </td>
-                                                    <td className="font-bold text-success py-2">
-                                                        <div>₹{expense.netPay?.toLocaleString() || '0'}</div>
-                                                        {expense.advanceDeduction > 0 && <div className="text-[10px] text-danger opacity-60">Adv: ₹{expense.advanceDeduction}</div>}
-                                                    </td>
-                                                </>
-                                            ) : category === 'Office & Misc' ? (
-                                                <>
-                                                    <td className="py-2"><span className="badge badge-outline-primary">{expense.officeExpenseType || '-'}</span></td>
-                                                    <td className="py-2">{expense.paidTo || '-'}</td>
-                                                    <td className="py-2">{expense.billNumber || '-'}</td>
-                                                    <td className="text-xs py-2">{expense.description || '-'}</td>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
-                                                    <td className="py-2">{expense.description || '-'}</td>
-                                                </>
-                                            )}
-                                            <td className="font-bold text-primary py-2 text-lg min-w-[120px]">₹{expense.amount.toLocaleString()}</td>
-                                            <td className="py-2">
-                                                {expense.sourceModel !== 'Manual' ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="badge badge-outline-warning text-[8px] py-0 px-1">{expense.sourceModel}</span>
-                                                        <span className="text-[9px] text-white-dark mt-1 font-bold">{expense.referenceId}</span>
-                                                    </div>
+                                    return filtered.map((expense: any) => {
+                                        const vNum = expense.vehicleNumber || expense.vehicleOrMachine || '';
+                                        const derivedType = expense.vehicleType || expense.vehicleOrMachine?.split(' (')[0];
+                                        const asset = vehicles.find(v =>
+                                            (v.vehicleNumber && vNum?.includes(v.vehicleNumber)) ||
+                                            (v.registrationNumber && vNum?.includes(v.registrationNumber)) ||
+                                            (v.category === derivedType || v.name === derivedType)
+                                        );
+                                        const actualAssetType = expense.assetType || (asset ? asset.type : '');
+                                        const currentExpType = expense.vehicleType || expense.vehicleOrMachine?.split(' (')[0];
+
+                                        return (
+                                            <tr key={expense._id} className="group hover:bg-primary/5 transition-all">
+                                                <td className="py-2">{new Date(expense.date).toLocaleDateString()}</td>
+                                                {category === 'Diesel' ? (
+                                                    <>
+                                                        <td className="py-2 text-center text-[10px]">
+                                                            <span className={`badge ${actualAssetType === 'Machine' ? 'badge-outline-warning' : 'badge-outline-primary'} py-0.5 px-2`}>
+                                                                {actualAssetType || '-'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-2 text-xs font-black uppercase text-secondary">{currentExpType || '-'}</td>
+                                                        <td className="py-2 font-black text-primary">
+                                                            {expense.vehicleNumber || expense.vehicleOrMachine?.match(/\((.*?)\)/)?.[1] || expense.vehicleOrMachine?.split(' (')[1]?.replace(')', '') || expense.vehicleOrMachine || '-'}
+                                                        </td>
+                                                        <td className="py-2">{expense.quantity || '-'}</td>
+                                                        <td className="py-2 font-black">₹{expense.rate || '-'}</td>
+                                                        <td className="py-2 text-center">{expense.meterReading || '-'}</td>
+                                                    </>
+                                                ) : category === 'Explosive Cost' ? (
+                                                    <>
+                                                        <td className="py-2">{expense.site || '-'}</td>
+                                                        <td className="py-2"><span className="badge badge-outline-warning">{expense.explosiveType || '-'}</span></td>
+                                                        <td className="py-2">{expense.quantity} {expense.unit} @ ₹{expense.rate}</td>
+                                                        <td className="py-2">
+                                                            <div className="font-semibold">{expense.supplierName || '-'}</div>
+                                                            {expense.licenseNumber && <div className="text-[10px] text-white-dark">Lic: {expense.licenseNumber}</div>}
+                                                        </td>
+                                                        <td className="py-2">{expense.supervisorName || '-'}</td>
+                                                    </>
+                                                ) : category === 'Transport Charges' ? (
+                                                    <>
+                                                        <td className="py-2"><span className="badge badge-outline-secondary">{expense.transportType || '-'}</span></td>
+                                                        <td className="text-xs py-2">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-primary font-medium">{expense.fromLocation || '-'}</span>
+                                                                <span className="text-white-dark">to {expense.toLocation || '-'}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
+                                                        <td className="text-xs italic">{expense.loadDetails || '-'}</td>
+                                                        <td className="py-2">{expense.quantity || '1'} @ ₹{expense.rate || '0'}</td>
+                                                    </>
+                                                ) : category === 'Machine Maintenance' ? (
+                                                    <>
+                                                        <td className="py-2">
+                                                            <div className="font-bold">{expense.vehicleOrMachine || '-'}</div>
+                                                        </td>
+                                                        <td className="py-2 text-xs">
+                                                            <div className="font-medium text-primary">{expense.vendorName || '-'}</div>
+                                                            {expense.billNumber && <div className="text-[10px] text-white-dark">Bill: {expense.billNumber}</div>}
+                                                        </td>
+                                                        <td className="py-2"><span className="badge badge-outline-info">{expense.maintenanceType || '-'}</span></td>
+                                                        <td className="py-2">₹{expense.sparePartsCost || '0'}</td>
+                                                        <td className="py-2">₹{expense.labourCharge || '0'}</td>
+                                                        <td className="py-2">{expense.meterReading || '-'} Hrs</td>
+                                                    </>
+                                                ) : category === 'Labour Wages' ? (
+                                                    <>
+                                                        <td className="py-2">
+                                                            <div className="font-bold flex items-center gap-2">
+                                                                {expense.labourName || '-'}
+                                                                {expense.salaryMonth && (
+                                                                    <span className="badge badge-outline-primary py-0.5 px-2 text-[10px] font-black uppercase ring-1 ring-primary/20">
+                                                                        Work: {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][expense.salaryMonth - 1]} {expense.salaryYear}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-2"><span className="badge badge-outline-info">{expense.workType || 'General'}</span></td>
+                                                        <td className="py-2">{expense.wageType || '-'}</td>
+                                                        <td className="py-2">
+                                                            <div className="font-bold">{expense.quantity || '-'} Days</div>
+                                                            {expense.otAmount > 0 && <div className="text-[10px] text-info font-black">OT: ₹{expense.otAmount}</div>}
+                                                        </td>
+                                                        <td className="font-bold text-success py-2">
+                                                            <div>₹{expense.netPay?.toLocaleString() || '0'}</div>
+                                                            {expense.advanceDeduction > 0 && <div className="text-[10px] text-danger opacity-60">Adv: ₹{expense.advanceDeduction}</div>}
+                                                        </td>
+                                                    </>
+                                                ) : category === 'Office & Misc' ? (
+                                                    <>
+                                                        <td className="py-2"><span className="badge badge-outline-primary">{expense.officeExpenseType || '-'}</span></td>
+                                                        <td className="py-2">{expense.paidTo || '-'}</td>
+                                                        <td className="py-2">{expense.billNumber || '-'}</td>
+                                                        <td className="text-xs py-2">{expense.description || '-'}</td>
+                                                    </>
                                                 ) : (
-                                                    <span className="text-xs text-white-dark italic">Manual</span>
+                                                    <>
+                                                        <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
+                                                        <td className="py-2">{expense.description || '-'}</td>
+                                                    </>
                                                 )}
-                                            </td>
-                                            <td className="text-center py-2 flex flex-col items-center gap-1 justify-center">
-                                                {expense.billUrl && (
-                                                    <a href={`${(BASE_URL || '').replace('/api', '')}${expense.billUrl}`} target="_blank" className="text-primary hover:underline text-[10px]">
-                                                        View Bill
-                                                    </a>
-                                                )}
-                                                {expense.inputBillUrl && (
-                                                    <a href={`${(BASE_URL || '').replace('/api', '')}${expense.inputBillUrl}`} target="_blank" className="text-info hover:underline text-[10px] font-bold">
-                                                        Input Bill
-                                                    </a>
-                                                )}
-                                                {expense.outputBillUrl && (
-                                                    <a href={`${(BASE_URL || '').replace('/api', '')}${expense.outputBillUrl}`} target="_blank" className="text-success hover:underline text-[10px] font-bold">
-                                                        Output Bill
-                                                    </a>
-                                                )}
-                                                <div className="flex justify-center items-center gap-2 mt-1">
-                                                    {(expense.sourceModel === 'Manual' || !expense.sourceModel) && canEditRecord(currentUser, expense.createdAt || expense.date) ? (
-                                                        <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditModal(expense)}>
-                                                            <IconEdit className="h-4 w-4" />
-                                                        </button>
-                                                    ) : (
-                                                        <span className="text-[10px] text-white-dark italic">
-                                                            {expense.sourceModel === 'Trip' ? 'System Entry' : 'Locked'}
-                                                        </span>
+                                                <td className="font-bold text-primary py-2 text-lg min-w-[120px]">₹{expense.amount.toLocaleString()}</td>
+                                                <td className="text-center py-2 flex flex-col items-center gap-1 justify-center">
+                                                    {expense.billUrl && (
+                                                        <a href={`${(BASE_URL || '').replace('/api', '')}${expense.billUrl}`} target="_blank" className="text-primary hover:underline text-[10px]">
+                                                            View Bill
+                                                        </a>
                                                     )}
-                                                    {isOwner && (
-                                                        <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
-                                                            <IconTrashLines className="h-4 w-4" />
-                                                        </button>
+                                                    {expense.inputBillUrl && (
+                                                        <a href={`${(BASE_URL || '').replace('/api', '')}${expense.inputBillUrl}`} target="_blank" className="text-info hover:underline text-[10px] font-bold">
+                                                            Input Bill
+                                                        </a>
                                                     )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ));
+                                                    {expense.outputBillUrl && (
+                                                        <a href={`${(BASE_URL || '').replace('/api', '')}${expense.outputBillUrl}`} target="_blank" className="text-success hover:underline text-[10px] font-bold">
+                                                            Output Bill
+                                                        </a>
+                                                    )}
+                                                    <div className="flex justify-center items-center gap-2 mt-1">
+                                                        {(expense.sourceModel === 'Manual' || !expense.sourceModel) && canEditRecord(currentUser, expense.createdAt || expense.date) ? (
+                                                            <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditModal(expense)}>
+                                                                <IconEdit className="h-4 w-4" />
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-[10px] text-white-dark italic">
+                                                                {expense.sourceModel === 'Trip' ? 'System Entry' : 'Locked'}
+                                                            </span>
+                                                        )}
+                                                        {isOwner && (
+                                                            <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => openDeleteModal(expense)}>
+                                                                <IconTrashLines className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    });
                                 })()}
                             </tbody>
                         </table>
@@ -1329,7 +1408,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 </div>
                                 {['Diesel', 'Transport Charges', 'Machine Maintenance'].includes(category) && (
                                     <>
-                                        {category === 'Machine Maintenance' && (
+                                        {(category === 'Machine Maintenance' || category === 'Diesel') && (
                                             <div>
                                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">Asset Type (வாகன வகை)</label>
                                                 <select name="assetType" className="form-select border-2 font-bold rounded-xl h-12 border-primary transition-all" value={formData.assetType} onChange={handleChange} required>
@@ -1339,10 +1418,10 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 </select>
                                             </div>
                                         )}
-                                        {(category !== 'Machine Maintenance' || formData.assetType) && (
+                                        {(category !== 'Machine Maintenance' && category !== 'Diesel' || formData.assetType) && (
                                             <div>
                                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">
-                                                    {category === 'Transport Charges' ? 'Transport Vehicle Type' : (category === 'Machine Maintenance' && formData.assetType === 'Machine') ? 'Select Machine Name' : 'Category Type'}
+                                                    {category === 'Transport Charges' ? 'Transport Vehicle Type' : (formData.assetType === 'Machine') ? 'Select Machine Name' : 'Category Type'}
                                                 </label>
                                                 <select name="vehicleType" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.vehicleType} onChange={handleChange} required>
                                                     <option value="">Select Category</option>
