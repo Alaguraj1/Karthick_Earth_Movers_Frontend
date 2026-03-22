@@ -11,8 +11,13 @@ const getHeaders = () => {
     return headers;
 };
 
-const handleResponse = async (response: Response) => {
-    if (response.status === 401) {
+const handleResponse = async (response: Response, url?: string) => {
+    // Only redirect to /login on 401 for AUTHENTICATED routes.
+    // If the 401 comes from the login endpoint itself, just let the error
+    // propagate to the catch block so the form can show the error message
+    // without causing a hard page reload (window.location.href).
+    const isLoginEndpoint = url?.includes('/auth/login') || url?.includes('/auth/');
+    if (response.status === 401 && !isLoginEndpoint) {
         if (typeof window !== 'undefined') {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -32,6 +37,7 @@ const handleResponse = async (response: Response) => {
     return { data };
 };
 
+
 const api = {
     get: async (url: string, config?: any) => {
         let fullUrl = `${BASE_URL}${url}`;
@@ -43,7 +49,7 @@ const api = {
             method: 'GET',
             headers: getHeaders(),
         });
-        return handleResponse(response);
+        return handleResponse(response, fullUrl);
     },
     post: async (url: string, data?: any, config?: any) => {
         const fullUrl = `${BASE_URL}${url}`;
@@ -63,7 +69,7 @@ const api = {
             body,
         });
 
-        return handleResponse(response);
+        return handleResponse(response, fullUrl);
     },
     put: async (url: string, data?: any, config?: any) => {
         const fullUrl = `${BASE_URL}${url}`;
@@ -72,7 +78,7 @@ const api = {
             headers: getHeaders(),
             body: JSON.stringify(data),
         });
-        return handleResponse(response);
+        return handleResponse(response, fullUrl);
     },
     delete: async (url: string, config?: any) => {
         const fullUrl = `${BASE_URL}${url}`;
@@ -80,7 +86,7 @@ const api = {
             method: 'DELETE',
             headers: getHeaders(),
         });
-        return handleResponse(response);
+        return handleResponse(response, fullUrl);
     },
     patch: async (url: string, data?: any, config?: any) => {
         const fullUrl = `${BASE_URL}${url}`;
@@ -89,7 +95,7 @@ const api = {
             headers: getHeaders(),
             body: JSON.stringify(data),
         });
-        return handleResponse(response);
+        return handleResponse(response, fullUrl);
     },
 };
 

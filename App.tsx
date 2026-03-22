@@ -24,13 +24,16 @@ function App({ children }: PropsWithChildren) {
         initLocale(themeConfig.locale);
 
         setIsLoading(false);
-    }, [dispatch, initLocale, themeConfig.theme, themeConfig.menu, themeConfig.layout, themeConfig.rtlClass, themeConfig.animation, themeConfig.navbar, themeConfig.locale, themeConfig.semidark]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Run only once on mount — theme/locale settings are read from localStorage once at startup.
+    // DO NOT add themeConfig values here — it causes the Loading spinner to re-appear
+    // every time any Redux state changes (e.g. auth.loading during login), making it
+    // look like the page is reloading.
 
     return (
         <div
-            className={`${(themeConfig.sidebar && 'toggle-sidebar') || ''} ${themeConfig.menu} ${themeConfig.layout} ${
-                themeConfig.rtlClass
-            } main-section relative font-nunito text-sm font-normal antialiased`}
+            className={`${(themeConfig.sidebar && 'toggle-sidebar') || ''} ${themeConfig.menu} ${themeConfig.layout} ${themeConfig.rtlClass
+                } main-section relative font-nunito text-sm font-normal antialiased`}
         >
             {isLoading ? <Loading /> : children}
         </div>
