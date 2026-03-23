@@ -154,8 +154,8 @@ const Header = () => {
                 <div className="relative flex w-full items-center bg-white px-5 py-2.5 dark:bg-black">
                     <div className="horizontal-logo flex items-center justify-between ltr:mr-2 rtl:ml-2 lg:hidden">
                         <Link href={isOwner ? "/" : "/expenses/diesel"} className="main-logo flex shrink-0 items-center">
-                            <img className="inline w-10 rounded-lg ltr:-ml-1 rtl:-mr-1" src="/assets/images/logo.png" alt="logo" />
-                            <span className="hidden align-middle text-xl font-black transition-all duration-300 ltr:ml-2 rtl:mr-2 dark:text-white-light md:inline uppercase tracking-tighter">Karthick Earth Movers</span>
+                            <img className="inline w-14 rounded-lg ltr:-ml-1 rtl:-mr-1" src="/assets/images/logo.png" alt="logo" />
+                            {/* <span className="hidden align-middle text-xl font-black transition-all duration-300 ltr:ml-2 rtl:mr-2 dark:text-white-light md:inline uppercase tracking-tighter">Karthick Earth Movers</span> */}
                         </Link>
                         <button
                             type="button"

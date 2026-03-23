@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
@@ -69,10 +69,11 @@ const InvoiceGeneration = () => {
             <head>
                 <title>Invoice ${selectedSale?.invoiceNumber}</title>
                 <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
                     body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #333; font-size: 14px; }
                     table { width: 100%; border-collapse: collapse; }
-                    @media print { body { padding: 15px; } }
+                    th { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    @media print { body { padding: 15px; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
                 </style>
             </head>
             <body>
@@ -113,32 +114,54 @@ const InvoiceGeneration = () => {
                         <button className="btn btn-outline-danger" onClick={() => setShowInvoice(false)}>
                             <IconX className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Back to List
                         </button>
-                        {currentUser?.role?.toLowerCase() === 'owner' && (
+                        {currentUser?.role?.toLowerCase() === 'owner' && (selectedSale.grandTotal || 0) > 0 && (
                             <button className="btn btn-primary" onClick={handlePrint}>
                                 <IconPrinter className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Print / Download PDF
                             </button>
                         )}
                     </div>
 
-                    <div id="invoice-print-area" className="panel">
+                    {/* ===== ZERO TOTAL GUARD ===== */}
+                    {(selectedSale.grandTotal || 0) === 0 ? (
+                        <div className="panel flex flex-col items-center justify-center py-16 text-center gap-4">
+                            <div className="text-6xl">🚫</div>
+                            <h4 className="text-xl font-bold text-danger">Invoice Cannot Be Generated</h4>
+                            <p className="text-white-dark max-w-sm">
+                                This sale has a <span className="font-bold text-danger">Grand Total of ₹0</span>.
+                                Please update the sale with valid quantities and rates before generating an invoice.
+                            </p>
+                            <button className="btn btn-outline-danger mt-2" onClick={() => setShowInvoice(false)}>
+                                <IconX className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Back to List
+                            </button>
+                        </div>
+                    ) : (
+
+
+                    <div id="invoice-print-area" className="panel" style={{ position: 'relative', overflow: 'hidden' }}>
+                        {/* ===== BACKGROUND WATERMARK LOGO ===== */}
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.06, pointerEvents: 'none', zIndex: 0 }}>
+                            <img src="/assets/images/logo.png" alt="watermark" style={{ width: '420px', height: '420px', objectFit: 'contain' }} />
+                        </div>
+
                         {/* ===== TOP HEADER: Company Logo + Address ===== */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                             <div>
                                 <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#e79b21', margin: 0 }}>INVOICE</h1>
                                 <p style={{ fontSize: '13px', color: '#555', marginTop: '4px', fontWeight: 'bold' }}>invoice no: {selectedSale.invoiceNumber}</p>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <p style={{ fontWeight: 'bold', fontSize: '15px', color: '#333' }}>Karthick Earth Movers</p>
-                                <p style={{ fontSize: '12px', color: '#888' }}>Stone Quarry & Crusher Unit</p>
-                                <p style={{ fontSize: '12px', color: '#888' }}>Tamil Nadu, India</p>
-                                <p style={{ fontSize: '12px', color: '#888' }}>karthickearthmovers@gmail.com</p>
+                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                <img src="/assets/images/logo.png" alt="Karthick Earth Movers" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
+                                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Stone Quarry & Transport Unit</p>
+                                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Tamil Nadu, India</p>
+                                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>karthickearthmovers@gmail.com</p>
+                                <p style={{ fontSize: '12px', color: '#e79b21', margin: 0, fontWeight: 'bold', letterSpacing: '0.5px' }}>GST: 33AVFPK9827P2ZV</p>
                             </div>
                         </div>
 
-                        <hr style={{ border: 'none', borderTop: '1px solid #e0e6ed', margin: '15px 0 25px 0' }} />
+                        <hr style={{ border: 'none', borderTop: '1px solid #e0e6ed', margin: '15px 0 25px 0', position: 'relative', zIndex: 1 }} />
 
                         {/* ===== DETAIL SECTION: Issue For | Invoice Info | Bank Info ===== */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' as any, gap: '20px', marginBottom: '30px' }}>
+                        <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '30px' }}>
                             {/* Issue For */}
                             <div style={{ flex: '1', minWidth: '250px' }}>
                                 <p style={{ fontSize: '11px', textTransform: 'uppercase', color: '#888', letterSpacing: '1px', marginBottom: '8px' }}>Issue For:</p>
@@ -297,6 +320,7 @@ const InvoiceGeneration = () => {
                             <p>Thank you for your business! — Karthick Earth Movers</p>
                         </div>
                     </div>
+                    )}
                 </div>
             ) : (
                 <>

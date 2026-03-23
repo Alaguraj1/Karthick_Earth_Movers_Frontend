@@ -93,10 +93,10 @@ const Sidebar = () => {
             <nav
                 className={`sidebar fixed bottom-0 top-0 z-50 h-full min-h-screen w-[260px] shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] transition-all duration-300 ${semidark ? 'text-white-dark' : ''}`}
             >
-                <div className="h-full bg-white dark:bg-black">
-                    <div className="flex items-center justify-between px-4 py-3">
+                <div className="h-full bg-white dark:bg-black flex flex-col">
+                    <div className="flex items-center justify-between px-4 py-3 shrink-0">
                         <Link href={isOwner ? "/" : "/expenses/diesel"} className="main-logo flex shrink-0 items-center">
-                            <img className="ml-[5px] w-24 flex-none rounded-lg" src="/assets/images/logo.png" alt="logo" />
+                            <img className="ml-[5px] w-40 flex-none rounded-lg" src="/assets/images/logo.png" alt="logo" />
                             {/* <span className="align-middle text-xl font-black ltr:ml-2 rtl:mr-2 dark:text-white-light lg:inline uppercase tracking-tighter">Karthick Earth Movers</span> */}
                         </Link>
 
@@ -108,7 +108,7 @@ const Sidebar = () => {
                             <IconCaretsDown className="m-auto rotate-90" />
                         </button>
                     </div>
-                    <PerfectScrollbar className="relative h-[calc(100vh-80px)]">
+                    <PerfectScrollbar className="relative flex-1 min-h-0">
                         <ul className="relative space-y-0.5 p-4 py-0 font-semibold">
                             <h2 className="-mx-4 mb-1 flex items-center bg-white-light/30 px-7 py-3 font-extrabold uppercase dark:bg-dark dark:bg-opacity-[0.08]">
                                 <IconMinus className="hidden h-5 w-4 flex-none" />

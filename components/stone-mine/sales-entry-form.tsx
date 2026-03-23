@@ -794,10 +794,16 @@ const SalesEntryForm = () => {
                                     return filtered.map((sale, idx) => (
                                         <tr key={sale._id} className={editId === sale._id ? 'bg-primary/5' : ''}>
                                             <td>{idx + 1}</td>
-                                            <td className="font-bold text-primary hover:underline">
-                                                <Link href={`/sales-billing/invoices?id=${sale._id}`} target="_blank">
-                                                    {sale.invoiceNumber}
-                                                </Link>
+                                            <td className="font-bold">
+                                                {(sale.grandTotal || 0) > 0 ? (
+                                                    <Link href={`/sales-billing/invoices?id=${sale._id}`} target="_blank" className="text-primary hover:underline">
+                                                        {sale.invoiceNumber}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="text-white-dark/50 cursor-not-allowed" title="Cannot generate invoice — total is ₹0">
+                                                        {sale.invoiceNumber}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
                                             <td className="font-semibold">{sale.customer?.name || '—'}</td>
@@ -820,7 +826,15 @@ const SalesEntryForm = () => {
                                                     </span>
                                                 </td>
                                             )}
-                                            {canSeeFinancials && <td className="!text-right font-bold">₹{sale.grandTotal?.toLocaleString()}</td>}
+                                            {canSeeFinancials && (
+                                                <td className="!text-right font-bold">
+                                                    {(sale.grandTotal || 0) === 0 ? (
+                                                        <span className="badge bg-danger/10 text-danger text-[10px]">₹0 – No Invoice</span>
+                                                    ) : (
+                                                        <>₹{sale.grandTotal?.toLocaleString()}</>
+                                                    )}
+                                                </td>
+                                            )}
                                             <td className="!text-center">
                                                 <span className={`badge ${sale.paymentStatus === 'Paid' ? 'bg-success/10 text-success'
                                                     : sale.paymentStatus === 'Partial' ? 'bg-warning/10 text-warning'

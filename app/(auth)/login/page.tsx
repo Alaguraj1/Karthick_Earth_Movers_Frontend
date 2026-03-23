@@ -23,8 +23,7 @@ const BoxedSignIn = () => {
                     <div className="relative flex flex-col justify-center rounded-2xl bg-black/65 px-8 py-16 backdrop-blur-2xl lg:min-h-[700px]">
                         <div className="mx-auto w-full max-w-[440px]">
                             <div className="mb-12 text-center">
-                                <h1 className="text-4xl font-extrabold uppercase !leading-snug text-white mb-3 tracking-tight">Karthick</h1>
-                                <p className="text-lg font-bold leading-normal text-primary uppercase tracking-[0.2em] mb-1">Earth Movers</p>
+                                <img src="/assets/images/logo.png" alt="Karthick Earth Movers" className="w-48 mx-auto mb-4" />
                                 <div className="h-1 w-20 bg-primary mx-auto mt-4 rounded-full"></div>
                             </div>
                             <ComponentsAuthLoginForm />
