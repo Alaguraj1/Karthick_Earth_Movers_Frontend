@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useEffect, useState, Fragment } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -353,6 +353,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                 const selected = vehicles.find(v => (v.vehicleNumber === value || v.registrationNumber === value) && (prev.assetType ? v.type === prev.assetType : true));
                 if (selected) {
                     updated.driverName = selected.driverName || selected.operatorName || '';
+                    updated.vendorName = selected.contractor?.companyName || selected.contractor?.name || selected.ownerName || '';
                 }
                 updated.vehicleOrMachine = (updated.vehicleType || prev.vehicleType) + (value ? ` (${value})` : '');
             }
@@ -1148,10 +1149,10 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     ) : category === 'Transport Charges' ? (
                                         <>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Type</th>
-                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Route (From-To)</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">To Location</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Vehicle</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Load</th>
-                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Qty/Rate</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Trips / Rate</th>
                                         </>
                                     ) : category === 'Machine Maintenance' ? (
                                         <>
@@ -1305,7 +1306,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                         </td>
                                                         <td className="py-2">{expense.vehicleOrMachine || '-'}</td>
                                                         <td className="text-xs italic">{expense.loadDetails || '-'}</td>
-                                                        <td className="py-2">{expense.quantity || '1'} @ ₹{expense.rate || '0'}</td>
+                                                        <td className="py-2">{expense.quantity || '1'} {category === 'Transport Charges' ? 'Trips' : ''} @ ₹{expense.rate || '0'}</td>
                                                     </>
                                                 ) : category === 'Machine Maintenance' ? (
                                                     <>
@@ -1486,19 +1487,34 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     </div>
                                 )}
                                 {category !== 'Labour Wages' && formData.vehicleNumber && (
-                                    <div>
-                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary text-secondary">
-                                            {formData.assetType === 'Machine' ? 'Operator Name' : 'Driver Name'}
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="driverName"
-                                            className="form-input border-2 font-bold rounded-xl h-12 border-secondary/20"
-                                            value={formData.driverName}
-                                            onChange={handleChange}
-                                            placeholder="Enter name..."
-                                        />
-                                    </div>
+                                    <>
+                                        <div>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary text-secondary">
+                                                {formData.assetType === 'Machine' ? 'Operator Name' : 'Driver Name'}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="driverName"
+                                                className="form-input border-2 font-bold rounded-xl h-12 border-secondary/20"
+                                                value={formData.driverName}
+                                                onChange={handleChange}
+                                                placeholder="Enter name..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">
+                                                {category === 'Transport Charges' ? 'Transport Owner / Vendor' : (category === 'Machine Maintenance' ? 'Vendor / Workshop Name' : 'Asset Owner / Vendor')}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="vendorName"
+                                                className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20"
+                                                value={formData.vendorName}
+                                                onChange={handleChange}
+                                                placeholder="Enter vendor name..."
+                                            />
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -1515,12 +1531,14 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     <>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">
-                                                {category === 'Diesel' ? 'Litres (லிட்டர்)' : category === 'Explosive Cost' ? 'Quantity' : 'Trips / Qty'}
+                                                {category === 'Diesel' ? 'Litres (லிட்டர்)' : category === 'Explosive Cost' ? 'Quantity' : 'Total Trips (பயணங்கள்)'}
                                             </label>
                                             <input type="number" name="quantity" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.quantity} onChange={handleChange} required step="any" min="0" />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Rate per Unit (விலை)</label>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">
+                                                {category === 'Transport Charges' ? 'Rate per Trip (விலை)' : 'Rate per Unit (விலை)'}
+                                            </label>
                                             <input type="number" name="rate" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.rate} onChange={handleChange} required step="any" min="0" />
                                         </div>
                                         {category === 'Diesel' && (
@@ -1602,14 +1620,6 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">To Location (எங்கு)</label>
                                             <input type="text" name="toLocation" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 text-primary font-medium" value={formData.toLocation} onChange={handleChange} placeholder="e.g. Client Site" />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Driver Name (ஓட்டுனர் பெயர்)</label>
-                                            <input type="text" name="driverName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.driverName} onChange={handleChange} placeholder="Enter name..." />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Transport Owner / Vendor</label>
-                                            <input type="text" name="vendorName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.vendorName} onChange={handleChange} placeholder="Siva Transports etc." />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Load Details (சுமை விவரம்)</label>
