@@ -8,7 +8,11 @@ import IconPrinter from '@/components/icon/icon-printer';
 import IconX from '@/components/icon/icon-x';
 import api from '@/utils/api';
 
-const InvoiceGeneration = () => {
+interface InvoiceGenerationProps {
+    mode?: 'invoice' | 'bill';
+}
+
+const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
     const searchParams = useSearchParams();
     const router = useRouter();
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -67,7 +71,7 @@ const InvoiceGeneration = () => {
         printWindow.document.write(`
             <html>
             <head>
-                <title>Invoice ${selectedSale?.invoiceNumber}</title>
+                <title>${mode === 'invoice' ? 'Invoice' : 'Bill'} ${selectedSale?.invoiceNumber?.replace('INV-', mode === 'invoice' ? 'INV-' : 'BILL-')}</title>
                 <style>
                     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
                     body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #333; font-size: 14px; }
@@ -101,8 +105,12 @@ const InvoiceGeneration = () => {
             {/* Page Header */}
             <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div>
-                    <h2 className="text-2xl font-bold dark:text-white-light">பில் உருவாக்குதல்</h2>
-                    <p className="text-white-dark text-sm mt-1">Invoice Generation — View and print invoices</p>
+                    <h2 className="text-2xl font-bold dark:text-white-light">
+                        {mode === 'invoice' ? 'பில் உருவாக்குதல்' : 'பில் பட்டியல் (Cash Bill)'}
+                    </h2>
+                    <p className="text-white-dark text-sm mt-1">
+                        {mode === 'invoice' ? 'Invoice Generation — View and print tax invoices' : 'Bill Generation — View and print non-tax bills'}
+                    </p>
                 </div>
             </div>
 
@@ -146,8 +154,12 @@ const InvoiceGeneration = () => {
                         {/* ===== TOP HEADER: Company Logo + Address ===== */}
                         <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                             <div>
-                                <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#e79b21', margin: 0 }}>INVOICE</h1>
-                                <p style={{ fontSize: '13px', color: '#555', marginTop: '4px', fontWeight: 'bold' }}>invoice no: {selectedSale.invoiceNumber}</p>
+                                <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#e79b21', margin: 0 }}>
+                                    {mode === 'invoice' ? 'INVOICE' : 'BILL'}
+                                </h1>
+                                <p style={{ fontSize: '13px', color: '#555', marginTop: '4px', fontWeight: 'bold' }}>
+                                    {mode === 'invoice' ? 'invoice no:' : 'bill no:'} {mode === 'invoice' ? selectedSale.invoiceNumber : selectedSale.invoiceNumber.replace('INV-', 'BILL-')}
+                                </p>
                             </div>
                             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                                 <img src="/assets/images/logo.png" alt="Karthick Earth Movers" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
@@ -248,9 +260,11 @@ const InvoiceGeneration = () => {
                                 <tr>
                                     <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>S.No</th>
                                     <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item Description</th>
+                                    {mode === 'invoice' && <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HSN CODE</th>}
                                     <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Qty</th>
                                     <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unit</th>
                                     <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rate (₹)</th>
+                                    {mode === 'invoice' && <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tax %</th>}
                                     <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount (₹)</th>
                                 </tr>
                             </thead>
@@ -259,9 +273,11 @@ const InvoiceGeneration = () => {
                                     <tr key={idx}>
                                         <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', fontSize: '13px' }}>{idx + 1}</td>
                                         <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', fontWeight: '600', fontSize: '13px' }}>{item.item}</td>
+                                        {mode === 'invoice' && <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '13px' }}>{item.hsnCode || '-'}</td>}
                                         <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '13px' }}>{item.quantity}</td>
                                         <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '13px' }}>{item.unit}</td>
                                         <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'right', fontSize: '13px' }}>₹{item.rate?.toLocaleString()}</td>
+                                        {mode === 'invoice' && <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'right', fontSize: '13px' }}>{item.gstPercentage || 0}%</td>}
                                         <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'right', fontWeight: 'bold', fontSize: '13px' }}>₹{item.amount?.toLocaleString()}</td>
                                     </tr>
                                 ))}
@@ -276,9 +292,21 @@ const InvoiceGeneration = () => {
                                     <span style={{ fontWeight: 'bold' }}>₹{selectedSale.subtotal?.toLocaleString()}</span>
                                 </div>
                                 {selectedSale.gstAmount > 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px' }}>
-                                        <span style={{ color: '#888' }}>GST ({selectedSale.gstPercentage}%)</span>
-                                        <span style={{ fontWeight: 'bold' }}>₹{selectedSale.gstAmount?.toLocaleString()}</span>
+                                    <div style={{ borderTop: '1px solid #eee', marginTop: '5px', paddingTop: '5px' }}>
+                                        {Array.from(new Set(selectedSale.items?.map((i: any) => i.gstPercentage) || [])).sort((a: any, b: any) => b - a).map((pct: any) => {
+                                            const amt = selectedSale.items?.filter((i: any) => i.gstPercentage === pct).reduce((s: number, i: any) => s + (i.gstAmount || 0), 0) || 0;
+                                            if (amt <= 0) return null;
+                                            return (
+                                                <div key={pct} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', fontSize: '12px', color: '#666' }}>
+                                                    <span style={{ fontStyle: 'italic' }}>GST {pct}%</span>
+                                                    <span>₹{amt.toLocaleString()}</span>
+                                                </div>
+                                            );
+                                        })}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px', borderTop: '1px solid #eee', marginTop: '5px' }}>
+                                            <span style={{ color: '#888' }}>Total Tax (GST)</span>
+                                            <span style={{ fontWeight: 'bold' }}>₹{selectedSale.gstAmount?.toLocaleString()}</span>
+                                        </div>
                                     </div>
                                 )}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px' }}>
@@ -292,7 +320,7 @@ const InvoiceGeneration = () => {
                                     </div>
                                 )}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 6px 0', fontSize: '18px', fontWeight: 'bold', color: '#e79b21', borderTop: '2px solid #e79b21', marginTop: '8px' }}>
-                                    <span>Grand Total</span>
+                                    <span>{mode === 'invoice' ? 'Grand Total' : 'Bill Total'}</span>
                                     <span>₹{selectedSale.grandTotal?.toLocaleString()}</span>
                                 </div>
                             </div>
@@ -343,17 +371,19 @@ const InvoiceGeneration = () => {
 
                     {/* Sales List */}
                     <div className="panel">
-                        <h5 className="text-lg font-bold dark:text-white-light mb-4">Invoice List</h5>
+                        <h5 className="text-lg font-bold dark:text-white-light mb-4">
+                            {mode === 'invoice' ? 'Tax Invoice List' : 'Normal Bill List'}
+                        </h5>
                         <div className="table-responsive">
                             <table className="table-hover">
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Invoice #</th>
+                                        <th>{mode === 'invoice' ? 'Invoice #' : 'Bill #'}</th>
                                         <th>Date</th>
                                         <th>Customer</th>
                                         <th>Items</th>
-                                        <th className="!text-right">Grand Total</th>
+                                        <th className="!text-right">Total</th>
                                         <th className="!text-center">Payment</th>
                                         <th className="!text-center">Status</th>
                                         <th className="!text-center">Action</th>
@@ -362,13 +392,22 @@ const InvoiceGeneration = () => {
                                 <tbody>
                                     {loading ? (
                                         <tr><td colSpan={9} className="text-center py-8 text-white-dark">Loading...</td></tr>
-                                    ) : sales.length === 0 ? (
-                                        <tr><td colSpan={9} className="text-center py-8 text-white-dark">No invoices found</td></tr>
-                                    ) : (
-                                        sales.map((sale, idx) => (
+                                    ) : (() => {
+                                        const filtered = sales.filter(s => {
+                                            const isGST = (s.gstAmount || 0) > 0;
+                                            return mode === 'invoice' ? isGST : !isGST;
+                                        });
+
+                                        if (filtered.length === 0) {
+                                            return <tr><td colSpan={9} className="text-center py-8 text-white-dark">No {mode === 'invoice' ? 'invoices' : 'bills'} found</td></tr>;
+                                        }
+
+                                        return filtered.map((sale, idx) => (
                                             <tr key={sale._id}>
                                                 <td>{idx + 1}</td>
-                                                <td className="font-bold text-primary">{sale.invoiceNumber}</td>
+                                                <td className="font-bold text-primary">
+                                                    {mode === 'invoice' ? sale.invoiceNumber : sale.invoiceNumber.replace('INV-', 'BILL-')}
+                                                </td>
                                                 <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
                                                 <td className="font-semibold">{sale.customer?.name || '—'}</td>
                                                 <td>
@@ -393,8 +432,8 @@ const InvoiceGeneration = () => {
                                                     </button>
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
+                                        ));
+                                    })()}
                                 </tbody>
                             </table>
                         </div>

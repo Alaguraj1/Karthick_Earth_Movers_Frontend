@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -23,7 +23,8 @@ const StoneTypesMaster = () => {
         name: '',
         description: '',
         unit: 'Tons',
-        defaultPrice: ''
+        hsnCode: '',
+        gstPercentage: 5
     });
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
@@ -56,7 +57,7 @@ const StoneTypesMaster = () => {
                 showToast(editItem ? 'Updated successfully!' : 'Added successfully!', 'success');
                 setNewItem({
                     name: '', description: '',
-                    unit: 'Tons', defaultPrice: ''
+                    unit: 'Tons', hsnCode: '', gstPercentage: 5
                 });
                 setEditItem(null);
                 setFormView(false);
@@ -75,7 +76,8 @@ const StoneTypesMaster = () => {
             name: item.name,
             description: item.description || '',
             unit: item.unit || 'Tons',
-            defaultPrice: item.defaultPrice || ''
+            hsnCode: item.hsnCode || '',
+            gstPercentage: item.gstPercentage || 5
         });
         setFormView(true);
     };
@@ -134,7 +136,26 @@ const StoneTypesMaster = () => {
                                     type="text"
                                     className="form-input border-2 focus:border-primary transition-all text-lg font-bold rounded-xl h-12"
                                     value={newItem.name}
-                                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                                    onChange={(e) => {
+                                        const name = e.target.value;
+                                        const lowerName = name.toLowerCase();
+                                        let suggestedHSN = newItem.hsnCode;
+
+                                        // Auto-suggestion logic
+                                        if (!newItem.hsnCode || newItem.hsnCode === '2505' || newItem.hsnCode === '2517') {
+                                            if (lowerName.includes('sand')) suggestedHSN = '2505';
+                                            else if (
+                                                lowerName.includes('jelly') || lowerName.includes('metal') ||
+                                                lowerName.includes('stone') || lowerName.includes('chips') ||
+                                                lowerName.includes('crush') || lowerName.includes('boulder') ||
+                                                lowerName.includes('bolder') || lowerName.includes('blue') ||
+                                                lowerName.includes('kal') || lowerName.includes('kundu') ||
+                                                lowerName.includes('saral') || lowerName.includes('vella')
+                                            ) suggestedHSN = '2517';
+                                        }
+
+                                        setNewItem({ ...newItem, name, hsnCode: suggestedHSN });
+                                    }}
                                     required
                                     placeholder="e.g., Jelly 20mm, M-Sand..."
                                 />
@@ -153,14 +174,28 @@ const StoneTypesMaster = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Default Price per Unit (₹)</label>
+                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">HSN CODE (எச்எஸ்என் குறியீடு)</label>
                                 <input
-                                    type="number"
+                                    type="text"
                                     className="form-input border-2 font-bold rounded-xl h-12"
-                                    value={newItem.defaultPrice}
-                                    onChange={(e) => setNewItem({ ...newItem, defaultPrice: e.target.value })}
-                                    placeholder="0.00"
+                                    value={newItem.hsnCode}
+                                    onChange={(e) => setNewItem({ ...newItem, hsnCode: e.target.value })}
+                                    placeholder="HSN Code"
                                 />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">GST % (ஜிஎஸ்டி விகிதம்)</label>
+                                <select
+                                    className="form-select border-2 font-bold rounded-xl h-12"
+                                    value={newItem.gstPercentage}
+                                    onChange={(e) => setNewItem({ ...newItem, gstPercentage: Number(e.target.value) })}
+                                >
+                                    <option value="0">0%</option>
+                                    <option value="5">5%</option>
+                                    <option value="12">12%</option>
+                                    <option value="18">18%</option>
+                                    <option value="28">28%</option>
+                                </select>
                             </div>
 
 
@@ -194,7 +229,7 @@ const StoneTypesMaster = () => {
                         </h5>
                         <button type="button" className="btn btn-primary shadow-[0_10px_20px_rgba(67,97,238,0.3)] rounded-xl py-2.5 px-6 font-black uppercase tracking-widest text-[10px]" onClick={() => {
                             setNewItem({
-                                name: '', description: '', unit: 'Tons', defaultPrice: ''
+                                name: '', description: '', unit: 'Tons', hsnCode: '', gstPercentage: 5
                             });
                             setEditItem(null);
                             setFormView(true);
@@ -208,7 +243,8 @@ const StoneTypesMaster = () => {
                                 <tr className="!bg-primary/5">
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Stone Type Name</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Unit</th>
-                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">Price</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4">HSN Code</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Tax %</th>
                                     <th className="text-center font-black uppercase tracking-widest text-[10px] py-4">Actions</th>
                                 </tr>
                             </thead>
@@ -231,7 +267,8 @@ const StoneTypesMaster = () => {
                                                 </div>
                                             </td>
                                             <td className="py-4 text-primary uppercase">{item.unit || '-'}</td>
-                                            <td className="py-4 font-black">₹{item.defaultPrice || '0'}</td>
+                                            <td className="py-4 font-black">{item.hsnCode || '-'}</td>
+                                            <td className="py-4 text-center text-success">{item.gstPercentage || 0}%</td>
                                             <td className="text-center py-4">
                                                 <div className="flex justify-center items-center gap-2">
                                                     <button type="button" className="p-2 rounded-lg text-primary hover:bg-primary hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>

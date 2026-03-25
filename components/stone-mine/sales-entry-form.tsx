@@ -50,7 +50,7 @@ const SalesEntryForm = () => {
     });
 
     const [items, setItems] = useState<any[]>([
-        { item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }
+        { item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }
     ]);
     const [recentSales, setRecentSales] = useState<any[]>([]);
     const [search, setSearch] = useState('');
@@ -142,7 +142,9 @@ const SalesEntryForm = () => {
             const selectedStone = stoneTypes.find(s => s._id === value);
             if (selectedStone) {
                 updatedItems[index].item = selectedStone.name;
-                updatedItems[index].rate = selectedStone.defaultPrice || '';
+                updatedItems[index].hsnCode = selectedStone.hsnCode || '';
+                updatedItems[index].gstPercentage = selectedStone.gstPercentage || 5;
+                updatedItems[index].rate = '';
                 let unit = selectedStone.unit || 'Tons';
                 if (unit === 'Ton') unit = 'Tons';
                 if (unit === 'Unit') unit = 'Units';
@@ -152,13 +154,16 @@ const SalesEntryForm = () => {
 
         const qty = parseFloat(updatedItems[index].quantity) || 0;
         const rate = parseFloat(updatedItems[index].rate) || 0;
+        const gstPct = parseFloat(updatedItems[index].gstPercentage) || 0;
+
         updatedItems[index].amount = qty * rate;
+        updatedItems[index].gstAmount = (updatedItems[index].amount * gstPct) / 100;
 
         setItems(updatedItems);
     };
 
     const addItem = () => {
-        setItems([...items, { item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]);
+        setItems([...items, { item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
     };
 
     const removeItem = (index: number) => {
@@ -167,8 +172,8 @@ const SalesEntryForm = () => {
     };
 
     const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const gstAmount = (subtotal * (parseFloat(String(formData.gstPercentage)) || 0)) / 100;
-    const grandTotal = subtotal + gstAmount;
+    const gstTotal = items.reduce((sum, item) => sum + (item.gstAmount || 0), 0);
+    const grandTotal = subtotal + gstTotal;
 
     const resetForm = () => {
         setEditId(null);
@@ -186,7 +191,7 @@ const SalesEntryForm = () => {
             receiptFile: '',
             gstNumber: '',
         });
-        setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]);
+        setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
     };
 
     const handleCreateNew = () => {
@@ -204,7 +209,7 @@ const SalesEntryForm = () => {
             receiptFile: '',
             gstNumber: '',
         });
-        setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]);
+        setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
         setShowForm(true);
     };
 
@@ -235,7 +240,10 @@ const SalesEntryForm = () => {
                         unit: item.unit || 'Tons',
                         rate: item.rate || '',
                         amount: item.amount || 0,
-                    })) || [{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0 }]
+                        hsnCode: item.hsnCode || '',
+                        gstPercentage: item.gstPercentage !== undefined ? item.gstPercentage : (sale.gstPercentage || 0),
+                        gstAmount: item.gstAmount || ((item.amount || 0) * (item.gstPercentage || sale.gstPercentage || 0)) / 100,
+                    })) || [{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]
                 );
                 setShowForm(true);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -274,10 +282,12 @@ const SalesEntryForm = () => {
                     quantity: parseFloat(item.quantity) || 0,
                     unit: item.unit,
                     rate: parseFloat(item.rate) || 0,
-                    amount: item.amount || 0
+                    hsnCode: item.hsnCode,
+                    gstPercentage: parseFloat(item.gstPercentage) || 0,
+                    gstAmount: item.gstAmount || 0
                 })),
                 subtotal,
-                gstAmount,
+                gstAmount: gstTotal,
                 grandTotal,
                 amountPaid: formData.paymentType === 'Cash' ? grandTotal : 0,
             };
@@ -528,9 +538,11 @@ const SalesEntryForm = () => {
                                         <tr>
                                             <th>#</th>
                                             <th>Item (Material)</th>
+                                            <th>HSN</th>
                                             <th>Quantity</th>
                                             <th>Unit</th>
                                             {canSeeFinancials && <th>Rate (₹)</th>}
+                                            {canSeeFinancials && <th>Tax %</th>}
                                             {canSeeFinancials && <th className="!text-right">Amount (₹)</th>}
                                             <th className="!text-center w-16">Action</th>
                                         </tr>
@@ -548,6 +560,9 @@ const SalesEntryForm = () => {
                                                     </select>
                                                 </td>
                                                 <td>
+                                                    <input type="text" name="hsnCode" className="form-input text-sm w-24" placeholder="HSN" value={item.hsnCode} onChange={(e) => handleItemChange(idx, e)} />
+                                                </td>
+                                                <td>
                                                     <input type="number" name="quantity" className="form-input text-sm w-28" placeholder="0" value={item.quantity} onChange={(e) => handleItemChange(idx, e)} required />
                                                 </td>
                                                 <td>
@@ -562,6 +577,17 @@ const SalesEntryForm = () => {
                                                 {canSeeFinancials && (
                                                     <td>
                                                         <input type="number" name="rate" className="form-input text-sm w-28 border-primary/20" placeholder="0.00" value={item.rate} onChange={(e) => handleItemChange(idx, e)} required={canSeeFinancials} />
+                                                    </td>
+                                                )}
+                                                {canSeeFinancials && (
+                                                    <td>
+                                                        <select name="gstPercentage" className="form-select text-sm w-24" value={item.gstPercentage} onChange={(e) => handleItemChange(idx, e)}>
+                                                            <option value="0">0%</option>
+                                                            <option value="5">5%</option>
+                                                            <option value="12">12%</option>
+                                                            <option value="18">18%</option>
+                                                            <option value="28">28%</option>
+                                                        </select>
                                                     </td>
                                                 )}
                                                 {canSeeFinancials && (
@@ -606,35 +632,64 @@ const SalesEntryForm = () => {
                                     <IconEdit className="w-4 h-4" />
                                     GST & Totals
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="text-xs font-bold text-white-dark uppercase mb-2 block">GST %</label>
-                                        <select name="gstPercentage" className="form-select" value={formData.gstPercentage} onChange={handleChange}>
-                                            <option value="0">No GST (0%)</option>
-                                            <option value="5">5%</option>
-                                            <option value="12">12%</option>
-                                            <option value="18">18%</option>
-                                            <option value="28">28%</option>
-                                        </select>
-                                    </div>
-                                    <div className="bg-dark-light/5 dark:bg-dark p-4 rounded-lg space-y-3">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-white-dark">Subtotal:</span>
-                                            <span className="font-bold">₹{subtotal.toLocaleString()}</span>
-                                        </div>
-                                        {gstAmount > 0 && (
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-white-dark">GST ({formData.gstPercentage}%):</span>
-                                                <span className="font-bold">₹{gstAmount.toLocaleString()}</span>
+                                    <div className="bg-dark-light/5 dark:bg-dark p-6 rounded-xl space-y-6">
+                                        {/* Material Subtotal Details */}
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center text-[10px] font-bold text-white-dark uppercase tracking-widest border-b border-primary/10 pb-2">
+                                                <span>Material Base Values</span>
+                                                <span>Amount</span>
                                             </div>
-                                        )}
-                                        <div className="flex justify-between text-lg border-t border-[#ebedf2] dark:border-[#1b2e4b] pt-2">
-                                            <span className="font-bold text-primary">Grand Total:</span>
-                                            <span className="font-black text-primary text-2xl">₹{grandTotal.toLocaleString()}</span>
+                                            <div className="space-y-2">
+                                                {items.map((item, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center text-sm">
+                                                        <span className="text-white-dark font-medium">
+                                                            {idx + 1}. {item.item || 'Select Material'} 
+                                                            <span className="text-[11px] ml-2 opacity-60 italic">({item.quantity} × ₹{item.rate})</span>
+                                                        </span>
+                                                        <span className="font-bold">₹{item.amount?.toLocaleString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex justify-between items-center pt-3 border-t border-dashed border-primary/20 bg-primary/5 p-3 rounded-lg">
+                                                <span className="text-[10px] uppercase font-black text-primary tracking-wider">Total Net Value (Subtotal):</span>
+                                                <span className="font-black text-primary text-xl">₹{subtotal.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Material Tax Breakdown */}
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center text-[10px] font-bold text-white-dark uppercase tracking-widest border-b border-primary/10 pb-2">
+                                                <span>Tax Identification</span>
+                                                <span>GST Amount</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {items.map((item, idx) => (
+                                                    item.gstAmount > 0 && (
+                                                        <div key={idx} className="flex justify-between items-center text-sm">
+                                                            <span className="text-white-dark font-medium lowercase">
+                                                                {idx + 1}. {item.item || 'Item'} (gst {item.gstPercentage}%)
+                                                            </span>
+                                                            <span className="font-bold text-warning-dark">₹{item.gstAmount?.toLocaleString()}</span>
+                                                        </div>
+                                                    )
+                                                ))}
+                                            </div>
+                                            <div className="flex justify-between items-center pt-3 border-t border-dashed border-primary/20 bg-warning/5 p-3 rounded-lg">
+                                                <span className="text-[10px] uppercase font-black text-warning-dark tracking-wider">Total GST:</span>
+                                                <span className="font-black text-warning-dark text-xl">₹{gstTotal.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Grand Total - The Bottom Line */}
+                                        <div className="flex justify-between items-center p-5 bg-primary/10 rounded-xl border-2 border-primary/20 shadow-inner">
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-primary text-2xl uppercase tracking-tighter leading-none">Grand Total</span>
+                                                <span className="text-[10px] text-white-dark mt-1 font-bold italic">Net Value + All Applied Taxes</span>
+                                            </div>
+                                            <span className="font-black text-primary text-4xl ltr:text-right rtl:text-left drop-shadow-sm">₹{grandTotal.toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                         )}
 
                         {/* Notes */}

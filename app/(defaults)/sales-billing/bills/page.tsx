@@ -3,7 +3,7 @@ import InvoiceGeneration from '@/components/stone-mine/invoice-generation';
 import RoleGuard from '@/components/stone-mine/role-guard';
 import React from 'react';
 
-const InvoicesPage = () => {
+const BillsPage = () => {
     return (
         <RoleGuard allowedRoles={['owner', 'manager']} redirectTo="/expenses/diesel">
             <div>
@@ -15,13 +15,13 @@ const InvoicesPage = () => {
                         <span>Sales & Billing</span>
                     </li>
                     <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2">
-                        <span>Invoice Generation</span>
+                        <span>Bill Generation (Non-Tax)</span>
                     </li>
                 </ul>
-                <InvoiceGeneration mode="invoice" />
+                <InvoiceGeneration mode="bill" />
             </div>
         </RoleGuard>
     );
 };
 
-export default InvoicesPage;
+export default BillsPage;

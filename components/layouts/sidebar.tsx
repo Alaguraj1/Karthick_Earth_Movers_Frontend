@@ -193,6 +193,9 @@ const Sidebar = () => {
                                                             <Link href="/sales-billing/invoices">Invoice Generation</Link>
                                                         </li>
                                                         <li>
+                                                            <Link href="/sales-billing/bills">Bill Generation (Non-Tax)</Link>
+                                                        </li>
+                                                        <li>
                                                             <Link href="/sales-billing/cash-credit">Cash / Credit Sales</Link>
                                                         </li>
                                                         <li>
