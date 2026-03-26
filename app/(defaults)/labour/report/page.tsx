@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import api from '@/utils/api';
 import IconMenuUsers from '@/components/icon/menu/icon-menu-users';
@@ -6,6 +6,8 @@ import IconMenuUsers from '@/components/icon/menu/icon-menu-users';
 const LabourReportPage = () => {
     const [labours, setLabours] = useState<any[]>([]);
     const [selectedLabour, setSelectedLabour] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [reportData, setReportData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
@@ -21,14 +23,14 @@ const LabourReportPage = () => {
         fetchLabours();
     }, []);
 
-    const fetchReport = async (labourId: string) => {
+    const fetchReport = async (labourId: string, month: number, year: number) => {
         if (!labourId) {
             setReportData(null);
             return;
         }
         setLoading(true);
         try {
-            const { data } = await api.get(`/labour/report/${labourId}`);
+            const { data } = await api.get(`/labour/report/${labourId}?month=${month}&year=${year}`);
             if (data.success) setReportData(data.data);
         } catch (error) {
             console.error(error);
@@ -39,7 +41,15 @@ const LabourReportPage = () => {
 
     const handleLabourChange = (e: any) => {
         setSelectedLabour(e.target.value);
-        fetchReport(e.target.value);
+        fetchReport(e.target.value, selectedMonth, selectedYear);
+    };
+
+    const handleMonthYearChange = (month: number, year: number) => {
+        setSelectedMonth(month);
+        setSelectedYear(year);
+        if (selectedLabour) {
+            fetchReport(selectedLabour, month, year);
+        }
     };
 
     return (
@@ -59,15 +69,33 @@ const LabourReportPage = () => {
                             <p className="text-white-dark text-xs">Detailed historical data per worker</p>
                         </div>
                     </div>
-                    <div className="w-full sm:w-80">
+                    <div className="flex flex-wrap items-center gap-3">
                         <select
-                            className="form-select border-primary font-bold text-primary"
-                            value={selectedLabour}
-                            onChange={handleLabourChange}
+                            className="form-select border-primary font-bold text-primary w-40"
+                            value={selectedMonth}
+                            onChange={(e) => handleMonthYearChange(parseInt(e.target.value), selectedYear)}
                         >
-                            <option value="">Select Worker to View Report</option>
-                            {labours.map(l => <option key={l._id} value={l._id}>{l.name}</option>)}
+                            {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+                                <option key={i} value={i + 1}>{m}</option>
+                            ))}
                         </select>
+                        <select
+                            className="form-select border-primary font-bold text-primary w-32"
+                            value={selectedYear}
+                            onChange={(e) => handleMonthYearChange(selectedMonth, parseInt(e.target.value))}
+                        >
+                            {Array.from({ length: 12 }, (_, i) => 2024 + i).map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                        <div className="w-full sm:w-60">
+                            <select
+                                className="form-select border-primary font-bold text-primary"
+                                value={selectedLabour}
+                                onChange={handleLabourChange}
+                            >
+                                <option value="">Select Worker to View Report</option>
+                                {labours.filter(l => l.labourType === 'Direct').map(l => <option key={l._id} value={l._id}>{l.name}</option>)}
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -112,9 +140,9 @@ const LabourReportPage = () => {
                                 <div className="text-3xl font-extrabold text-info">{reportData.attendance.length}</div>
                                 <div className="text-[10px] font-bold uppercase text-info mt-1">Total Attendance Marked</div>
                             </div>
-                            <div className="panel flex flex-col items-center justify-center text-center p-5 bg-warning/5 border-warning/20">
+                             <div className="panel flex flex-col items-center justify-center text-center p-5 bg-warning/5 border-warning/20">
                                 <div className="text-3xl font-extrabold text-warning">₹ {reportData.advances.reduce((sum: number, a: any) => sum + a.amount, 0).toLocaleString()}</div>
-                                <div className="text-[10px] font-bold uppercase text-warning mt-1">Life-time Advance Taken</div>
+                                <div className="text-[10px] font-bold uppercase text-warning mt-1">Advance Taken In This Period</div>
                             </div>
                             <div className="panel flex flex-col items-center justify-center text-center p-5 bg-success/5 border-success/20">
                                 <div className="text-3xl font-extrabold text-success">

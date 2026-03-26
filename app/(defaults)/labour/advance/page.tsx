@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import IconPlus from '@/components/icon/icon-plus';
 import IconSave from '@/components/icon/icon-save';
@@ -145,7 +145,7 @@ const AdvancePage = () => {
                                     <label className="text-[10px] font-black uppercase text-white-dark mb-1 block">Select Labour (தொழிலாளர்)</label>
                                     <select name="labour" className="form-select font-bold rounded-xl" value={formData.labour} onChange={handleChange} required>
                                         <option value="">Select Worker</option>
-                                        {labours.map(l => (
+                                        {labours.filter(l => l.labourType === 'Direct').map(l => (
                                             <option key={l._id} value={l._id}>{l.name} ({l.workType})</option>
                                         ))}
                                     </select>
