@@ -323,16 +323,6 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/vendors/transport">Transport Vendors</Link>
                                                 </li>
-                                                {isManagement && (
-                                                    <>
-                                                        <li>
-                                                            <Link href="/vendors/payments">Payment History</Link>
-                                                        </li>
-                                                        <li>
-                                                            <Link href="/vendors/outstanding">Outstanding Balance</Link>
-                                                        </li>
-                                                    </>
-                                                )}
                                             </ul>
                                         </AnimateHeight>
                                     </li>

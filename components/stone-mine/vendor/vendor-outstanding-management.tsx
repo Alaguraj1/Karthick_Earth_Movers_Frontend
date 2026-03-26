@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import api from '@/utils/api';
 import IconSearch from '@/components/icon/icon-search';
@@ -77,7 +77,10 @@ const VendorOutstandingManagement = () => {
                     <h2 className="text-2xl font-bold dark:text-white-light">Outstanding Balance (பாக்கி தொகை)</h2>
                     <p className="text-white-dark text-sm">Payable Management: Total Invoice – Total Paid = Balance</p>
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
+                    <Link href="/vendors/advance" className="btn btn-outline-warning shadow-sm">
+                        <span>💸</span> Advance Tracking
+                    </Link>
                     <Link href="/vendors/payments" className="btn btn-primary shadow-lg">
                         <span>💳</span> Make Payment
                     </Link>

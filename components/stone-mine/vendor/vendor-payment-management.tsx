@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -28,6 +28,7 @@ const VendorPaymentManagement = () => {
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
         vendorSelected: '', // Value format: "id|type|name"
+        paymentType: 'Payment', // Bill, Payment, Advance
         invoiceAmount: '',
         paidAmount: '',
         paymentMode: 'Cash',
@@ -128,7 +129,7 @@ const VendorPaymentManagement = () => {
             };
 
             await api.post('/vendors/payments', data);
-            showToast('Payment recorded successfully!', 'success');
+            showToast(`${formData.paymentType === 'Bill' ? 'Bill recorded' : 'Payment recorded'} successfully!`, 'success');
 
             resetForm();
             fetchData();
@@ -141,6 +142,7 @@ const VendorPaymentManagement = () => {
         setFormData({
             date: new Date().toISOString().split('T')[0],
             vendorSelected: '',
+            paymentType: 'Payment',
             invoiceAmount: '',
             paidAmount: '',
             paymentMode: 'Cash',
@@ -178,12 +180,15 @@ const VendorPaymentManagement = () => {
                 </div>
                 {!showForm && (
                     <div className="flex items-center gap-2">
+                        <Link href="/vendors/advance" className="btn btn-outline-warning shadow-sm">
+                            <span>💸</span> View Advances
+                        </Link>
                         <Link href="/vendors/outstanding" className="btn btn-outline-info shadow-sm">
                             <span>📊</span> View Outstanding
                         </Link>
                         <button className="btn btn-primary shadow-lg" onClick={() => setShowForm(true)}>
                             <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
-                            Record New Payment
+                            Record New Bill / Pay
                         </button>
                     </div>
                 )}
@@ -198,10 +203,17 @@ const VendorPaymentManagement = () => {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                             <div>
-                                <label className="text-sm font-bold">Date *</label>
+                                <label className="text-sm font-bold text-gray-400">Date *</label>
                                 <input type="date" name="date" className="form-input" value={formData.date} onChange={handleChange} required />
                             </div>
-                            <div className="md:col-span-3">
+                            <div>
+                                <label className="text-sm font-black text-primary uppercase text-[10px]">Entry Type</label>
+                                <select name="paymentType" className="form-select border-primary font-black" value={formData.paymentType} onChange={handleChange}>
+                                    <option value="Bill">📝 New Bill (Debit To Us)</option>
+                                    <option value="Payment">💳 Payment (Credit From Us)</option>
+                                </select>
+                            </div>
+                            <div className="md:col-span-2">
                                 <label className="text-sm font-bold">Select Vendor / Contractor *</label>
                                 <select name="vendorSelected" className="form-select" value={formData.vendorSelected} onChange={handleChange} required>
                                     <option value="">Select a vendor...</option>
@@ -238,13 +250,16 @@ const VendorPaymentManagement = () => {
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                            {formData.paymentType === 'Bill' && (
+                                <div>
+                                    <label className="text-sm font-bold text-danger">Bill Amount (Increase Bal)</label>
+                                    <input type="number" name="invoiceAmount" className="form-input border-danger/40" value={formData.invoiceAmount} onChange={handleChange} placeholder="0" required={formData.paymentType === 'Bill'} />
+                                </div>
+                            )}
+
                             <div>
-                                <label className="text-sm font-bold">Invoice/Bill Amount (A)</label>
-                                <input type="number" name="invoiceAmount" className="form-input" value={formData.invoiceAmount} onChange={handleChange} placeholder="0" />
-                            </div>
-                            <div>
-                                <label className="text-sm font-bold text-primary">Paid Amount (B)</label>
-                                <input type="number" name="paidAmount" className="form-input border-primary/30" value={formData.paidAmount} onChange={handleChange} placeholder="0" />
+                                <label className="text-sm font-bold text-success">Paid Amount (Decrease Bal)</label>
+                                <input type="number" name="paidAmount" className="form-input border-success/40 font-black text-success" value={formData.paidAmount} onChange={handleChange} placeholder="0" required={formData.paymentType === 'Payment'} />
                             </div>
                             <div>
                                 <label className="text-sm font-bold">Payment Mode</label>
@@ -255,8 +270,8 @@ const VendorPaymentManagement = () => {
                                     <option value="Cheque">Cheque</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className="text-sm font-bold">Reference #</label>
+                            <div className={formData.paymentType === 'Bill' ? 'md:col-span-1' : 'md:col-span-2'}>
+                                <label className="text-sm font-bold">Ref # / Check No</label>
                                 <input type="text" name="referenceNumber" className="form-input" value={formData.referenceNumber} onChange={handleChange} placeholder="UTR / Check No" />
                             </div>
                         </div>
@@ -303,10 +318,11 @@ const VendorPaymentManagement = () => {
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Vendor Name</th>
                                 <th>Category</th>
+                                <th>Type</th>
+                                <th>Vendor Name</th>
                                 <th className="!text-right">Invoice (₹)</th>
-                                <th className="!text-right text-primary">Paid (₹)</th>
+                                <th className="!text-right text-primary">Payment (₹)</th>
                                 <th className="!text-center">Mode</th>
                                 <th>Ref #</th>
                                 <th className="!text-center">Action</th>
@@ -314,22 +330,27 @@ const VendorPaymentManagement = () => {
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={8} className="text-center py-8">Loading history...</td></tr>
+                                <tr><td colSpan={9} className="text-center py-8">Loading history...</td></tr>
                             ) : filteredPayments.length === 0 ? (
-                                <tr><td colSpan={8} className="text-center py-8">No payment records found.</td></tr>
+                                <tr><td colSpan={9} className="text-center py-8">No payment records found.</td></tr>
                             ) : (
                                 filteredPayments.map((p) => (
                                     <tr key={p._id}>
                                         <td className="whitespace-nowrap">{new Date(p.date).toLocaleDateString('en-GB')}</td>
-                                        <td className="font-bold">{p.vendorName}</td>
                                         <td>
                                             <span className={`badge ${p.vendorType === 'ExplosiveSupplier' ? 'badge-outline-danger' :
-                                                p.vendorType === 'LabourContractor' ? 'badge-outline-warning' : 'badge-outline-info'}`}>
+                                                p.vendorType === 'LabourContractor' ? 'badge-outline-warning' : 'badge-outline-info'} py-0.5 px-1.5 text-[10px]`}>
                                                 {p.vendorType.replace('Supplier', '').replace('Contractor', '').replace('Vendor', '')}
                                             </span>
                                         </td>
-                                        <td className="!text-right font-bold">₹{p.invoiceAmount?.toLocaleString()}</td>
-                                        <td className="!text-right font-black text-primary">₹{p.paidAmount?.toLocaleString()}</td>
+                                        <td>
+                                            <span className={`text-[10px] font-black uppercase ${p.paymentType === 'Bill' ? 'text-danger' : p.paymentType === 'Advance' ? 'text-warning' : 'text-success'}`}>
+                                                {p.paymentType || 'Payment'}
+                                            </span>
+                                        </td>
+                                        <td className="font-bold">{p.vendorName}</td>
+                                        <td className="!text-right font-bold text-danger">₹{p.invoiceAmount > 0 ? p.invoiceAmount.toLocaleString() : '-'}</td>
+                                        <td className="!text-right font-black text-success">₹{p.paidAmount > 0 ? p.paidAmount.toLocaleString() : '-'}</td>
                                         <td className="!text-center text-xs opacity-70">{p.paymentMode}</td>
                                         <td className="text-xs truncate max-w-[100px]">{p.referenceNumber || '-'}</td>
                                         <td className="text-center">

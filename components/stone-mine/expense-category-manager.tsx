@@ -208,6 +208,21 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                     });
 
                     if (data.success) {
+                        // Check if already paid in local expenses list
+                        const isAlreadyPaid = expenses.find(e => 
+                            e.category === 'Labour Wages' && 
+                            e.labourId === formData.labourId && 
+                            e.salaryMonth === lookupMonth && 
+                            e.salaryYear === lookupYear
+                        );
+
+                        if (isAlreadyPaid) {
+                            showToast(`Wages for ${formData.labourName} have already been finalized for ${lookupMonth}/${lookupYear}! See record on ${new Date(isAlreadyPaid.date).toLocaleDateString()}.`, 'error');
+                            setFormData(prev => ({ ...prev, labourName: '', labourId: '', quantity: '0', amount: '0', netPay: '0', otAmount: '0', perDaySalary: '0' }));
+                            setSelectedContractorSummary(null);
+                            return;
+                        }
+
                         let summary;
                         if (formData.labourType === 'Vendor') {
                             summary = data.data.find((s: any) => s.isVendorGroup && s.contractorId === formData.labourId);
@@ -218,7 +233,14 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                         }
 
                         if (summary) {
-                            if (summary.attendance.total === 0 && summary.attendance.totalDaysAll > 0) {
+                            if (summary.isFinalized) {
+                                showToast(`Wages for ${formData.labourName} have already been finalized for ${lookupMonth}/${lookupYear}! Edit the existing record in the table below if needed.`, 'error');
+                                setFormData(prev => ({ ...prev, labourName: '', labourId: '', quantity: '0', amount: '0', netPay: '0', otAmount: '0', perDaySalary: '0' }));
+                                setSelectedContractorSummary(null);
+                                return;
+                            }
+
+                            if (summary.attendance.total === 0 && (summary.attendance.totalDaysAll > 0 || summary.totalDaysAll > 0)) {
                                 showToast(`${formData.labourType === 'Vendor' ? 'Wages for Contractor' : 'Salary for'} ${formData.labourName} is already fully paid for this month!`, 'error');
                                 setFormData(prev => ({ ...prev, labourName: '', labourId: '', quantity: '0', amount: '0', netPay: '0', otAmount: '0', perDaySalary: '0' }));
                                 setSelectedContractorSummary(null);
@@ -755,7 +777,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             value={listYear}
                                             onChange={(e) => setListYear(parseInt(e.target.value))}
                                         >
-                                            {Array.from({ length: (new Date().getFullYear() + 1) - 2024 + 1 }, (_, i) => 2024 + i).map(y => (
+                                            {Array.from({ length: 2035 - 2024 + 1 }, (_, i) => 2024 + i).map(y => (
                                                 <option key={y} value={y}>{y}</option>
                                             ))}
                                         </select>
@@ -1655,7 +1677,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                     value={lookupYear}
                                                     onChange={(e) => setLookupYear(parseInt(e.target.value))}
                                                 >
-                                                    {Array.from({ length: (new Date().getFullYear() + 1) - 2024 + 1 }, (_, i) => 2024 + i).map(y => (
+                                                    {Array.from({ length: 2035 - 2024 + 1 }, (_, i) => 2024 + i).map(y => (
                                                         <option key={y} value={y}>{y}</option>
                                                     ))}
                                                 </select>
@@ -1826,7 +1848,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 <div className="table-responsive border-2 border-primary/20 rounded-2xl overflow-hidden bg-white/50 backdrop-blur-sm shadow-xl">
                                     <table className="table-hover w-full text-xs font-bold uppercase">
                                         <thead>
-                                            <tr className="bg-primary text-white border-b-0">
+                                            <tr className="bg-primary border-b-0">
                                                 <th className="py-4 px-4 text-left font-black tracking-wider">Labour Name</th>
                                                 <th className="py-4 text-left font-black tracking-wider">Work & Wage</th>
                                                 <th className="py-4 text-center font-black tracking-wider">Days</th>
@@ -1857,6 +1879,16 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                     <td className="py-3 text-right font-black text-primary pr-4 font-mono">₹{parseFloat(worker.netPayable).toLocaleString()}</td>
                                                 </tr>
                                             ))}
+                                            {selectedContractorSummary.contractorDirectAdvance > 0 && (
+                                                <tr className="bg-danger/5 italic border-t-2 border-danger/20">
+                                                    <td colSpan={5} className="py-4 px-4 font-bold text-danger flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-full bg-danger animate-pulse"></span>
+                                                        Contractor Direct Advance (கான்ட்ராக்டர் முன்பணம்)
+                                                    </td>
+                                                    <td className="py-4 text-right text-danger font-mono font-black">₹{parseFloat(selectedContractorSummary.contractorDirectAdvance).toLocaleString()}</td>
+                                                    <td className="py-4 text-right pr-4 font-mono font-bold text-danger">-₹{parseFloat(selectedContractorSummary.contractorDirectAdvance).toLocaleString()}</td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                         <tfoot>
                                             <tr className="bg-primary/5 border-t-2 border-primary/20">
