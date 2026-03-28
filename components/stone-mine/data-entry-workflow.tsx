@@ -56,13 +56,17 @@ const workflowData: WorkflowSection[] = [
                 stepNo: 2,
                 titleTamil: 'படி 2: தினசரி பதிவுகள் (Daily Operations)',
                 titleEnglish: 'Step 2: Daily Operations',
-                descriptionTamil: 'அடிப்படை தகவல்கள் உள்ளிடப்பட்ட பிறகு, அன்றக வேலைகளை பதிவு செய்யலாம்.',
+                descriptionTamil: 'அடிப்படை தகவல்கள் உள்ளிடப்பட்ட பிறகு, இயந்திரங்கள் மற்றும் அன்றாட வேலைகளை பதிவு செய்யலாம்.',
                 fields: [
                     { name: 'Daily Attendance', tamil: 'தொழிலாளர் வருகை (Labour List-ல் இருந்து)', required: true },
+                    { name: 'Machine Production', tamil: 'எந்திரங்களின் தினசரி வேலை மற்றும் HMR பதிவு', required: true },
+                    { name: 'Permits', tamil: 'டிரிப்களுக்கான அனுமதி சீட்டுகள் (Permits)', required: false },
                     { name: 'Transport Trips', tamil: 'வாகன டிரிப்கள் பதிவு நிலை', required: true },
                 ],
                 tips: [
                     'தினமும் காலையில் வருகை (Attendance) பதிவு செய்யவும்.',
+                    'எந்திரங்களுக்கு ஆபரேட்டர்களை இணைத்து தினசரி Production ஐப் பதியவும்.',
+                    'டிரிப்களுக்கு முன்பு தேவையான Permits களை உள்ளீடு செய்யவும்.',
                     'ஓடும் டிரிப்களை (Trips) அன்றாடம் Transport மெனுவில் பதிவு செய்யவும்.',
                 ],
             },
@@ -218,6 +222,61 @@ const workflowData: WorkflowSection[] = [
             }
         ],
         roles: ['owner', 'manager', 'supervisor'],
+    },
+    {
+        id: 'production',
+        icon: '⚙️',
+        titleTamil: 'இயந்திர உற்பத்தி (Machine Production)',
+        titleEnglish: 'Machine Production',
+        color: '#8b5cf6',
+        gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+        overviewTamil: 'குவாரியில் உள்ள இயந்திரங்களின் தினசரி வேலை நேரம், HMR விவரங்கள் மற்றும் ஆபரேட்டர் விவரங்களை பதிவு செய்யும் பகுதி.',
+        steps: [
+            {
+                stepNo: 1,
+                titleTamil: 'வழக்கமான வேலை பதிவு',
+                titleEnglish: 'Daily Production Entry',
+                descriptionTamil: 'இயந்திரங்கள் எவ்வளவு நேரம் வேலை செய்தன என்பதை Shift Time அடிப்படையில் பதிவு செய்யலாம்.',
+                fields: [
+                    { name: 'Machine & Operator', tamil: 'எந்த இயந்திரம் மற்றும் அதனை இயக்கியவர் யார்', required: true },
+                    { name: 'Shift Time', tamil: 'வேலை தொடங்கிய நேரம் மற்றும் முடித்த நேரம்', required: true },
+                    { name: 'HMR', tamil: 'இயந்திரத்தின் தொடக்க மற்றும் முடிவு HMR (Optional)', required: false },
+                    { name: 'Break Time', tamil: 'இடைவேளை நிமிடங்கள் (Total Hours-ல் தானாக கழிக்கப்படும்)', required: false },
+                ],
+                tips: [
+                    'Shift Time சரியாக உள்ளீடு செய்தால் Total Working Hours தானாகவே கணக்கிடப்படும்.',
+                    'ஆபரேட்டர் பெயர்கள் Labour List-ல் இருந்து பெறப்படும்.'
+                ],
+            }
+        ],
+        roles: ['owner', 'manager', 'supervisor'],
+    },
+    {
+        id: 'permits',
+        icon: '📜',
+        titleTamil: 'அனுமதி சீட்டுகள் (Permits)',
+        titleEnglish: 'Permits Management',
+        color: '#10b981',
+        gradient: 'linear-gradient(135deg, #10b981, #059669)',
+        overviewTamil: 'ஒரு குறிப்பிட்ட வண்டி அல்லது பல வண்டிகளுக்கு அரசாங்கத்தால் வழங்கப்படும் அனுமதி சீட்டுகளை நிர்வகித்தல்.',
+        steps: [
+            {
+                stepNo: 1,
+                titleTamil: 'பெர்மிட் உள்ளீடு',
+                titleEnglish: 'Permit Entry',
+                descriptionTamil: 'புதிய Permit Number மற்றும் அதற்கான வாகனங்களை இணைக்கவும்.',
+                fields: [
+                    { name: 'Permit Number', tamil: 'அனுமதி சீட்டு பதிவு எண்', required: true },
+                    { name: 'Total Trips Allowed', tamil: 'மொத்த டிரிப்கள் எவ்வளவு allowed?', required: true },
+                    { name: 'Vehicles', tamil: 'எந்தெந்த வண்டிகள் இந்த பெர்மிட்டினை பயன்படுத்தும்', required: false },
+                ],
+                tips: [
+                    'ஒரு பெர்மிட்-ல் உள்ள Trips Allowed குறையும்போது தானாகவே Track செய்யப்படும்.',
+                    'Expired அல்லது Completed ஆன பெர்மிட்டுகளை Status செலக்ட் மூலம் மாற்றிக்கொள்ளலாம்.',
+                ],
+            }
+        ],
+        roles: ['owner', 'manager'],
     },
     {
         id: 'labour',
@@ -425,7 +484,7 @@ const DataEntryWorkflow = () => {
                         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-2xl font-black mb-3 border border-blue-200 dark:border-blue-800">2</div>
                         <h4 className="font-extrabold text-blue-700 dark:text-blue-300 uppercase tracking-wider text-xs mb-1">Step 2: Operations</h4>
                         <p className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-2">தினசரி வேலைகள்</p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">Labour Attendance, Transport Trips, Daily Operations Setup</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">Attendance, Machine Production, Permits, Transport Trips</p>
                     </div>
 
                     <div className="md:hidden text-2xl text-gray-300 font-black">⬇</div>
