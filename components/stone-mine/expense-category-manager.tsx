@@ -666,12 +666,15 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
         // Try to parse vehicleType and vehicleNumber from vehicleOrMachine string if possible
         // Expecting "Name (Number)" or just "Name"
-        let vType = expense.vehicleOrMachine || '';
-        let vNum = '';
-        if (vType.includes('(')) {
+        // Always prefer the directly stored fields first
+        let vType = expense.vehicleType || expense.vehicleOrMachine || '';
+        let vNum = expense.vehicleNumber || '';
+        if (!vNum && vType.includes('(')) {
             const parts = vType.split(' (');
             vType = parts[0];
             vNum = parts[1].replace(')', '');
+        } else if (!expense.vehicleType && !vType.includes('(')) {
+            // vType already set correctly from vehicleOrMachine
         }
 
         if (expense.category === 'Labour Wages') {
@@ -680,9 +683,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             setLookupYear(d.getFullYear());
         }
 
-        // Determine assetType if category is Machine Maintenance
-        let aType = '';
-        if (expense.category === 'Machine Maintenance') {
+        // Restore assetType: always prefer the saved value, fall back to vehicle lookup
+        let aType = expense.assetType || '';
+        if (!aType && expense.category === 'Machine Maintenance') {
             const asset = vehicles.find(v => (v.vehicleNumber === vNum || v.registrationNumber === vNum));
             aType = asset ? asset.type : '';
         }

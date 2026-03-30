@@ -315,7 +315,7 @@ const UserManagement = () => {
                                 <input
                                     type="text"
                                     className="form-input mt-1"
-                                    placeholder="e.g. Karthick Raja"
+                                    placeholder="Enter Full Name"
                                     value={form.name}
                                     onChange={e => setForm({ ...form, name: e.target.value })}
                                     required
@@ -326,7 +326,7 @@ const UserManagement = () => {
                                 <input
                                     type="text"
                                     className="form-input mt-1"
-                                    placeholder="e.g. karthick123"
+                                    placeholder="Enter Username"
                                     value={form.username}
                                     onChange={e => setForm({ ...form, username: e.target.value })}
                                     required
@@ -337,7 +337,7 @@ const UserManagement = () => {
                                 <input
                                     type="email"
                                     className="form-input mt-1"
-                                    placeholder="e.g. karthick@example.com"
+                                    placeholder="Enter Email"
                                     value={form.email}
                                     onChange={e => setForm({ ...form, email: e.target.value })}
                                 />
@@ -349,7 +349,7 @@ const UserManagement = () => {
                                         <input
                                             type={showPassword ? 'text' : 'password'}
                                             className="form-input mt-1 pe-12"
-                                            placeholder="Min 6 characters"
+                                            placeholder="Enter Password"
                                             value={form.password}
                                             onChange={e => setForm({ ...form, password: e.target.value })}
                                             required
