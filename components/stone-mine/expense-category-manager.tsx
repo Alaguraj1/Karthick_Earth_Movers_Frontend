@@ -11,7 +11,7 @@ import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconSearch from '@/components/icon/icon-search';
 import { Transition, Dialog, DialogPanel, TransitionChild } from '@headlessui/react';
 
-import api, { BASE_URL } from '@/utils/api';
+import api, { BASE_URL, BACKEND_URL } from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import { canEditRecord } from '@/utils/permissions';
 
@@ -1383,17 +1383,17 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 <td className="font-bold text-primary py-2 text-lg min-w-[120px]">₹{expense.amount.toLocaleString()}</td>
                                                 <td className="text-center py-2 flex flex-col items-center gap-1 justify-center">
                                                     {expense.billUrl && (
-                                                        <a href={`${(BASE_URL || '').replace('/api', '')}${expense.billUrl}`} target="_blank" className="text-primary hover:underline text-[10px]">
+                                                        <a href={`${BACKEND_URL}${expense.billUrl}`} target="_blank" className="text-primary hover:underline text-[10px]">
                                                             View Bill
                                                         </a>
                                                     )}
                                                     {expense.inputBillUrl && (
-                                                        <a href={`${(BASE_URL || '').replace('/api', '')}${expense.inputBillUrl}`} target="_blank" className="text-info hover:underline text-[10px] font-bold">
+                                                        <a href={`${BACKEND_URL}${expense.inputBillUrl}`} target="_blank" className="text-info hover:underline text-[10px] font-bold">
                                                             Input Bill
                                                         </a>
                                                     )}
                                                     {expense.outputBillUrl && (
-                                                        <a href={`${(BASE_URL || '').replace('/api', '')}${expense.outputBillUrl}`} target="_blank" className="text-success hover:underline text-[10px] font-bold">
+                                                        <a href={`${BACKEND_URL}${expense.outputBillUrl}`} target="_blank" className="text-success hover:underline text-[10px] font-bold">
                                                             Output Bill
                                                         </a>
                                                     )}
@@ -1946,7 +1946,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={(e) => setSelectedInputFile(e.target.files ? e.target.files[0] : null)} accept=".jpg,.jpeg,.png,.pdf" />
                                                 {formData.inputBillUrl && (
                                                     <a
-                                                        href={`${(BASE_URL || '').replace('/api', '')}${formData.inputBillUrl}`}
+                                                        href={`${BACKEND_URL}${formData.inputBillUrl}`}
                                                         target="_blank"
                                                         className="text-primary hover:underline text-[10px] font-bold"
                                                     >
@@ -1961,7 +1961,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={(e) => setSelectedOutputFile(e.target.files ? e.target.files[0] : null)} accept=".jpg,.jpeg,.png,.pdf" />
                                                 {formData.outputBillUrl && (
                                                     <a
-                                                        href={`${(BASE_URL || '').replace('/api', '')}${formData.outputBillUrl}`}
+                                                        href={`${BACKEND_URL}${formData.outputBillUrl}`}
                                                         target="_blank"
                                                         className="text-success hover:underline text-[10px] font-bold"
                                                     >
@@ -1978,7 +1978,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={handleFileChange} accept=".jpg,.jpeg,.png,.pdf" />
                                             {formData.billUrl && (
                                                 <a
-                                                    href={`${(BASE_URL || '').replace('/api', '')}${formData.billUrl}`}
+                                                    href={`${BACKEND_URL}${formData.billUrl}`}
                                                     target="_blank"
                                                     className="btn btn-outline-primary btn-sm rounded-xl py-2 px-6"
                                                     title="View Bill"

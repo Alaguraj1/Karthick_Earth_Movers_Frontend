@@ -1,4 +1,6 @@
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+// Backend origin for file/image URLs (strips trailing /api from BASE_URL)
+export const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/api$/, '');
 
 const getHeaders = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
