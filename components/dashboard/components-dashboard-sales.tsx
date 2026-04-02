@@ -95,10 +95,12 @@ const ComponentsDashboardSales = () => {
             const sortedYears = Array.from(years).sort((a, b) => a - b);
 
             sortedYears.forEach(year => {
-                points.push({
-                    year,
-                    label: year.toString()
-                });
+                if (year) {
+                    points.push({
+                        year,
+                        label: year.toString()
+                    });
+                }
             });
         } else {
             // last12months
@@ -115,6 +117,10 @@ const ComponentsDashboardSales = () => {
         return points;
     };
 
+    if (loading) return <div className="flex justify-center items-center h-screen"><span className="animate-spin border-4 border-primary border-t-transparent rounded-full w-12 h-12"></span></div>;
+
+    if (!data) return <div className="flex justify-center items-center h-screen text-white-dark uppercase font-black tracking-widest">No data available (கிடைக்கவில்லை)</div>;
+
     const chartPoints = getChartDataPoints();
 
     const revenueChartSeries = [
@@ -122,6 +128,7 @@ const ComponentsDashboardSales = () => {
             name: 'Income',
             data: chartPoints.map(p => {
                 const found = data?.revenueChart?.revenueData?.find((rd: any) =>
+                    rd?._id &&
                     (p.day ? rd._id.day === p.day : true) &&
                     (p.month ? rd._id.month === p.month : true) &&
                     rd._id.year === p.year
@@ -133,6 +140,7 @@ const ComponentsDashboardSales = () => {
             name: 'Expenses',
             data: chartPoints.map(p => {
                 const found = data?.revenueChart?.expenseData?.find((ed: any) =>
+                    ed?._id &&
                     (p.day ? ed._id.day === p.day : true) &&
                     (p.month ? ed._id.month === p.month : true) &&
                     ed._id.year === p.year
@@ -174,9 +182,9 @@ const ComponentsDashboardSales = () => {
                 labels: {
                     formatter: (value: number) => {
                         if (value === null || value === undefined) return '0';
-                        if (typeof value !== 'number') return String(value);
+                        if (typeof value !== 'number' || isNaN(value)) return '0';
                         if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
-                        return value.toString();
+                        return String(value);
                     },
                     offsetX: isRtl ? -30 : -10,
                     offsetY: 0,
@@ -255,7 +263,9 @@ const ComponentsDashboardSales = () => {
                                 color: '#888ea8',
                                 fontSize: '16px',
                                 formatter: (w: any) => {
-                                    const total = w.globals.seriesTotals.reduce((a: any, b: any) => a + (b || 0), 0);
+                                    const totals = w?.globals?.seriesTotals;
+                                    if (!totals || !Array.isArray(totals)) return '₹0K';
+                                    const total = totals.reduce((a: any, b: any) => a + (b || 0), 0);
                                     return '₹' + (total / 1000).toFixed(1) + 'K';
                                 },
                             },
@@ -269,7 +279,7 @@ const ComponentsDashboardSales = () => {
 
 
 
-    if (loading) return <div className="flex justify-center items-center h-screen"><span className="animate-spin border-4 border-primary border-t-transparent rounded-full w-12 h-12"></span></div>;
+    if (!isMounted) return null;
 
     return (
         <>
@@ -495,7 +505,7 @@ const ComponentsDashboardSales = () => {
                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-8 translate-x-8"></div>
                             <div className="relative z-10 p-6 flex flex-col h-full justify-between">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white-dark mb-1">Attendance — இருப்பகுதி</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white-dark mb-1">Attendance — வருகை</p>
                                     <h5 className="text-2xl font-black text-black dark:text-white">Labour Stats</h5>
                                 </div>
 
@@ -520,7 +530,7 @@ const ComponentsDashboardSales = () => {
                                         <span>Status</span>
                                         <span className="text-success">Live Tracking</span>
                                     </div>
-                                    <Link href="/labour/wages" className="text-[9px] font-black uppercase tracking-[0.2em] text-primary hover:underline flex items-center gap-1">
+                                    <Link href="/labour/list" className="text-[9px] font-black uppercase tracking-[0.2em] text-primary hover:underline flex items-center gap-1">
                                         Open Labour Management <IconArrowLeft className="w-3 h-3 rotate-180" />
                                     </Link>
                                 </div>
