@@ -145,209 +145,210 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                     ) : (
 
 
-                    <div id="invoice-print-area" className="panel" style={{ position: 'relative', overflow: 'hidden' }}>
-                        {/* ===== BACKGROUND WATERMARK LOGO ===== */}
-                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.06, pointerEvents: 'none', zIndex: 0 }}>
-                            <img src="/assets/images/logo.png" alt="watermark" style={{ width: '420px', height: '420px', objectFit: 'contain' }} />
-                        </div>
-
-                        {/* ===== TOP HEADER: Company Logo + Address ===== */}
-                        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                            <div>
-                                <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#e79b21', margin: 0 }}>
-                                    {mode === 'invoice' ? 'INVOICE' : 'BILL'}
-                                </h1>
-                                <p style={{ fontSize: '13px', color: '#555', marginTop: '4px', fontWeight: 'bold' }}>
-                                    {mode === 'invoice' ? 'invoice no:' : 'bill no:'} {mode === 'invoice' ? selectedSale.invoiceNumber : selectedSale.invoiceNumber.replace('INV-', 'BILL-')}
-                                </p>
+                        <div id="invoice-print-area" className="panel" style={{ position: 'relative', overflow: 'hidden' }}>
+                            {/* ===== BACKGROUND WATERMARK LOGO ===== */}
+                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.06, pointerEvents: 'none', zIndex: 0 }}>
+                                <img src="/assets/images/logo.png" alt="watermark" style={{ width: '420px', height: '420px', objectFit: 'contain' }} />
                             </div>
-                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                                <img src="/assets/images/logo.png" alt="Karthick Earth Movers" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
-                                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Stone Quarry & Transport Unit</p>
-                                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Tamil Nadu, India</p>
-                                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>karthickearthmovers@gmail.com</p>
-                                <p style={{ fontSize: '12px', color: '#e79b21', margin: 0, fontWeight: 'bold', letterSpacing: '0.5px' }}>GST: 33AVFPK9827P2ZV</p>
+
+                            {/* ===== TOP HEADER: Company Logo + Address ===== */}
+                            <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                <div>
+                                    <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#e79b21', margin: 0 }}>
+                                        {mode === 'invoice' ? 'INVOICE' : 'BILL'}
+                                    </h1>
+                                    <p style={{ fontSize: '13px', color: '#555', marginTop: '4px', fontWeight: 'bold' }}>
+                                        {mode === 'invoice' ? 'invoice no:' : 'bill no:'} {mode === 'invoice' ? selectedSale.invoiceNumber : selectedSale.invoiceNumber.replace('INV-', 'BILL-')}
+                                    </p>
+                                </div>
+                                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                    <img src="/assets/images/logo.png" alt="Karthick Earth Movers" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
+                                    <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Stone Quarry & Transport Unit</p>
+                                    <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Tamil Nadu, India</p>
+                                    <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>karthickearthmovers@gmail.com</p>
+                                    <p style={{ fontSize: '12px', color: '#e79b21', margin: 0, fontWeight: 'bold', letterSpacing: '0.5px' }}>GST: 33AVFPK9827P2ZV</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <hr style={{ border: 'none', borderTop: '1px solid #e0e6ed', margin: '15px 0 25px 0', position: 'relative', zIndex: 1 }} />
+                            <hr style={{ border: 'none', borderTop: '1px solid #e0e6ed', margin: '15px 0 25px 0', position: 'relative', zIndex: 1 }} />
 
-                        {/* ===== DETAIL SECTION: Issue For | Invoice Info | Bank Info ===== */}
-                        <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '30px' }}>
-                            {/* Issue For */}
-                            <div style={{ flex: '1', minWidth: '250px' }}>
-                                <p style={{ fontSize: '11px', textTransform: 'uppercase', color: '#888', letterSpacing: '1px', marginBottom: '8px' }}>Issue For:</p>
-                                <table style={{ width: '100%', fontSize: '13px' }}>
-                                    <tbody>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>customer name :</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{selectedSale.customer?.name || '—'}</td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>address:</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', whiteSpace: 'normal', maxWidth: '150px' }}>{selectedSale.customer?.address || '—'}</td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>phone number:</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{selectedSale.customer?.phone || '—'}</td>
-                                        </tr>
-                                        {selectedSale.customer?.gstNumber && (
+                            {/* ===== DETAIL SECTION: Issue For | Invoice Info | Bank Info ===== */}
+                            <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+                                {/* Issue For */}
+                                <div style={{ flex: '1', minWidth: '250px' }}>
+                                    <p style={{ fontSize: '11px', textTransform: 'uppercase', color: '#888', letterSpacing: '1px', marginBottom: '8px' }}>Issue For:</p>
+                                    <table style={{ width: '100%', fontSize: '13px' }}>
+                                        <tbody>
                                             <tr>
-                                                <td style={{ padding: '4px 0', color: '#888' }}>GST:</td>
-                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', color: '#e79b21' }}>{selectedSale.customer.gstNumber}</td>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>customer name :</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{selectedSale.customer?.name || '—'}</td>
                                             </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Invoice Details */}
-                            <div style={{ flex: '1', minWidth: '200px' }}>
-                                <table style={{ width: '100%', fontSize: '13px' }}>
-                                    <tbody>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>Issue Date :</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{new Date(selectedSale.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>Payment Type :</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{selectedSale.paymentType}</td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>Status :</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', color: selectedSale.paymentStatus === 'Paid' ? '#00ab55' : selectedSale.paymentStatus === 'Partial' ? '#e2a03f' : '#e7515a' }}>{selectedSale.paymentStatus}</td>
-                                        </tr>
-                                        {selectedSale.dueDate && (
                                             <tr>
-                                                <td style={{ padding: '4px 0', color: '#888' }}>Due Date :</td>
-                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{new Date(selectedSale.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>address:</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', whiteSpace: 'normal', maxWidth: '150px' }}>{selectedSale.customer?.address || '—'}</td>
                                             </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                            <tr>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>phone number:</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{selectedSale.customer?.phone || '—'}</td>
+                                            </tr>
+                                            {selectedSale.customer?.gstNumber && (
+                                                <tr>
+                                                    <td style={{ padding: '4px 0', color: '#888' }}>GST:</td>
+                                                    <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', color: '#e79b21' }}>{selectedSale.customer.gstNumber}</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Invoice Details */}
+                                <div style={{ flex: '1', minWidth: '200px' }}>
+                                    <table style={{ width: '100%', fontSize: '13px' }}>
+                                        <tbody>
+                                            <tr>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>Issue Date :</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{new Date(selectedSale.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>Payment Type :</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{selectedSale.paymentType}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>Status :</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', color: selectedSale.paymentStatus === 'Paid' ? '#00ab55' : selectedSale.paymentStatus === 'Partial' ? '#e2a03f' : '#e7515a' }}>{selectedSale.paymentStatus}</td>
+                                            </tr>
+                                            {selectedSale.dueDate && (
+                                                <tr>
+                                                    <td style={{ padding: '4px 0', color: '#888' }}>Due Date :</td>
+                                                    <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{new Date(selectedSale.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Bank / Payment Info */}
+                                <div style={{ flex: '1', minWidth: '200px' }}>
+                                    <table style={{ width: '100%', fontSize: '13px' }}>
+                                        <tbody>
+                                            <tr>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>Bank Name:</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>IDBI Bank (Kallandhiri Branch)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>Account Number:</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>1201102000002059</td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>IFSC Code:</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>IBKL0001201</td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ padding: '4px 0', color: '#888' }}>City:</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>Madurai</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
 
-                            {/* Bank / Payment Info */}
-                            <div style={{ flex: '1', minWidth: '200px' }}>
-                                <table style={{ width: '100%', fontSize: '13px' }}>
-                                    <tbody>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>Bank Name:</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>Indian Bank</td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>Account Number:</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>—</td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>IFSC Code:</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>—</td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ padding: '4px 0', color: '#888' }}>Country:</td>
-                                            <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>India</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                            <hr style={{ border: 'none', borderTop: '1px solid #e0e6ed', margin: '0 0 20px 0' }} />
 
-                        <hr style={{ border: 'none', borderTop: '1px solid #e0e6ed', margin: '0 0 20px 0' }} />
-
-                        {/* ===== ITEMS TABLE ===== */}
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '25px' }}>
-                            <thead>
-                                <tr>
-                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>S.No</th>
-                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item Description</th>
-                                    {mode === 'invoice' && <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HSN CODE</th>}
-                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Qty</th>
-                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unit</th>
-                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rate (₹)</th>
-                                    {mode === 'invoice' && <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tax %</th>}
-                                    <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount (₹)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {selectedSale.items?.map((item: any, idx: number) => (
-                                    <tr key={idx}>
-                                        <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', fontSize: '13px' }}>{idx + 1}</td>
-                                        <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', fontWeight: '600', fontSize: '13px' }}>{item.item}</td>
-                                        {mode === 'invoice' && <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '13px' }}>{item.hsnCode || '-'}</td>}
-                                        <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '13px' }}>{item.quantity}</td>
-                                        <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '13px' }}>{item.unit}</td>
-                                        <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'right', fontSize: '13px' }}>₹{item.rate?.toLocaleString()}</td>
-                                        {mode === 'invoice' && <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'right', fontSize: '13px' }}>{item.gstPercentage || 0}%</td>}
-                                        <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'right', fontWeight: 'bold', fontSize: '13px' }}>₹{item.amount?.toLocaleString()}</td>
+                            {/* ===== ITEMS TABLE ===== */}
+                            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '25px' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>S.No</th>
+                                        <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item Description</th>
+                                        {mode === 'invoice' && <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HSN CODE</th>}
+                                        <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Qty</th>
+                                        <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unit</th>
+                                        <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rate (₹)</th>
+                                        {mode === 'invoice' && <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tax %</th>}
+                                        <th style={{ background: '#e79b21', color: 'white', padding: '12px 15px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount (₹)</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {selectedSale.items?.map((item: any, idx: number) => (
+                                        <tr key={idx}>
+                                            <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', fontSize: '13px' }}>{idx + 1}</td>
+                                            <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', fontWeight: '600', fontSize: '13px' }}>{item.item}</td>
+                                            {mode === 'invoice' && <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '13px' }}>{item.hsnCode || '-'}</td>}
+                                            <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '13px' }}>{item.quantity}</td>
+                                            <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '13px' }}>{item.unit}</td>
+                                            <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'right', fontSize: '13px' }}>₹{item.rate?.toLocaleString()}</td>
+                                            {mode === 'invoice' && <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'right', fontSize: '13px' }}>{item.gstPercentage || 0}%</td>}
+                                            <td style={{ padding: '11px 15px', borderBottom: '1px solid #eee', textAlign: 'right', fontWeight: 'bold', fontSize: '13px' }}>₹{item.amount?.toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
 
-                        {/* ===== TOTALS ===== */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '40px' }}>
-                            <div style={{ minWidth: '280px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px' }}>
-                                    <span style={{ color: '#888' }}>Subtotal</span>
-                                    <span style={{ fontWeight: 'bold' }}>₹{selectedSale.subtotal?.toLocaleString()}</span>
-                                </div>
-                                {selectedSale.gstAmount > 0 && (
-                                    <div style={{ borderTop: '1px solid #eee', marginTop: '5px', paddingTop: '5px' }}>
-                                        {Array.from(new Set(selectedSale.items?.map((i: any) => i.gstPercentage) || [])).sort((a: any, b: any) => b - a).map((pct: any) => {
-                                            const amt = selectedSale.items?.filter((i: any) => i.gstPercentage === pct).reduce((s: number, i: any) => s + (i.gstAmount || 0), 0) || 0;
-                                            if (amt <= 0) return null;
-                                            return (
-                                                <div key={pct} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', fontSize: '12px', color: '#666' }}>
-                                                    <span style={{ fontStyle: 'italic' }}>GST {pct}%</span>
-                                                    <span>₹{amt.toLocaleString()}</span>
-                                                </div>
-                                            );
-                                        })}
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px', borderTop: '1px solid #eee', marginTop: '5px' }}>
-                                            <span style={{ color: '#888' }}>Total Tax (GST)</span>
-                                            <span style={{ fontWeight: 'bold' }}>₹{selectedSale.gstAmount?.toLocaleString()}</span>
-                                        </div>
-                                    </div>
-                                )}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px' }}>
-                                    <span style={{ color: '#888' }}>Amount Paid</span>
-                                    <span style={{ fontWeight: 'bold', color: '#00ab55' }}>₹{selectedSale.amountPaid?.toLocaleString()}</span>
-                                </div>
-                                {selectedSale.balanceAmount > 0 && (
+                            {/* ===== TOTALS ===== */}
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '40px' }}>
+                                <div style={{ minWidth: '280px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px' }}>
-                                        <span style={{ color: '#888' }}>Balance Due</span>
-                                        <span style={{ fontWeight: 'bold', color: '#e7515a' }}>₹{selectedSale.balanceAmount?.toLocaleString()}</span>
+                                        <span style={{ color: '#888' }}>Subtotal</span>
+                                        <span style={{ fontWeight: 'bold' }}>₹{selectedSale.subtotal?.toLocaleString()}</span>
                                     </div>
-                                )}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 6px 0', fontSize: '18px', fontWeight: 'bold', color: '#e79b21', borderTop: '2px solid #e79b21', marginTop: '8px' }}>
-                                    <span>{mode === 'invoice' ? 'Grand Total' : 'Bill Total'}</span>
-                                    <span>₹{selectedSale.grandTotal?.toLocaleString()}</span>
+                                    {selectedSale.gstAmount > 0 && (
+                                        <div style={{ borderTop: '1px solid #eee', marginTop: '5px', paddingTop: '5px' }}>
+                                            {Array.from(new Set(selectedSale.items?.map((i: any) => i.gstPercentage) || [])).sort((a: any, b: any) => b - a).map((pct: any) => {
+                                                const amt = selectedSale.items?.filter((i: any) => i.gstPercentage === pct).reduce((s: number, i: any) => s + (i.gstAmount || 0), 0) || 0;
+                                                if (amt <= 0) return null;
+                                                return (
+                                                    <div key={pct} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', fontSize: '12px', color: '#666' }}>
+                                                        <span style={{ fontStyle: 'italic' }}>GST {pct}%</span>
+                                                        <span>₹{amt.toLocaleString()}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px', borderTop: '1px solid #eee', marginTop: '5px' }}>
+                                                <span style={{ color: '#888' }}>Total Tax (GST)</span>
+                                                <span style={{ fontWeight: 'bold' }}>₹{selectedSale.gstAmount?.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px' }}>
+                                        <span style={{ color: '#888' }}>Amount Paid</span>
+                                        <span style={{ fontWeight: 'bold', color: '#00ab55' }}>₹{selectedSale.amountPaid?.toLocaleString()}</span>
+                                    </div>
+                                    {selectedSale.balanceAmount > 0 && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '14px' }}>
+                                            <span style={{ color: '#888' }}>Balance Due</span>
+                                            <span style={{ fontWeight: 'bold', color: '#e7515a' }}>₹{selectedSale.balanceAmount?.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 6px 0', fontSize: '18px', fontWeight: 'bold', color: '#e79b21', borderTop: '2px solid #e79b21', marginTop: '8px' }}>
+                                        <span>{mode === 'invoice' ? 'Grand Total' : 'Bill Total'}</span>
+                                        <span>₹{selectedSale.grandTotal?.toLocaleString()}</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* ===== NOTES ===== */}
-                        {selectedSale.notes && (
-                            <div style={{ background: '#f8f9fa', padding: '12px 15px', borderRadius: '6px', marginBottom: '30px', fontSize: '13px' }}>
-                                <span style={{ fontWeight: 'bold', color: '#888', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notes: </span>
-                                <span style={{ color: '#555' }}>{selectedSale.notes}</span>
-                            </div>
-                        )}
+                            {/* ===== NOTES ===== */}
+                            {selectedSale.notes && (
+                                <div style={{ background: '#f8f9fa', padding: '12px 15px', borderRadius: '6px', marginBottom: '30px', fontSize: '13px' }}>
+                                    <span style={{ fontWeight: 'bold', color: '#888', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notes: </span>
+                                    <span style={{ color: '#555' }}>{selectedSale.notes}</span>
+                                </div>
+                            )}
 
-                        {/* ===== FOOTER ===== */}
-                        <div style={{ marginTop: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ borderTop: '1px solid #ccc', width: '200px', paddingTop: '8px', fontSize: '12px', color: '#888' }}>Customer Signature</div>
+                            {/* ===== FOOTER ===== */}
+                            <div style={{ paddingTop: '50px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ borderTop: '1px solid #ccc', width: '200px', paddingTop: '8px', fontSize: '12px', color: '#888' }}>Customer Signature</div>
+                                </div>
+                                <div style={{ textAlign: 'center', position: 'relative' }}>
+                                    <img src="/assets/images/Karthick-Earthmovers-owner-sign.jpeg" alt="Authorized Signature" style={{ width: '180px', position: 'absolute', top: '-45px', left: '50%', transform: 'translateX(-50%)', opacity: 0.9, pointerEvents: 'none' }} />
+                                    <div style={{ borderTop: '1px solid #ccc', width: '200px', paddingTop: '8px', marginTop: '20px', fontSize: '12px', color: '#888' }}>Authorized Signature</div>
+                                </div>
                             </div>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ borderTop: '1px solid #ccc', width: '200px', paddingTop: '8px', fontSize: '12px', color: '#888' }}>Authorized Signature</div>
+
+                            <div style={{ marginTop: '30px', textAlign: 'center', fontSize: '11px', color: '#aaa', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                                <p>Thank you for your business! — Karthick Earth Movers</p>
                             </div>
                         </div>
-
-                        <div style={{ marginTop: '30px', textAlign: 'center', fontSize: '11px', color: '#aaa', borderTop: '1px solid #eee', paddingTop: '15px' }}>
-                            <p>Thank you for your business! — Karthick Earth Movers</p>
-                        </div>
-                    </div>
                     )}
                 </div>
             ) : (
