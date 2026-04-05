@@ -35,7 +35,15 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
             if (filters.startDate) params.startDate = filters.startDate;
             if (filters.endDate) params.endDate = filters.endDate;
             const { data } = await api.get('/sales', { params });
-            if (data.success) setSales(data.data);
+            if (data.success) {
+                const sorted = data.data.sort((a: any, b: any) => {
+                    const dateA = new Date(a.invoiceDate).getTime();
+                    const dateB = new Date(b.invoiceDate).getTime();
+                    if (dateB !== dateA) return dateB - dateA;
+                    return (b._id || '').localeCompare(a._id || '');
+                });
+                setSales(sorted);
+            }
         } catch (error) {
             console.error(error);
         } finally {

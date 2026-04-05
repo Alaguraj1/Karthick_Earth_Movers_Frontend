@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import api from '@/utils/api';
 import IconSearch from '@/components/icon/icon-search';
@@ -17,7 +17,15 @@ const TripProfitability = () => {
                 api.get('/trips'),
                 api.get('/trips/stats')
             ]);
-            if (tripRes.data.success) setTrips(tripRes.data.data);
+            if (tripRes.data.success) {
+                const sorted = tripRes.data.data.sort((a: any, b: any) => {
+                    const dateA = new Date(a.date).getTime();
+                    const dateB = new Date(b.date).getTime();
+                    if (dateB !== dateA) return dateB - dateA;
+                    return (b._id || '').localeCompare(a._id || '');
+                });
+                setTrips(sorted);
+            }
             if (statRes.data.success) setStats(statRes.data.data);
         } catch (error) {
             console.error(error);

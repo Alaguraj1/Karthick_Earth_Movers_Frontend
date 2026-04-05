@@ -35,8 +35,8 @@ const SalesDetailsView = () => {
             const { data } = await api.get(`/sales/${saleId}`);
             if (data.success) {
                 setSale(data.data);
-                setTrips(data.trips || []);
-                setPayments(data.payments || []);
+                setTrips((data.trips || []).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+                setPayments((data.payments || []).sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()));
             }
         } catch (error) {
             console.error('Error fetching sale details:', error);

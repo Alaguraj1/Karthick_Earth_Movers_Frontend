@@ -64,7 +64,17 @@ const SalesEntryForm = () => {
     const fetchSales = async () => {
         try {
             const res = await api.get('/sales');
-            if (res.data.success) setRecentSales(res.data.data);
+            if (res.data.success) {
+                const sorted = res.data.data.sort((a: any, b: any) => {
+                    // Sort by invoiceDate descending, then by invoiceNumber/ID descending
+                    const dateA = new Date(a.invoiceDate).getTime();
+                    const dateB = new Date(b.invoiceDate).getTime();
+                    if (dateB !== dateA) return dateB - dateA;
+                    // Fallback to ID or invoice number if dates are same
+                    return (b._id || '').localeCompare(a._id || '');
+                });
+                setRecentSales(sorted);
+            }
         } catch (error) {
             console.error(error);
         }

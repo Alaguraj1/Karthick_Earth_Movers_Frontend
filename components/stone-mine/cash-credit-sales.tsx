@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
@@ -24,7 +24,15 @@ const CashCreditSales = () => {
             if (filters.endDate) params.endDate = filters.endDate;
             if (activeTab !== 'all') params.paymentType = activeTab;
             const { data } = await api.get('/sales', { params });
-            if (data.success) setSales(data.data);
+            if (data.success) {
+                const sorted = data.data.sort((a: any, b: any) => {
+                    const dateA = new Date(a.invoiceDate).getTime();
+                    const dateB = new Date(b.invoiceDate).getTime();
+                    if (dateB !== dateA) return dateB - dateA;
+                    return (b._id || '').localeCompare(a._id || '');
+                });
+                setSales(sorted);
+            }
         } catch (error) {
             console.error(error);
         } finally {

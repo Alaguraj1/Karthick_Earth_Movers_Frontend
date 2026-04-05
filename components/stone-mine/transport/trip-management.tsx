@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -78,7 +78,15 @@ const TripManagement = () => {
                 api.get('/permits'),
             ]);
 
-            if (tripRes.data.success) setTrips(tripRes.data.data);
+            if (tripRes.data.success) {
+                const sortedTrips = tripRes.data.data.sort((a: any, b: any) => {
+                    const dateA = new Date(a.date).getTime();
+                    const dateB = new Date(b.date).getTime();
+                    if (dateB !== dateA) return dateB - dateA;
+                    return (b._id || '').localeCompare(a._id || '');
+                });
+                setTrips(sortedTrips);
+            }
             if (vehicleRes.data.success) {
                 // Filter out MACHINES (JCBs, etc.) from Transport Trip Management
                 const transportOnly = vehicleRes.data.data.filter((v: any) => v.type === 'Vehicle');
@@ -89,7 +97,15 @@ const TripManagement = () => {
             if (customerRes.data.success) setCustomers(customerRes.data.data);
             if (stoneRes.data.success) setStoneTypes(stoneRes.data.data);
             if (categoryRes.data.success) setVehicleCategories(categoryRes.data.data);
-            if (salesRes && salesRes.data.success) setSales(salesRes.data.data);
+            if (salesRes && salesRes.data.success) {
+                const sortedSales = salesRes.data.data.sort((a: any, b: any) => {
+                    const dateA = new Date(a.invoiceDate).getTime();
+                    const dateB = new Date(b.invoiceDate).getTime();
+                    if (dateB !== dateA) return dateB - dateA;
+                    return (b._id || '').localeCompare(a._id || '');
+                });
+                setSales(sortedSales);
+            }
             if (permitRes.data.success) setPermits(permitRes.data.data);
         } catch (error) {
             console.error(error);
