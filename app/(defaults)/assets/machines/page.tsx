@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -416,7 +416,7 @@ const MachineDetails = () => {
                                     </select>
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Machine Name / ID</label>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Machine Name / Model</label>
                                     <input
                                         type="text"
                                         className="form-input border-2 font-bold rounded-xl h-12"
@@ -427,12 +427,12 @@ const MachineDetails = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Model Number</label>
-                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.modelNumber} onChange={(e) => setNewItem({ ...newItem, modelNumber: e.target.value })} />
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Registration / Serial No (Unique)</label>
+                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12 uppercase" value={newItem.registrationNumber} onChange={(e) => setNewItem({ ...newItem, registrationNumber: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Registration / Serial No</label>
-                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12 uppercase" value={newItem.registrationNumber} onChange={(e) => setNewItem({ ...newItem, registrationNumber: e.target.value })} />
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Owner Name</label>
+                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.ownerName} onChange={(e) => setNewItem({ ...newItem, ownerName: e.target.value })} placeholder="Enter Owner Name" />
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Current Condition</label>
@@ -469,7 +469,7 @@ const MachineDetails = () => {
                                         <input type="date" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.purchaseDate} onChange={(e) => setNewItem({ ...newItem, purchaseDate: e.target.value })} />
                                     </div>
                                 )}
-                                <div className="md:col-span-2">
+                                <div>
                                     <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Operator Name</label>
                                     <select
                                         className="form-select border-2 font-bold rounded-xl h-12"
@@ -481,6 +481,10 @@ const MachineDetails = () => {
                                             <option key={op._id} value={op.name}>{op.name} {op.mobile ? `- ${op.mobile}` : ''}</option>
                                         ))}
                                     </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Operator Mobile Number</label>
+                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.mobile} onChange={(e) => setNewItem({ ...newItem, mobile: e.target.value })} placeholder="Enter Mobile Number" />
                                 </div>
                             </div>
                             <div className="pt-4">
@@ -574,11 +578,10 @@ const MachineDetails = () => {
                                         <div className="space-y-4">
                                             <div>
                                                 <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Assigned Operator</span>
-                                                <span className="text-sm font-black">{detailsView.operatorName || 'N/A'}</span>
+                                                <span className="text-sm font-black">{detailsView.operatorName || 'N/A'} {detailsView.mobile ? `(${detailsView.mobile})` : ''}</span>
                                             </div>
                                             <div>
-                                                <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Model / Serial</span>
-                                                <span className="text-sm font-black">{detailsView.modelNumber || 'N/A'}</span>
+                                                <span className="text-sm font-black">{detailsView.registrationNumber || detailsView.vehicleNumber}</span>
                                             </div>
                                             <div>
                                                 <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Condition</span>
@@ -586,7 +589,7 @@ const MachineDetails = () => {
                                             </div>
                                             <div>
                                                 <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Asset Owner</span>
-                                                <span className="text-sm font-black">{detailsView.ownershipType === 'Own' ? (detailsView.ownerName || 'Own Asset') : (detailsView.contractor?.name || 'Rental Asset')}</span>
+                                                <span className="text-sm font-black">{detailsView.ownerName || (detailsView.ownershipType === 'Own' ? 'Own Asset' : detailsView.contractor?.name) || 'N/A'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -838,6 +841,7 @@ const MachineDetails = () => {
                                                     <div>
                                                         <span className="text-[9px] font-black uppercase text-white-dark block tracking-widest mb-1">Operator</span>
                                                         <span className="text-sm font-bold text-black dark:text-white-light truncate block">{asset.operatorName || 'Not Assigned'}</span>
+                                                        {asset.mobile && <span className="text-[10px] font-black text-info">{asset.mobile}</span>}
                                                     </div>
                                                     <div>
                                                         <span className="text-[9px] font-black uppercase text-white-dark block tracking-widest mb-1">Condition</span>

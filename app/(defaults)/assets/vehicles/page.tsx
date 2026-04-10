@@ -417,7 +417,7 @@ const VehicleDetails = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Vehicle Plate Number</label>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Vehicle Plate Number (Unique)</label>
                                     <input
                                         type="text"
                                         name="vehicleNumber"
@@ -433,11 +433,15 @@ const VehicleDetails = () => {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                                 <div>
                                     <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Owner Name</label>
-                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.ownerName} onChange={(e) => setNewItem({ ...newItem, ownerName: e.target.value })} />
+                                    <input type="text" placeholder="Enter Owner Name" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.ownerName} onChange={(e) => setNewItem({ ...newItem, ownerName: e.target.value })} />
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Driver Name</label>
                                     <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.driverName} onChange={(e) => setNewItem({ ...newItem, driverName: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Driver Mobile Number</label>
+                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.mobile} onChange={(e) => setNewItem({ ...newItem, mobile: e.target.value })} placeholder="Enter Mobile Number" />
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Permit Expiry Date</label>
@@ -568,11 +572,14 @@ const VehicleDetails = () => {
                                         <div className="space-y-4">
                                             <div>
                                                 <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Driver</span>
-                                                <span className="text-sm font-black">{detailsView.driverName || 'N/A'}</span>
+                                                <span className="text-sm font-black">{detailsView.driverName || 'N/A'} {detailsView.mobile ? `(${detailsView.mobile})` : ''}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-sm font-black">{detailsView.vehicleNumber}</span>
                                             </div>
                                             <div>
                                                 <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Owner</span>
-                                                <span className="text-sm font-black">{detailsView.ownershipType === 'Own' ? (detailsView.ownerName || 'Internal') : (detailsView.contractor?.name || 'Contractor')}</span>
+                                                <span className="text-sm font-black">{detailsView.ownerName || (detailsView.ownershipType === 'Own' ? 'Internal' : detailsView.contractor?.name) || 'N/A'}</span>
                                             </div>
                                             <div>
                                                 <span className="text-[10px] font-black uppercase text-white-dark block mb-1">Condition</span>
@@ -791,6 +798,7 @@ const VehicleDetails = () => {
                                                     <div>
                                                         <span className="text-[9px] font-black uppercase text-white-dark block tracking-widest mb-1">Driver</span>
                                                         <span className="text-sm font-bold text-black dark:text-white-light truncate block">{asset.driverName || 'Not Assigned'}</span>
+                                                        {asset.mobile && <span className="text-[10px] font-black text-info">{asset.mobile}</span>}
                                                     </div>
                                                     <div>
                                                         <span className="text-[9px] font-black uppercase text-white-dark block tracking-widest mb-1">Owner</span>
