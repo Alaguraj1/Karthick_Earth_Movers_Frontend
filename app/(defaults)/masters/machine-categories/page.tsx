@@ -135,7 +135,7 @@ const MachineCategoriesMaster = () => {
                                     value={newItem.name}
                                     onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                                     required
-                                    placeholder="e.g., Poclain, Breaker, Loader..."
+                                    placeholder="Enter Machine Category Name"
                                 />
                             </div>
 

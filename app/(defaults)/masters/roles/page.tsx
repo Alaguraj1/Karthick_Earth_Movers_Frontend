@@ -148,7 +148,7 @@ const RoleMaster = () => {
                                     value={newItem.name}
                                     onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                                     required
-                                    placeholder="e.g., Accountant, Supervisor, Operator..."
+                                    placeholder="Enter Role Name"
                                 />
                             </div>
 

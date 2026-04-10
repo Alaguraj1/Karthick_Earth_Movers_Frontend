@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -157,7 +157,7 @@ const StoneTypesMaster = () => {
                                         setNewItem({ ...newItem, name, hsnCode: suggestedHSN });
                                     }}
                                     required
-                                    placeholder="e.g., Jelly 20mm, M-Sand..."
+                                    placeholder="Enter Stone Type Name"
                                 />
                             </div>
 

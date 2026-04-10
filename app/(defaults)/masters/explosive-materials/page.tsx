@@ -139,7 +139,7 @@ const ExplosiveMaterialsMaster = () => {
                                     value={newItem.name}
                                     onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                                     required
-                                    placeholder="e.g., Detonator, Ammonium Nitrate..."
+                                    placeholder="Enter Material Name"
                                 />
                             </div>
 
