@@ -474,17 +474,21 @@ const MachineDetails = () => {
                                     <select
                                         className="form-select border-2 font-bold rounded-xl h-12"
                                         value={newItem.operatorName}
-                                        onChange={(e) => setNewItem({ ...newItem, operatorName: e.target.value })}
+                                        onChange={(e) => {
+                                            const opName = e.target.value;
+                                            const operator = operators.find((op: any) => op.name === opName);
+                                            setNewItem({ ...newItem, operatorName: opName, mobile: operator?.mobile || '' });
+                                        }}
                                     >
                                         <option value="">Select Operator (இயக்குபவர்)</option>
                                         {operators.map((op: any) => (
-                                            <option key={op._id} value={op.name}>{op.name} {op.mobile ? `- ${op.mobile}` : ''}</option>
+                                            <option key={op._id} value={op.name}>{op.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Operator Mobile Number</label>
-                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12" value={newItem.mobile} onChange={(e) => setNewItem({ ...newItem, mobile: e.target.value })} placeholder="Enter Mobile Number" />
+                                    <input type="text" className="form-input border-2 font-bold rounded-xl h-12 bg-gray-100 dark:bg-gray-800 cursor-not-allowed" value={newItem.mobile} readOnly placeholder="Enter Mobile Number" />
                                 </div>
                             </div>
                             <div className="pt-4">
