@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -208,11 +208,12 @@ const AttendancePage = () => {
     const stats = {
         total: labours.length,
         present: Object.values(attendanceData).filter((a: any) => a.status === 'Present').length,
+        leave: Object.values(attendanceData).filter((a: any) => a.status === 'Paid Leave').length,
         absent: Object.values(attendanceData).filter((a: any) => a.status === 'Absent').length,
         halfDay: Object.values(attendanceData).filter((a: any) => a.status === 'Half Day').length,
     };
 
-    const presentPercent = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
+    const presentPercent = stats.total > 0 ? Math.round(((stats.present + stats.leave) / stats.total) * 100) : 0;
 
     const getInitials = (name: string) => {
         return name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
@@ -251,11 +252,11 @@ const AttendancePage = () => {
                             : 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700'
                     }`}
             >
-                {/* Status Indicator Strip */}
                 <div className={`h-1 w-full ${status === 'Present' ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
-                    status === 'Half Day' ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
-                        status === 'Absent' ? 'bg-gradient-to-r from-red-400 to-red-500' :
-                            'bg-gray-200 dark:bg-gray-700'
+                    status === 'Paid Leave' ? 'bg-gradient-to-r from-primary to-primary/80' :
+                        status === 'Half Day' ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                            status === 'Absent' ? 'bg-gradient-to-r from-red-400 to-red-500' :
+                                'bg-gray-200 dark:bg-gray-700'
                     }`}></div>
 
                 <div className="p-4">
@@ -290,7 +291,7 @@ const AttendancePage = () => {
                             <input
                                 type="number"
                                 className={`w-14 h-9 text-center font-black text-sm border-2 rounded-xl border-gray-200 dark:border-gray-600 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all bg-white dark:bg-gray-700 dark:text-white ${(!isJoined(labour) || attendanceData[labour._id]?.isPaid || monthPaidLabours.includes(labour._id)) ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                min="0" max="12"
+                                min="0" max="24"
                                 value={attendanceData[labour._id]?.overtimeHours || 0}
                                 onChange={(e) => handleOvertimeChange(labour._id, parseInt(e.target.value) || 0)}
                                 disabled={!isJoined(labour) || attendanceData[labour._id]?.isPaid || monthPaidLabours.includes(labour._id)}
@@ -345,6 +346,19 @@ const AttendancePage = () => {
                                 </div>
                                 <span className="text-[9px] font-black uppercase tracking-widest">Absent</span>
                             </button>
+
+                            {(isAdmin || isOwner) && (
+                                <button
+                                    onClick={() => handleStatusChange(labour._id, 'Paid Leave')}
+                                    disabled={attendanceData[labour._id]?.isPaid || monthPaidLabours.includes(labour._id)}
+                                    className={`group col-span-3 relative flex items-center justify-center py-2.5 rounded-xl transition-all duration-300 border-2 ${(attendanceData[labour._id]?.isPaid || monthPaidLabours.includes(labour._id)) ? 'opacity-50 cursor-not-allowed' : ''} ${status === 'Paid Leave'
+                                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-[1.02]'
+                                        : 'bg-white dark:bg-gray-700 text-primary border-primary/20 dark:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/50'
+                                        }`}
+                                >
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-center">⭐ Gov / Paid Leave</span>
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="bg-gray-100 dark:bg-gray-700/50 py-3 px-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-center">
@@ -384,20 +398,21 @@ const AttendancePage = () => {
                 </td>
                 <td className="px-3 py-3">
                     {isJoined(labour) ? (
-                        <div className="flex items-center gap-1.5">
-                            {['Present', 'Half Day', 'Absent'].map((s) => (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            {['Present', 'Half Day', 'Absent', ...((isAdmin || isOwner) ? ['Paid Leave'] : [])].map((s) => (
                                 <button
                                     key={s}
                                     onClick={() => handleStatusChange(labour._id, s)}
                                     disabled={attendanceData[labour._id]?.isPaid || monthPaidLabours.includes(labour._id)}
                                     className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-200 border ${(attendanceData[labour._id]?.isPaid || monthPaidLabours.includes(labour._id)) ? 'opacity-30 cursor-not-allowed' : ''} ${status === s
                                         ? s === 'Present' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                                            : s === 'Paid Leave' ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
                                             : s === 'Half Day' ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20'
                                                 : 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/20'
                                         : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300'
                                         }`}
                                 >
-                                    {s === 'Present' ? '✓' : s === 'Half Day' ? '½' : '✗'} {s}
+                                    {s === 'Present' ? '✓' : s === 'Paid Leave' ? '⭐' : s === 'Half Day' ? '½' : '✗'} {s === 'Paid Leave' ? 'Gov. Leave' : s}
                                 </button>
                             ))}
                         </div>
@@ -411,7 +426,7 @@ const AttendancePage = () => {
                     <input
                         type="number"
                         className={`w-16 h-8 text-center font-bold text-xs border-2 rounded-lg border-gray-200 dark:border-gray-600 focus:border-primary bg-white dark:bg-gray-700 dark:text-white ${(!isJoined(labour) || attendanceData[labour._id]?.isPaid || monthPaidLabours.includes(labour._id)) ? 'opacity-30 cursor-not-allowed' : ''}`}
-                        min="0" max="12"
+                        min="0" max="24"
                         value={attendanceData[labour._id]?.overtimeHours || 0}
                         onChange={(e) => handleOvertimeChange(labour._id, parseInt(e.target.value) || 0)}
                         disabled={!isJoined(labour) || attendanceData[labour._id]?.isPaid || monthPaidLabours.includes(labour._id)}
@@ -424,7 +439,7 @@ const AttendancePage = () => {
     return (
         <div className="space-y-5">
             {/* Premium Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 p-6 text-white shadow-2xl">
+            <div className="relative overflow-hidden rounded-2xl bg-primary p-6 text-white shadow-2xl">
                 <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-white/5 blur-3xl"></div>
                 <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-white/5 blur-3xl"></div>
                 <div className="absolute right-6 top-6 opacity-10">
@@ -482,18 +497,18 @@ const AttendancePage = () => {
             {/* Stats Dashboard */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                 {/* Attendance Progress */}
-                <div className="col-span-2 lg:col-span-1 panel !p-4 bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-800 border-blue-200/50 dark:border-blue-800/50">
-                    <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2">Attendance Rate</div>
+                <div className="col-span-2 lg:col-span-1 panel !p-4 bg-primary/5 dark:bg-primary/10 border-primary/20 dark:border-primary/20">
+                    <div className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Attendance Rate</div>
                     <div className="relative w-20 h-20 mx-auto mb-2">
                         <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
                             <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" className="text-gray-200 dark:text-gray-600" strokeWidth="2.5" />
-                            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" className="text-blue-500"
+                            <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" className="text-primary"
                                 strokeWidth="2.5" strokeDasharray={`${presentPercent} 100`}
                                 strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.8s ease' }}
                             />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-lg font-black text-blue-600 dark:text-blue-400">{presentPercent}%</span>
+                            <span className="text-lg font-black text-primary">{presentPercent}%</span>
                         </div>
                     </div>
                     <div className="text-center text-[10px] text-gray-400">Attendance Rate</div>
@@ -653,9 +668,9 @@ const AttendancePage = () => {
                 <div className="panel !p-0 overflow-hidden rounded-2xl">
                     {directLabours.length > 0 && (
                         <>
-                            <div className="bg-gradient-to-r from-blue-500/10 to-transparent px-5 py-3 border-b border-gray-100 dark:border-gray-700">
-                                <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <div className="bg-primary/5 px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+                                <span className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-primary"></span>
                                     Direct Workers — {directLabours.length}
                                 </span>
                             </div>
@@ -701,12 +716,12 @@ const AttendancePage = () => {
                     {directLabours.length > 0 && (
                         <div>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="h-px flex-1 bg-gradient-to-r from-blue-300 to-transparent dark:from-blue-700"></div>
-                                <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 px-4 py-1.5 rounded-full border border-blue-200 dark:border-blue-800">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                <div className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent dark:from-primary/50"></div>
+                                <span className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20">
+                                    <span className="w-2 h-2 rounded-full bg-primary"></span>
                                     Direct Workers — {directLabours.length}
                                 </span>
-                                <div className="h-px flex-1 bg-gradient-to-l from-blue-300 to-transparent dark:from-blue-700"></div>
+                                <div className="h-px flex-1 bg-gradient-to-l from-primary/30 to-transparent dark:from-primary/50"></div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                 {directLabours.map(renderWorkerCard)}
@@ -737,7 +752,7 @@ const AttendancePage = () => {
             <div className="fixed bottom-8 right-8 z-50">
                 <button
                     type="button"
-                    className={`group relative overflow-hidden bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white shadow-[0_10px_40px_rgba(79,70,229,0.45)] px-8 py-4 rounded-2xl flex items-center gap-3 transform hover:scale-105 active:scale-95 transition-all duration-300 font-black uppercase tracking-widest text-sm ${(!isPeriodEditable || saving || loading) ? 'grayscale opacity-70 cursor-not-allowed' : ''}`}
+                    className={`group relative overflow-hidden bg-primary text-white shadow-xl shadow-primary/40 px-8 py-4 rounded-2xl flex items-center gap-3 transform hover:scale-105 active:scale-95 transition-all duration-300 font-black uppercase tracking-widest text-sm ${(!isPeriodEditable || saving || loading) ? 'grayscale opacity-70 cursor-not-allowed' : ''}`}
                     onClick={handleSave}
                     disabled={!isPeriodEditable || saving || loading}
                 >
