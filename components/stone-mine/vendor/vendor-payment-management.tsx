@@ -24,6 +24,8 @@ const VendorPaymentManagement = () => {
     const [balances, setBalances] = useState<any>({});
     const [selectedVendorStats, setSelectedVendorStats] = useState<any>(null);
     const [historySearch, setHistorySearch] = useState('');
+    const [vendorTrips, setVendorTrips] = useState<any[]>([]);
+    const [isFetchingTrips, setIsFetchingTrips] = useState(false);
 
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
@@ -82,18 +84,72 @@ const VendorPaymentManagement = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const fetchVendorTrips = async (date: string, vendorId: string, vendorVehicles: any[]) => {
+        if (!date || !vendorId || !vendorVehicles.length) {
+            setVendorTrips([]);
+            return;
+        }
+
+        try {
+            setIsFetchingTrips(true);
+            const { data } = await api.get(`/trips?date=${date}`);
+            if (data.success) {
+                const vehicleNumbers = vendorVehicles.map(v => (v.vehicleNumber || '').toLowerCase());
+                const filtered = data.data.filter((t: any) => {
+                    const vNum = (t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || '').toLowerCase();
+                    return vehicleNumbers.includes(vNum);
+                });
+
+                setVendorTrips(filtered);
+
+                // Calculate total based on vendor's agreement rates for these vehicles
+                const total = filtered.reduce((sum: number, trip: any) => {
+                    const vName = (trip.vehicleId?.vehicleNumber || trip.vehicleId?.registrationNumber || '').toLowerCase();
+                    const vAgreement = vendorVehicles.find(v => (v.vehicleNumber || '').toLowerCase() === vName);
+                    const tripRate = Number(vAgreement?.ratePerTrip || 0);
+                    const tripPadi = Number(vAgreement?.padiKasu || 0);
+                    return sum + tripRate + tripPadi;
+                }, 0);
+
+                if (total > 0 && formData.paymentType === 'Bill') {
+                    setFormData(prev => ({ ...prev, invoiceAmount: total.toString() }));
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching trips:', error);
+            showToast('Could not load trips for calculation', 'error');
+        } finally {
+            setIsFetchingTrips(false);
+        }
+    };
+
     const handleChange = (e: any) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
 
+        if (name === 'date') {
+            const [vId, vType] = formData.vendorSelected.split('|');
+            if (vType === 'TransportVendor') {
+                const vendor = allVendors.find(v => v._id === vId && v.type === vType);
+                if (vendor) fetchVendorTrips(value, vId, vendor.vehicles || []);
+            }
+        }
+
         if (name === 'vendorSelected') {
             if (!value) {
                 setSelectedVendorStats(null);
+                setVendorTrips([]);
                 return;
             }
             const [vId, vType] = value.split('|');
             const vendor = allVendors.find((v) => v._id === vId && v.type === vType);
             if (vendor) {
+                if (vType === 'TransportVendor') {
+                    fetchVendorTrips(formData.date, vId, vendor.vehicles || []);
+                } else {
+                    setVendorTrips([]);
+                }
+
                 const ledgerBal = balances[`${vId}|${vType}`] || 0;
                 let potentialCost = 0;
                 if (vType === 'TransportVendor') {
@@ -150,6 +206,7 @@ const VendorPaymentManagement = () => {
             notes: ''
         });
         setSelectedVendorStats(null);
+        setVendorTrips([]);
         setShowForm(false);
     };
 
@@ -246,6 +303,68 @@ const VendorPaymentManagement = () => {
                                         ₹{selectedVendorStats.outstanding.toLocaleString()}
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {vendorTrips.length > 0 && (
+                            <div className="panel bg-info/5 border-dashed border-info/30 p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h6 className="font-black text-xs uppercase text-info">Trips Log for {formData.date}</h6>
+                                    <span className="badge badge-outline-info">{vendorTrips.length} Trips Found</span>
+                                </div>
+                                <div className="table-responsive">
+                                    <table className="table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th className="text-[10px] uppercase">Vehicle</th>
+                                                <th className="text-[10px] uppercase">Route</th>
+                                                <th className="text-[10px] uppercase !text-right">Rate</th>
+                                                <th className="text-[10px] uppercase !text-right">Padi</th>
+                                                <th className="text-[10px] uppercase !text-right">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {vendorTrips.map((t, idx) => {
+                                                const [vId, vType] = formData.vendorSelected.split('|');
+                                                const vendor = allVendors.find(v => v._id === vId && v.type === vType);
+                                                const vName = (t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || '').toLowerCase();
+                                                const vAgreement = vendor?.vehicles?.find((v: any) => (v.vehicleNumber || '').toLowerCase() === vName);
+                                                const tripRate = Number(vAgreement?.ratePerTrip || 0);
+                                                const tripPadi = Number(vAgreement?.padiKasu || 0);
+                                                return (
+                                                    <tr key={idx} className="border-b border-info/10">
+                                                        <td className="text-xs font-bold">{vName.toUpperCase()}</td>
+                                                        <td className="text-[10px]">{t.fromLocation} → {t.toLocation}</td>
+                                                        <td className="text-xs !text-right">₹{tripRate.toLocaleString()}</td>
+                                                        <td className="text-xs !text-right text-warning font-bold">₹{tripPadi.toLocaleString()}</td>
+                                                        <td className="text-xs !text-right font-black text-info">₹{(tripRate + tripPadi).toLocaleString()}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-info/10">
+                                                <td colSpan={4} className="text-right text-[10px] font-black uppercase">Grand Total (Bill Amount):</td>
+                                                <td className="!text-right text-sm font-black text-info">
+                                                    ₹{vendorTrips.reduce((sum, t) => {
+                                                        const [vId, vType] = formData.vendorSelected.split('|');
+                                                        const vendor = allVendors.find(v => v._id === vId && v.type === vType);
+                                                        const vName = (t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || '').toLowerCase();
+                                                        const vAgreement = vendor?.vehicles?.find((v: any) => (v.vehicleNumber || '').toLowerCase() === vName);
+                                                        return sum + Number(vAgreement?.ratePerTrip || 0) + Number(vAgreement?.padiKasu || 0);
+                                                    }, 0).toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {isFetchingTrips && (
+                            <div className="flex items-center justify-center p-4 bg-info/5 rounded animate-pulse">
+                                <span className="animate-spin border-2 border-info border-l-transparent rounded-full w-4 h-4 mr-2"></span>
+                                <span className="text-xs font-bold text-info uppercase">Calculating Trips...</span>
                             </div>
                         )}
 

@@ -323,6 +323,15 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/vendors/transport">Transport Vendors</Link>
                                                 </li>
+                                                <li>
+                                                    <Link href="/vendors/payments">Vendor Payment History</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/advance">Vendor Advance</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/outstanding">Vendor Outstanding</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>
