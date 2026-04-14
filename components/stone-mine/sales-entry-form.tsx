@@ -60,6 +60,7 @@ const SalesEntryForm = () => {
     const [filterDelivery, setFilterDelivery] = useState('');
     const [filterReceipt, setFilterReceipt] = useState('');
     const [filterGst, setFilterGst] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     const fetchSales = async () => {
         try {
@@ -283,7 +284,10 @@ const SalesEntryForm = () => {
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
+        if (isSaving) return;
+
         try {
+            setIsSaving(true);
             const payload = {
                 ...formData,
                 items: items.map(item => ({
@@ -320,6 +324,8 @@ const SalesEntryForm = () => {
         } catch (error: any) {
             console.error(error);
             showToast(error.response?.data?.message || 'Error saving sale', 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -712,9 +718,13 @@ const SalesEntryForm = () => {
                             <button type="button" className="btn btn-outline-danger px-8" onClick={resetForm}>
                                 Cancel
                             </button>
-                            <button type="submit" className="btn btn-primary px-10 shadow-lg shadow-primary/20">
-                                <IconSave className="ltr:mr-2 rtl:ml-2" />
-                                {editId ? 'Update Sale' : 'Save Sale'}
+                            <button type="submit" className="btn btn-primary px-10 shadow-lg shadow-primary/20" disabled={isSaving}>
+                                {isSaving ? (
+                                    <span className="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 ltr:mr-2 rtl:ml-2 inline-block"></span>
+                                ) : (
+                                    <IconSave className="ltr:mr-2 rtl:ml-2" />
+                                )}
+                                {isSaving ? 'Saving...' : editId ? 'Update Sale' : 'Save Sale'}
                             </button>
                         </div>
                     </form>
@@ -731,10 +741,10 @@ const SalesEntryForm = () => {
                                 <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
                                 {isOwner && (
                                     <>
-                                        <button className="btn btn-outline-primary whitespace-nowrap" onClick={downloadTemplate}>
+                                        {/* <button className="btn btn-outline-primary whitespace-nowrap" onClick={downloadTemplate}>
                                             <IconDownload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
                                             Download Template
-                                        </button>
+                                        </button> */}
                                         <button className="btn btn-info whitespace-nowrap" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
                                             <IconFileUpload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
                                             {isUploading ? 'Uploading...' : 'Bulk Upload'}
