@@ -26,6 +26,7 @@ const TripManagement = () => {
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Filter states
     const [search, setSearch] = useState('');
@@ -256,7 +257,9 @@ const TripManagement = () => {
     };
 
     const handleConvertToSale = async (tripId: string) => {
+        if (isSaving) return;
         try {
+            setIsSaving(true);
             const { data } = await api.post(`/trips/${tripId}/convert-to-sale`);
             if (data.success) {
                 showToast('Trip converted to Sale successfully!', 'success');
@@ -264,11 +267,14 @@ const TripManagement = () => {
             }
         } catch (error: any) {
             showToast(error.response?.data?.message || 'Error converting trip', 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
+        if (isSaving) return;
 
         // Quantity validation: check against remaining sale qty
         if (formData.saleId && remainingQty !== null) {
@@ -284,6 +290,7 @@ const TripManagement = () => {
         }
 
         try {
+            setIsSaving(true);
             const payload = { ...formData };
             if (editId) {
                 await api.put(`/trips/${editId}`, payload);
@@ -297,6 +304,8 @@ const TripManagement = () => {
         } catch (error: any) {
             console.error(error);
             showToast(error.response?.data?.message || 'Error saving record', 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -593,10 +602,14 @@ const TripManagement = () => {
                         </div>
 
                         <div className="flex items-center justify-end gap-3 pt-4">
-                            <button type="button" className="btn btn-outline-danger" onClick={resetForm}>Cancel</button>
-                            <button type="submit" className="btn btn-primary px-8">
-                                <IconSave className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
-                                {editId ? 'Update Record' : 'Save Record'}
+                            <button type="button" className="btn btn-outline-danger" onClick={resetForm} disabled={isSaving}>Cancel</button>
+                            <button type="submit" className="btn btn-primary px-8" disabled={isSaving}>
+                                {isSaving ? (
+                                    <span className="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 ltr:mr-2 rtl:ml-2 inline-block"></span>
+                                ) : (
+                                    <IconSave className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
+                                )}
+                                {isSaving ? 'Saving...' : editId ? 'Update Record' : 'Save Record'}
                             </button>
                         </div>
                     </form>
