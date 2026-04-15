@@ -153,9 +153,7 @@ const Sidebar = () => {
                                                         <Link href="/expenses/labour-wages">Labour Wages</Link>
                                                     </li>
                                                 )}
-                                                <li>
-                                                    <Link href="/expenses/explosive-cost">Explosive Cost</Link>
-                                                </li>
+
                                                 <li>
                                                     <Link href="/expenses/transport-charges">Transport</Link>
                                                 </li>
@@ -321,9 +319,7 @@ const Sidebar = () => {
 
                                         <AnimateHeight duration={300} height={currentMenu === 'vendor-mgmt' ? 'auto' : 0}>
                                             <ul className="sub-menu text-gray-500">
-                                                <li>
-                                                    <Link href="/vendors/explosive">Explosive Suppliers</Link>
-                                                </li>
+
                                                 <li>
                                                     <Link href="/vendors/labour">Labour Contractors</Link>
                                                 </li>
