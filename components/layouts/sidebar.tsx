@@ -185,8 +185,12 @@ const Sidebar = () => {
                                                     <Link href="/sales-billing/customers">Customer Management</Link>
                                                 </li>
                                                 <li>
+                                                    <Link href="/sales-billing/quotations">Quotations</Link>
+                                                </li>
+                                                <li>
                                                     <Link href="/sales-billing/sales-entry">Sales Entry</Link>
                                                 </li>
+
                                                 {isManagement && (
                                                     <>
                                                         <li>
