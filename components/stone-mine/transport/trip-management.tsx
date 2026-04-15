@@ -50,10 +50,14 @@ const TripManagement = () => {
         permitId: '',
         loadQuantity: '',
         loadUnit: 'Tons',
-        notes: ''
+        notes: '',
+        billUrl: '',
+        billNumber: ''
     };
 
     const [formData, setFormData] = useState(initialForm);
+    const [uploading, setUploading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     // Selected sale object (for derived fields)
     const [selectedSale, setSelectedSale] = useState<any>(null);
     // Calculated remaining qty for the selected sale
@@ -256,6 +260,63 @@ const TripManagement = () => {
         }
     };
 
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+
+    const convertJfifToJpg = async (file: File): Promise<File> => {
+        if (!file.name.toLowerCase().endsWith('.jfif')) return file;
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0);
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const convertedFile = new File([blob], file.name.replace(/\.jfif$/i, '.jpg'), { type: 'image/jpeg' });
+                            resolve(convertedFile);
+                        } else {
+                            reject(new Error('Canvas toBlob failed'));
+                        }
+                    }, 'image/jpeg', 0.9);
+                };
+                img.onerror = reject;
+            };
+            reader.onerror = reject;
+        });
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            let file = e.target.files[0];
+            setUploading(true);
+            try {
+                if (file.name.toLowerCase().endsWith('.jfif')) {
+                    showToast('Converting JFIF to JPG...', 'info');
+                    file = await convertJfifToJpg(file);
+                }
+                const uploadData = new FormData();
+                uploadData.append('bill', file);
+                const { data } = await api.post('/upload', uploadData);
+                if (data.success) {
+                    setFormData(prev => ({ ...prev, billUrl: data.filePath }));
+                    setSelectedFile(file);
+                    showToast('Bill uploaded successfully!', 'success');
+                }
+            } catch (err) {
+                console.error('File upload failed:', err);
+                showToast('Upload failed. Please try again.', 'error');
+            } finally {
+                setUploading(false);
+            }
+        }
+    };
+
     const handleConvertToSale = async (tripId: string) => {
         if (isSaving) return;
         try {
@@ -328,6 +389,8 @@ const TripManagement = () => {
             permitId: trip.permitId?._id || trip.permitId || '',
             loadQuantity: trip.loadQuantity || '',
             loadUnit: trip.loadUnit || 'Tons',
+            billUrl: trip.billUrl || '',
+            billNumber: trip.billNumber || '',
             notes: trip.notes || ''
         });
         setEditId(trip._id);
@@ -596,6 +659,49 @@ const TripManagement = () => {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-primary/5 p-4 rounded-xl border border-primary/10">
+                            <div>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary">Bill / LR Number</label>
+                                <input type="text" name="billNumber" className="form-input border-primary/20" value={formData.billNumber || ''} onChange={handleChange} placeholder="Invoice / LR Num" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary">Bill Attachment</label>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-3">
+                                        <label className={`cursor-pointer flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-primary/30 rounded-xl px-4 h-12 hover:border-primary/60 transition-all bg-white dark:bg-black/20 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                            <span className="text-xs text-primary font-bold uppercase">{uploading ? 'Uploading...' : 'Upload Bill'}</span>
+                                            <input type="file" className="hidden" onChange={handleFileChange} accept="image/*,.pdf" />
+                                        </label>
+                                        {(formData.billUrl || selectedFile) && !uploading && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-danger btn-sm rounded-xl h-12"
+                                                onClick={() => {
+                                                    setFormData(prev => ({ ...prev, billUrl: '' }));
+                                                    setSelectedFile(null);
+                                                }}
+                                            >
+                                                <IconTrashLines className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    {formData.billUrl && (
+                                        <div className="relative w-20 h-20 border-2 border-primary/20 rounded-xl overflow-hidden group shadow-sm">
+                                            {formData.billUrl.match(/\.(jpg|jpeg|png|jfif)$/i) || !formData.billUrl.includes('.') ? (
+                                                <img src={`${BACKEND_URL}${formData.billUrl}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Bill Preview" />
+                                            ) : (
+                                                <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-[10px] uppercase">PDF</div>
+                                            )}
+                                            <a href={`${BACKEND_URL}${formData.billUrl}`} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[9px] font-black uppercase transition-opacity">
+                                                View
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="bg-info/5 p-4 rounded-lg">
                             <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Remarks / Notes</label>
                             <textarea name="notes" className="form-textarea min-h-[80px]" value={formData.notes || ''} onChange={handleChange}></textarea>
@@ -689,6 +795,8 @@ const TripManagement = () => {
                                     <th>Vehicle / Driver</th>
                                     <th>Route & Customer</th>
                                     <th>Material</th>
+                                    <th className="!text-center">LR / Bill</th>
+                                    <th className="!text-center">Receipt</th>
                                     <th className="!text-right text-danger">Expenses</th>
                                     <th className="!text-center text-info">Linked Sale</th>
                                     <th className="!text-center">Actions</th>
@@ -713,7 +821,8 @@ const TripManagement = () => {
                                             t.toLocation?.toLowerCase().includes(search.toLowerCase());
 
                                         const matchesVehicle = !filterVehicle || vNum === filterVehicle;
-                                        const matchesCustomer = !filterCustomer || cName === filterCustomer;
+                                        const cId = t.customerId?._id || t.customerId || '';
+                                        const matchesCustomer = !filterCustomer || cId === filterCustomer;
                                         const matchesSaleLink = !filterSaleLink ||
                                             (filterSaleLink === 'linked' && !!t.saleId) ||
                                             (filterSaleLink === 'internal' && !t.saleId);
@@ -755,6 +864,16 @@ const TripManagement = () => {
                                             <td>
                                                 <span className="badge badge-outline-dark">{trip.stoneTypeId?.name || 'Material'}</span>
                                                 <div className="text-[10px] mt-1 font-bold">{trip.loadQuantity} {trip.loadUnit}</div>
+                                            </td>
+                                            <td className="!text-center font-bold text-primary text-xs">{trip.billNumber || '—'}</td>
+                                            <td className="!text-center">
+                                                {trip.billUrl ? (
+                                                    <a href={`${BACKEND_URL}${trip.billUrl}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:scale-110 transition-all inline-block p-1 bg-primary/10 rounded-md shadow-sm">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-white-dark/30">—</span>
+                                                )}
                                             </td>
                                             <td className="!text-right text-danger font-bold">₹{((trip.driverAmount || 0) + (trip.driverBata || 0) + (trip.otherExpenses || 0)).toLocaleString()}</td>
                                             <td className="!text-center">
