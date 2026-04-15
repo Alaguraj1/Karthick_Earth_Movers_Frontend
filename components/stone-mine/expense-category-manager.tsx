@@ -801,6 +801,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     <option value="">All Types</option>
                                     <option value="Machine">Machine (இயந்திரம்)</option>
                                     <option value="Vehicle">Vehicle (வாகனம்)</option>
+                                    <option value="Blasting">Blasting (பிளாஸ்டிங்)</option>
                                 </select>
                             </div>
                             <div>
@@ -1466,10 +1467,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                     <option value="">Select Asset Type</option>
                                                     <option value="Machine">Machine (இயந்திரம்)</option>
                                                     <option value="Vehicle">Vehicle (வாகனம்)</option>
+                                                    <option value="Blasting">Blasting (பிளாஸ்டிங்)</option>
                                                 </select>
                                             </div>
                                         )}
-                                        {(category !== 'Machine Maintenance' && category !== 'Diesel' || formData.assetType) && (
+                                        {(category !== 'Machine Maintenance' && category !== 'Diesel' || (formData.assetType && formData.assetType !== 'Blasting')) && (
                                             <div>
                                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block font-primary">
                                                     {category === 'Transport Charges' ? 'Transport Vehicle Type' : (formData.assetType === 'Machine') ? 'Select Machine Name' : 'Category Type'}

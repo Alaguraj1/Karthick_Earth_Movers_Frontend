@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -24,8 +24,10 @@ const StoneTypesMaster = () => {
         description: '',
         unit: 'Tons',
         hsnCode: '',
-        gstPercentage: 5
+        gstPercentage: 5,
+        blastingRatePerTon: 0
     });
+
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -57,8 +59,9 @@ const StoneTypesMaster = () => {
                 showToast(editItem ? 'Updated successfully!' : 'Added successfully!', 'success');
                 setNewItem({
                     name: '', description: '',
-                    unit: 'Tons', hsnCode: '', gstPercentage: 5
+                    unit: 'Tons', hsnCode: '', gstPercentage: 5, blastingRatePerTon: 0
                 });
+
                 setEditItem(null);
                 setFormView(false);
                 fetchData();
@@ -77,8 +80,10 @@ const StoneTypesMaster = () => {
             description: item.description || '',
             unit: item.unit || 'Tons',
             hsnCode: item.hsnCode || '',
-            gstPercentage: item.gstPercentage || 5
+            gstPercentage: item.gstPercentage || 5,
+            blastingRatePerTon: item.blastingRatePerTon || 0
         });
+
         setFormView(true);
     };
 
@@ -200,6 +205,17 @@ const StoneTypesMaster = () => {
 
 
                             <div className="md:col-span-3">
+                                <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 block">Material cost (per ton) blasting (பிளாஸ்டிங் டன் ரேட்)</label>
+                                <input
+                                    type="number"
+                                    className="form-input border-2 focus:border-primary transition-all text-lg font-bold rounded-xl h-12"
+                                    value={newItem.blastingRatePerTon}
+                                    onChange={(e) => setNewItem({ ...newItem, blastingRatePerTon: Number(e.target.value) })}
+                                    placeholder="Enter Blasting Rate per Ton"
+                                />
+                            </div>
+
+                            <div className="md:col-span-3">
                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">விவரம் (Additional Remarks)</label>
                                 <textarea
                                     className="form-textarea border-2 font-bold rounded-xl min-h-[100px]"
@@ -208,6 +224,7 @@ const StoneTypesMaster = () => {
                                     placeholder="Enter any additional notes..."
                                 ></textarea>
                             </div>
+
                         </div>
 
                         <div className="flex items-center justify-end gap-4 pt-10 border-t-2 border-primary/5">
@@ -229,8 +246,9 @@ const StoneTypesMaster = () => {
                         </h5>
                         <button type="button" className="btn btn-primary shadow-[0_10px_20px_rgba(67,97,238,0.3)] rounded-xl py-2.5 px-6 font-black uppercase tracking-widest text-[10px]" onClick={() => {
                             setNewItem({
-                                name: '', description: '', unit: 'Tons', hsnCode: '', gstPercentage: 5
+                                name: '', description: '', unit: 'Tons', hsnCode: '', gstPercentage: 5, blastingRatePerTon: 0
                             });
+
                             setEditItem(null);
                             setFormView(true);
                         }}>
@@ -244,8 +262,10 @@ const StoneTypesMaster = () => {
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Stone Type Name</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">Unit</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4">HSN Code</th>
+                                    <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Blasting Rate</th>
                                     <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Tax %</th>
                                     <th className="text-center font-black uppercase tracking-widest text-[10px] py-4">Actions</th>
+
                                 </tr>
                             </thead>
                             <tbody className="font-bold">
@@ -268,7 +288,9 @@ const StoneTypesMaster = () => {
                                             </td>
                                             <td className="py-4 text-primary uppercase">{item.unit || '-'}</td>
                                             <td className="py-4 font-black">{item.hsnCode || '-'}</td>
+                                            <td className="py-4 text-center font-bold text-primary">₹{item.blastingRatePerTon || 0}/T</td>
                                             <td className="py-4 text-center text-success">{item.gstPercentage || 0}%</td>
+
                                             <td className="text-center py-4">
                                                 <div className="flex justify-center items-center gap-2">
                                                     <button type="button" className="p-2 rounded-lg text-primary hover:bg-primary hover:text-white transition-all transform group-hover:scale-110 shadow-lg shadow-transparent hover:shadow-primary/20" onClick={() => handleEdit(item)}>
