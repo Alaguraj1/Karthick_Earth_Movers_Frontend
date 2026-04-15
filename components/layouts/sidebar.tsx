@@ -299,6 +299,9 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/assets/vehicles">Vehicle Details</Link>
                                                 </li>
+                                                <li>
+                                                    <Link href="/spare-parts">Spare Parts</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>
