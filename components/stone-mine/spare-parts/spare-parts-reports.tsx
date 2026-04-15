@@ -88,7 +88,7 @@ const SparePartsReports = () => {
     }
 
     // Group by Spare Part for nice view
-    const groupedData = reportData.reduce((acc, curr) => {
+    const groupedData = reportData.reduce((acc: Record<string, any[]>, curr: any) => {
         if (!acc[curr.spareName]) acc[curr.spareName] = [];
         acc[curr.spareName].push(curr);
         return acc;
@@ -132,8 +132,8 @@ const SparePartsReports = () => {
                 <div className="space-y-6">
                     {Object.keys(groupedData).sort().map(spareName => {
                         const items = groupedData[spareName];
-                        const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
-                        const totalValue = items.reduce((sum, i) => sum + i.total, 0);
+                        const totalQty = items.reduce((sum: number, i: any) => sum + i.quantity, 0);
+                        const totalValue = items.reduce((sum: number, i: any) => sum + i.total, 0);
 
                         return (
                             <div key={spareName} className="panel p-0 overflow-hidden shadow-lg border border-primary/10">

@@ -49,6 +49,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedInputFile, setSelectedInputFile] = useState<File | null>(null);
     const [selectedOutputFile, setSelectedOutputFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState({ main: false, input: false, output: false });
 
     // Filter states
     const [searchTerm, setSearchTerm] = useState('');
@@ -475,9 +476,75 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         });
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const convertJfifToJpg = async (file: File): Promise<File> => {
+        if (!file.name.toLowerCase().endsWith('.jfif')) return file;
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0);
+                    canvas.toBlob(
+                        (blob) => {
+                            if (blob) {
+                                const convertedFile = new File([blob], file.name.replace(/\.jfif$/i, '.jpg'), { type: 'image/jpeg' });
+                                resolve(convertedFile);
+                            } else {
+                                reject(new Error('Canvas toBlob failed'));
+                            }
+                        },
+                        'image/jpeg',
+                        0.9
+                    );
+                };
+                img.onerror = reject;
+            };
+            reader.onerror = reject;
+        });
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'bill' | 'input' | 'output' = 'bill') => {
         if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0]);
+            let file = e.target.files[0];
+            const typeKey = type === 'bill' ? 'main' : (type === 'input' ? 'input' : 'output');
+            
+            setUploading(prev => ({ ...prev, [typeKey]: true }));
+            
+            try {
+                if (file.name.toLowerCase().endsWith('.jfif')) {
+                    showToast('Converting JFIF to JPG...', 'info');
+                    file = await convertJfifToJpg(file);
+                }
+                
+                // Perform Instant Upload like Blasting Advance
+                const uploadedUrl = await uploadSpecificFile(file);
+                if (uploadedUrl) {
+                    if (type === 'bill') {
+                        setFormData(prev => ({ ...prev, billUrl: uploadedUrl }));
+                        setSelectedFile(file);
+                    } else if (type === 'input') {
+                        setFormData(prev => ({ ...prev, inputBillUrl: uploadedUrl }));
+                        setSelectedInputFile(file);
+                    } else if (type === 'output') {
+                        setFormData(prev => ({ ...prev, outputBillUrl: uploadedUrl }));
+                        setSelectedOutputFile(file);
+                    }
+                    showToast('File uploaded successfully!', 'success');
+                } else {
+                    showToast('Upload failed. Please try again.', 'error');
+                }
+            } catch (err) {
+                console.error('File processing/upload failed:', err);
+                showToast('Error uploading file', 'error');
+            } finally {
+                setUploading(prev => ({ ...prev, [typeKey]: false }));
+            }
         }
     };
 
@@ -485,9 +552,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         const uploadData = new FormData();
         uploadData.append('bill', file);
         try {
-            const { data } = await api.post('/upload', uploadData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const { data } = await api.post('/upload', uploadData);
             return data.filePath;
         } catch (error) {
             console.error('File upload failed:', error);
@@ -495,35 +560,13 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         }
     };
 
-    const uploadFile = async () => {
-        if (!selectedFile) return null;
-        return uploadSpecificFile(selectedFile);
-    };
-
     const handleAdd = async (e: any) => {
         e.preventDefault();
-        let billUrl = formData.billUrl;
-        if (selectedFile) {
-            const uploadedUrl = await uploadSpecificFile(selectedFile);
-            if (uploadedUrl) billUrl = uploadedUrl;
-        }
-        let inputBillUrl = formData.inputBillUrl;
-        if (selectedInputFile) {
-            const uploadedUrl = await uploadSpecificFile(selectedInputFile);
-            if (uploadedUrl) inputBillUrl = uploadedUrl;
-        }
-        let outputBillUrl = formData.outputBillUrl;
-        if (selectedOutputFile) {
-            const uploadedUrl = await uploadSpecificFile(selectedOutputFile);
-            if (uploadedUrl) outputBillUrl = uploadedUrl;
-        }
-
+        // Files are already uploaded via handleFileChange
+        
         // Clean up empty ObjectIDs to prevent backend crash
         const payload = {
             ...formData,
-            billUrl,
-            inputBillUrl,
-            outputBillUrl,
             salaryMonth: category === 'Labour Wages' ? lookupMonth : '',
             salaryYear: category === 'Labour Wages' ? lookupYear : ''
         };
@@ -546,28 +589,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const handleUpdate = async (e: any) => {
         e.preventDefault();
-        let billUrl = formData.billUrl;
-        if (selectedFile) {
-            const uploadedUrl = await uploadSpecificFile(selectedFile);
-            if (uploadedUrl) billUrl = uploadedUrl;
-        }
-        let inputBillUrl = formData.inputBillUrl;
-        if (selectedInputFile) {
-            const uploadedUrl = await uploadSpecificFile(selectedInputFile);
-            if (uploadedUrl) inputBillUrl = uploadedUrl;
-        }
-        let outputBillUrl = formData.outputBillUrl;
-        if (selectedOutputFile) {
-            const uploadedUrl = await uploadSpecificFile(selectedOutputFile);
-            if (uploadedUrl) outputBillUrl = uploadedUrl;
-        }
-
+        // Files are already uploaded via handleFileChange
+        
         // Clean up empty ObjectIDs to prevent backend crash
         const payload = {
             ...formData,
-            billUrl,
-            inputBillUrl,
-            outputBillUrl,
             salaryMonth: category === 'Labour Wages' ? lookupMonth : '',
             salaryYear: category === 'Labour Wages' ? lookupYear : ''
         };
@@ -1945,51 +1971,116 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 </div>
                                 {category === 'Machine Maintenance' ? (
                                     <>
-                                        <div className="lg:col-span-1">
+                                         <div className="lg:col-span-1">
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Input Bill Attachment</label>
-                                            <div className="flex items-center gap-2">
-                                                <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={(e) => setSelectedInputFile(e.target.files ? e.target.files[0] : null)} accept=".jpg,.jpeg,.png,.pdf" />
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center gap-3">
+                                                    <label className={`cursor-pointer flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-primary/30 rounded-xl px-4 h-12 hover:border-primary/60 transition-all bg-primary/5 ${uploading.input ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                                        <span className="text-sm text-primary font-bold uppercase tracking-tight">{uploading.input ? 'Uploading...' : 'Upload Receipt'}</span>
+                                                        <input type="file" className="hidden" onChange={(e) => handleFileChange(e, 'input')} accept="image/*,.pdf" />
+                                                    </label>
+                                                    {(formData.inputBillUrl || selectedInputFile) && !uploading.input && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-outline-danger btn-sm rounded-xl h-12 animate-fade-in"
+                                                            onClick={() => {
+                                                                setFormData(prev => ({ ...prev, inputBillUrl: '' }));
+                                                                setSelectedInputFile(null);
+                                                            }}
+                                                        >
+                                                            <IconTrashLines className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                                 {formData.inputBillUrl && (
-                                                    <a
-                                                        href={`${BACKEND_URL}${formData.inputBillUrl}`}
-                                                        target="_blank"
-                                                        className="text-primary hover:underline text-[10px] font-bold"
-                                                    >
-                                                        View Bill <IconEdit className="w-4 h-4" />
-                                                    </a>
+                                                    <div className="relative w-24 h-24 border-2 border-primary/20 rounded-xl overflow-hidden group shadow-md mt-1">
+                                                        {formData.inputBillUrl.match(/\.(jpg|jpeg|png|jfif)$/i) || !formData.inputBillUrl.includes('.') ? (
+                                                            <img src={`${BACKEND_URL}${formData.inputBillUrl}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Input Preview" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase">PDF Bill</div>
+                                                        )}
+                                                        <a href={`${BACKEND_URL}${formData.inputBillUrl}`} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-black uppercase transition-opacity">
+                                                            <IconEdit className="w-5 h-5 mb-1" />
+                                                            View Full
+                                                        </a>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="lg:col-span-1">
+                                         <div className="lg:col-span-1">
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Output Bill Attachment</label>
-                                            <div className="flex items-center gap-2">
-                                                <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={(e) => setSelectedOutputFile(e.target.files ? e.target.files[0] : null)} accept=".jpg,.jpeg,.png,.pdf" />
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center gap-3">
+                                                    <label className={`cursor-pointer flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-success/30 rounded-xl px-4 h-12 hover:border-success/60 transition-all bg-success/5 ${uploading.output ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-success"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                                        <span className="text-sm text-success font-bold uppercase tracking-tight">{uploading.output ? 'Uploading...' : 'Upload Receipt'}</span>
+                                                        <input type="file" className="hidden" onChange={(e) => handleFileChange(e, 'output')} accept="image/*,.pdf" />
+                                                    </label>
+                                                    {(formData.outputBillUrl || selectedOutputFile) && !uploading.output && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-outline-danger btn-sm rounded-xl h-12 animate-fade-in"
+                                                            onClick={() => {
+                                                                setFormData(prev => ({ ...prev, outputBillUrl: '' }));
+                                                                setSelectedOutputFile(null);
+                                                            }}
+                                                        >
+                                                            <IconTrashLines className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                                 {formData.outputBillUrl && (
-                                                    <a
-                                                        href={`${BACKEND_URL}${formData.outputBillUrl}`}
-                                                        target="_blank"
-                                                        className="text-success hover:underline text-[10px] font-bold"
-                                                    >
-                                                        View Output Bill <IconEdit className="w-4 h-4" />
-                                                    </a>
+                                                    <div className="relative w-24 h-24 border-2 border-success/20 rounded-xl overflow-hidden group shadow-md mt-1">
+                                                        {formData.outputBillUrl.match(/\.(jpg|jpeg|png|jfif)$/i) || !formData.outputBillUrl.includes('.') ? (
+                                                            <img src={`${BACKEND_URL}${formData.outputBillUrl}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Output Preview" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-success/10 flex items-center justify-center text-success font-black text-xs uppercase">PDF Bill</div>
+                                                        )}
+                                                        <a href={`${BACKEND_URL}${formData.outputBillUrl}`} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-black uppercase transition-opacity">
+                                                            <IconEdit className="w-5 h-5 mb-1" />
+                                                            View Full
+                                                        </a>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="lg:col-span-1">
+                                     <div className="lg:col-span-1">
                                         <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Bill Attachment</label>
-                                        <div className="flex items-center gap-2">
-                                            <input type="file" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 flex-1" onChange={handleFileChange} accept=".jpg,.jpeg,.png,.pdf" />
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-3">
+                                                <label className={`cursor-pointer flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-primary/30 rounded-xl px-4 h-12 hover:border-primary/60 transition-all bg-primary/5 ${uploading.main ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                                    <span className="text-sm text-primary font-bold uppercase tracking-tight">{uploading.main ? 'Uploading...' : 'Upload Receipt'}</span>
+                                                    <input type="file" className="hidden" onChange={(e) => handleFileChange(e, 'bill')} accept="image/*,.pdf" />
+                                                </label>
+                                                {(formData.billUrl || selectedFile) && !uploading.main && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-danger btn-sm rounded-xl h-12 animate-fade-in"
+                                                        onClick={() => {
+                                                            setFormData(prev => ({ ...prev, billUrl: '' }));
+                                                            setSelectedFile(null);
+                                                        }}
+                                                    >
+                                                        <IconTrashLines className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
                                             {formData.billUrl && (
-                                                <a
-                                                    href={`${BACKEND_URL}${formData.billUrl}`}
-                                                    target="_blank"
-                                                    className="btn btn-outline-primary btn-sm rounded-xl py-2 px-6"
-                                                    title="View Bill"
-                                                >
-                                                    <IconEdit className="w-4 h-4" />
-                                                </a>
+                                                <div className="relative w-24 h-24 border-2 border-primary/20 rounded-xl overflow-hidden group shadow-md mt-1">
+                                                    {formData.billUrl.match(/\.(jpg|jpeg|png|jfif)$/i) || !formData.billUrl.includes('.') ? (
+                                                        <img src={`${BACKEND_URL}${formData.billUrl}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Bill Preview" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase">PDF Bill</div>
+                                                    )}
+                                                    <a href={`${BACKEND_URL}${formData.billUrl}`} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-black uppercase transition-opacity">
+                                                        <IconEdit className="w-5 h-5 mb-1" />
+                                                        View Full
+                                                    </a>
+                                                </div>
                                             )}
                                         </div>
                                     </div>

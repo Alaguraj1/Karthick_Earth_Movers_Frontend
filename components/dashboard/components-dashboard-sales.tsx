@@ -276,9 +276,6 @@ const ComponentsDashboardSales = () => {
         },
     };
 
-
-
-
     if (!isMounted) return null;
 
     return (
@@ -292,8 +289,6 @@ const ComponentsDashboardSales = () => {
                 {/* Real-time Alerts Section */}
                 {(data?.alerts?.compliance?.length > 0) && (
                     <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Low Stock Alerts removed */}
-
                         {/* Compliance Alerts */}
                         {data?.alerts?.compliance?.length > 0 && (
                             <div className="panel bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20 border-red-200 dark:border-red-800 rounded-2xl shadow-lg">
@@ -354,21 +349,11 @@ const ComponentsDashboardSales = () => {
                                         }
                                     >
                                         <ul className="!min-w-[150px] font-bold uppercase text-[10px] tracking-widest">
-                                            <li>
-                                                <button type="button" onClick={() => setChartPeriod('week')}>Last 7 Days</button>
-                                            </li>
-                                            <li>
-                                                <button type="button" onClick={() => setChartPeriod('month')}>This Month</button>
-                                            </li>
-                                            <li>
-                                                <button type="button" onClick={() => setChartPeriod('year')}>This Year</button>
-                                            </li>
-                                            <li>
-                                                <button type="button" onClick={() => setChartPeriod('last12months')}>Last 12 Months</button>
-                                            </li>
-                                            <li>
-                                                <button type="button" onClick={() => setChartPeriod('all')}>All Years</button>
-                                            </li>
+                                            <li><button type="button" onClick={() => setChartPeriod('week')}>Last 7 Days</button></li>
+                                            <li><button type="button" onClick={() => setChartPeriod('month')}>This Month</button></li>
+                                            <li><button type="button" onClick={() => setChartPeriod('year')}>This Year</button></li>
+                                            <li><button type="button" onClick={() => setChartPeriod('last12months')}>Last 12 Months</button></li>
+                                            <li><button type="button" onClick={() => setChartPeriod('all')}>All Years</button></li>
                                         </ul>
                                     </Dropdown>
                                 </div>
@@ -402,8 +387,6 @@ const ComponentsDashboardSales = () => {
                     </div>
 
                     <div className="mb-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-
-
                         <div className="panel h-full border-none shadow-xl rounded-3xl bg-gradient-to-br from-white to-gray-50 dark:from-black dark:to-gray-900">
                             <div className="mb-8 flex items-center px-2">
                                 <h5 className="text-xl font-black uppercase tracking-tight dark:text-white-light italic">Executive Summary (சுருக்கம்)</h5>
@@ -542,7 +525,7 @@ const ComponentsDashboardSales = () => {
                         <div className="panel h-full border-none shadow-xl rounded-2xl col-span-2 overflow-hidden">
                             <div className="mb-6 flex items-center justify-between px-2">
                                 <h5 className="text-xl font-black uppercase tracking-tight italic">Latest Live Sales (சமீபத்திய விற்பனை)</h5>
-                                <Link href="/sales" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">View All Registry →</Link>
+                                <Link href="/sales-billing/sales-entry" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">View All Registry →</Link>
                             </div>
                             <div className="table-responsive rounded-xl">
                                 <table className="table-hover">
