@@ -340,31 +340,33 @@ const Sidebar = () => {
                                     </li>
 
                                     {/* Blasting Management */}
-                                    <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'blasting-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('blasting-mgmt')}>
-                                            <div className="flex items-center">
-                                                <IconMenuWidgets className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Blasting</span>
-                                            </div>
-                                            <div className={currentMenu !== 'blasting-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
-                                                <IconCaretDown />
-                                            </div>
-                                        </button>
+                                    {isManagement && (
+                                        <li className="menu nav-item">
+                                            <button type="button" className={`${currentMenu === 'blasting-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('blasting-mgmt')}>
+                                                <div className="flex items-center">
+                                                    <IconMenuWidgets className="shrink-0 group-hover:!text-primary" />
+                                                    <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Blasting</span>
+                                                </div>
+                                                <div className={currentMenu !== 'blasting-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                    <IconCaretDown />
+                                                </div>
+                                            </button>
 
-                                        <AnimateHeight duration={300} height={currentMenu === 'blasting-mgmt' ? 'auto' : 0}>
-                                            <ul className="sub-menu text-gray-500">
-                                                <li>
-                                                    <Link href="/blasting?tab=blasting">Blasting Records</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/blasting?tab=advance">Advance</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/blasting?tab=explosive-shop">Explosive Shop</Link>
-                                                </li>
-                                            </ul>
-                                        </AnimateHeight>
-                                    </li>
+                                            <AnimateHeight duration={300} height={currentMenu === 'blasting-mgmt' ? 'auto' : 0}>
+                                                <ul className="sub-menu text-gray-500">
+                                                    <li>
+                                                        <Link href="/blasting/records">Blasting Records</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/blasting/advance">Advance</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/blasting/explosive-shop">Explosive Shop</Link>
+                                                    </li>
+                                                </ul>
+                                            </AnimateHeight>
+                                        </li>
+                                    )}
 
                                     {/* 7. Accounts & Reports */}
                                     {isOwner && (
