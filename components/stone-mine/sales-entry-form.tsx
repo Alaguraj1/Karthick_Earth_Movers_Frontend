@@ -47,7 +47,17 @@ const SalesEntryForm = () => {
         receiptNumber: '',
         receiptFile: '',
         gstNumber: '',
+        tripStartDate: '',
+        tripEndDate: '',
+        saleType: 'Direct',
+        permitAmountPerTon: 0,
+        isThirdPartyVehicle: false,
+        thirdPartyVehicleNumber: '',
+        ourVehicleCostPerTon: 0,
+        thirdPartyAmount: 0
     });
+
+    const [tripIds, setTripIds] = useState<string[]>([]);
 
     const [items, setItems] = useState<any[]>([
         { item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }
@@ -57,27 +67,28 @@ const SalesEntryForm = () => {
     const [filterCustomer, setFilterCustomer] = useState('');
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
-    const [filterDelivery, setFilterDelivery] = useState('');
     const [filterReceipt, setFilterReceipt] = useState('');
     const [filterGst, setFilterGst] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoadingSales, setIsLoadingSales] = useState(true);
 
     const fetchSales = async () => {
         try {
+            setIsLoadingSales(true);
             const res = await api.get('/sales');
             if (res.data.success) {
                 const sorted = res.data.data.sort((a: any, b: any) => {
-                    // Sort by invoiceDate descending, then by invoiceNumber/ID descending
                     const dateA = new Date(a.invoiceDate).getTime();
                     const dateB = new Date(b.invoiceDate).getTime();
                     if (dateB !== dateA) return dateB - dateA;
-                    // Fallback to ID or invoice number if dates are same
                     return (b._id || '').localeCompare(a._id || '');
                 });
                 setRecentSales(sorted);
             }
         } catch (error) {
             console.error(error);
+        } finally {
+            setIsLoadingSales(false);
         }
     };
 
@@ -100,6 +111,12 @@ const SalesEntryForm = () => {
     const handleChange = (e: any) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        // Reset items if core trip linking fields change
+        if (name === 'customer' || name === 'tripStartDate' || name === 'tripEndDate') {
+            setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
+            setTripIds([]);
+        }
 
         if (name === 'gstNumber' && value.length >= 3) {
             handleGstSearch(value);
@@ -129,6 +146,46 @@ const SalesEntryForm = () => {
             }
         } catch (error) {
             console.error('Error searching customer by GST:', error);
+        }
+    };
+
+    const fetchTripSummary = async () => {
+        if (!formData.customer || !formData.tripStartDate || !formData.tripEndDate) {
+            showToast('Please select Customer and Trip Date Range (From/To)', 'error');
+            return;
+        }
+
+        try {
+            const res = await api.get(`/trips/customer-summary?customerId=${formData.customer}&startDate=${formData.tripStartDate}&endDate=${formData.tripEndDate}&saleType=${formData.saleType}`);
+            if (res.data.success) {
+                const summary = res.data.data;
+                if (summary.length === 0) {
+                    showToast('No pending (non-billed) trips found for this customer in chosen date range', 'info');
+                    return;
+                }
+
+                const newItems = summary.map((s: any) => ({
+                    item: s.stoneTypeName,
+                    stoneType: s.stoneTypeId,
+                    quantity: s.totalQuantity,
+                    internalQuantity: s.internalQuantity || 0,
+                    externalQuantity: s.externalQuantity || 0,
+                    unit: s.unit || 'Tons',
+                    rate: '',
+                    amount: 0,
+                    hsnCode: s.hsnCode || '',
+                    gstPercentage: s.gstPercentage || 5,
+                    gstAmount: 0
+                }));
+
+                const allTripIds = summary.flatMap((s: any) => s.tripIds);
+                setItems(newItems);
+                setTripIds(allTripIds);
+                showToast(`✅ Found ${allTripIds.length} trips across ${summary.length} materials!`, 'success');
+            }
+        } catch (error: any) {
+            console.error('Error fetching trip summary:', error);
+            showToast(error.response?.data?.message || 'Error fetching trip summary', 'error');
         }
     };
 
@@ -184,7 +241,24 @@ const SalesEntryForm = () => {
 
     const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
     const gstTotal = items.reduce((sum, item) => sum + (item.gstAmount || 0), 0);
-    const grandTotal = subtotal + gstTotal;
+    
+    // 3rd Party Calculation
+    let thirdPartyCalcAmount = 0;
+    let totalInternalTons = 0;
+    let totalExternalTons = 0;
+
+    if (formData.saleType === '3rd Party') {
+        const totalTons = items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+        totalInternalTons = items.reduce((sum, item) => sum + (parseFloat(item.internalQuantity) || 0), 0);
+        totalExternalTons = items.reduce((sum, item) => sum + (parseFloat(item.externalQuantity) || 0), 0);
+
+        const permitTotal = (formData.permitAmountPerTon || 0) * totalTons;
+        // Rental is ONLY for internal tons (Own/Contractor)
+        const transportTotal = (formData.ourVehicleCostPerTon || 0) * totalInternalTons;
+        thirdPartyCalcAmount = permitTotal + transportTotal;
+    }
+
+    const grandTotal = subtotal + gstTotal + (formData.saleType === '3rd Party' ? thirdPartyCalcAmount : 0);
 
     const resetForm = () => {
         setEditId(null);
@@ -201,8 +275,17 @@ const SalesEntryForm = () => {
             receiptNumber: '',
             receiptFile: '',
             gstNumber: '',
+            tripStartDate: '',
+            tripEndDate: '',
+            saleType: 'Direct',
+            permitAmountPerTon: 0,
+            isThirdPartyVehicle: false,
+            thirdPartyVehicleNumber: '',
+            ourVehicleCostPerTon: 0,
+            thirdPartyAmount: 0
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
+        setTripIds([]);
     };
 
     const handleCreateNew = () => {
@@ -219,9 +302,47 @@ const SalesEntryForm = () => {
             receiptNumber: '',
             receiptFile: '',
             gstNumber: '',
+            tripStartDate: '',
+            tripEndDate: '',
+            saleType: 'Direct',
+            permitAmountPerTon: 0,
+            isThirdPartyVehicle: false,
+            thirdPartyVehicleNumber: '',
+            ourVehicleCostPerTon: 0,
+            thirdPartyAmount: 0
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
+        setTripIds([]);
         setShowForm(true);
+    };
+
+    const handleSaleTypeChange = (type: string) => {
+        if (formData.saleType === type) return;
+        
+        setFormData({
+            invoiceDate: new Date().toISOString().split('T')[0],
+            customer: '',
+            paymentType: 'Cash',
+            gstPercentage: 0,
+            dueDate: '',
+            notes: '',
+            fromLocation: 'Quarry',
+            toLocation: '',
+            receiptNumber: '',
+            receiptFile: '',
+            gstNumber: '',
+            tripStartDate: '',
+            tripEndDate: '',
+            saleType: type,
+            permitAmountPerTon: 0,
+            isThirdPartyVehicle: false,
+            thirdPartyVehicleNumber: '',
+            ourVehicleCostPerTon: 0,
+            thirdPartyAmount: 0
+        });
+        setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
+        setTripIds([]);
+        showToast(`Switched to ${type} Sale. Form reset.`, 'info');
     };
 
     const handleEdit = async (saleId: string) => {
@@ -242,7 +363,20 @@ const SalesEntryForm = () => {
                     receiptNumber: sale.receiptNumber || '',
                     receiptFile: sale.receiptFile || '',
                     gstNumber: sale.customer?.gstNumber || '',
+                    tripStartDate: sale.tripStartDate ? new Date(sale.tripStartDate).toISOString().split('T')[0] : '',
+                    tripEndDate: sale.tripEndDate ? new Date(sale.tripEndDate).toISOString().split('T')[0] : '',
+                    saleType: sale.saleType || 'Direct',
+                    permitAmountPerTon: sale.permitAmountPerTon || 0,
+                    isThirdPartyVehicle: sale.isThirdPartyVehicle || false,
+                    thirdPartyVehicleNumber: sale.thirdPartyVehicleNumber || '',
+                    ourVehicleCostPerTon: sale.ourVehicleCostPerTon || 0,
+                    thirdPartyAmount: sale.thirdPartyAmount || 0,
                 });
+                if (data.trips) {
+                    setTripIds(data.trips.map((t: any) => t._id));
+                } else {
+                    setTripIds([]);
+                }
                 setItems(
                     sale.items?.map((item: any) => ({
                         item: item.item || '',
@@ -304,6 +438,7 @@ const SalesEntryForm = () => {
                 gstAmount: gstTotal,
                 grandTotal,
                 amountPaid: formData.paymentType === 'Cash' ? grandTotal : 0,
+                tripIds,
             };
 
             if (editId) {
@@ -431,7 +566,7 @@ const SalesEntryForm = () => {
         <div className="space-y-6">
             {/* Sale Entry Form — shown only when creating/editing */}
             {showForm && (
-                <div className="panel">
+                <div className="panel animate__animated animate__fadeIn">
                     <div className="mb-8 flex items-center justify-between border-b border-[#ebedf2] dark:border-[#1b2e4b] pb-5">
                         <div>
                             <h5 className="text-xl font-bold dark:text-white-light">
@@ -447,12 +582,58 @@ const SalesEntryForm = () => {
                     </div>
 
                     <form className="space-y-8" onSubmit={handleSubmit}>
+
                         {/* Section 1: Invoice Details */}
                         <div className="space-y-5">
                             <div className="flex items-center gap-2 text-primary font-bold uppercase text-xs tracking-wider border-b border-primary/10 pb-2">
                                 <IconEdit className="w-4 h-4" />
-                                Invoice Details
+                                Sale Type & Invoice Details
                             </div>
+                            <div className="bg-primary/5 p-6 rounded-2xl border border-primary/20 shadow-sm animate__animated animate__fadeIn">
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                                    <div className="space-y-1">
+                                        <h6 className="text-primary font-black uppercase text-xs tracking-widest">Pricing Methodology</h6>
+                                        <p className="text-[11px] text-white-dark font-bold">Choose how this sale is billed and calculated</p>
+                                    </div>
+                                    <div className="flex items-center bg-white dark:bg-black/20 p-1.5 rounded-xl border border-primary/10 shadow-inner">
+                                        <button 
+                                            type="button"
+                                            className={`px-6 py-2 rounded-lg text-sm font-black transition-all duration-300 ${formData.saleType === 'Direct' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-white-dark hover:text-primary'}`}
+                                            onClick={() => handleSaleTypeChange('Direct')}
+                                        >
+                                            DIRECT SALE
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            className={`px-6 py-2 rounded-lg text-sm font-black transition-all duration-300 ${formData.saleType === '3rd Party' ? 'bg-warning text-white shadow-lg shadow-warning/30' : 'text-white-dark hover:text-warning'}`}
+                                            onClick={() => handleSaleTypeChange('3rd Party')}
+                                        >
+                                            3RD PARTY SALE
+                                        </button>
+                                    </div>
+                                </div>
+
+                                 {formData.saleType === '3rd Party' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-primary/10 animate__animated animate__slideInDown text-warning">
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase mb-2 block tracking-tighter">Permit Fee (Per Ton)</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold">₹</span>
+                                                <input type="number" name="permitAmountPerTon" className="form-input pl-8 border-warning/30 focus:border-warning ring-warning/10" value={formData.permitAmountPerTon} onChange={handleChange} placeholder="0.00" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase mb-2 block tracking-tighter">Vehicle Rental / Transport Cost (Per Ton)</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold">₹</span>
+                                                <input type="number" name="ourVehicleCostPerTon" className="form-input pl-8 border-warning/30 focus:border-warning ring-warning/10" value={formData.ourVehicleCostPerTon} onChange={handleChange} placeholder="0.00" />
+                                            </div>
+                                            <p className="text-[9px] mt-1 font-bold italic opacity-70">* Enter 0 if using a 3rd Party manual vehicle</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                                 <div>
                                     <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Invoice Date *</label>
@@ -512,6 +693,34 @@ const SalesEntryForm = () => {
                                         </select>
                                     </div>
                                 )}
+                                <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-5 group">
+                                    <div className="relative">
+                                        <label className="text-[10px] font-black text-white-dark uppercase mb-2 block tracking-tighter group-hover:text-primary transition-colors">Trip Start Date (தொடக்கம்)</label>
+                                        <input type="date" name="tripStartDate" className="form-input border-primary/20 hover:border-primary focus:border-primary transition-all font-bold" value={formData.tripStartDate} onChange={handleChange} />
+                                    </div>
+                                    <div className="relative">
+                                        <label className="text-[10px] font-black text-white-dark uppercase mb-2 block tracking-tighter group-hover:text-primary transition-colors">Trip End Date (முடிவு)</label>
+                                        <input type="date" name="tripEndDate" className="form-input border-primary/20 hover:border-primary focus:border-primary transition-all font-bold" value={formData.tripEndDate} onChange={handleChange} />
+                                    </div>
+                                </div>
+                                {formData.customer && (
+                                    <div className="flex flex-col justify-end">
+                                        <button 
+                                            type="button" 
+                                            className="btn btn-primary w-full shadow-lg shadow-primary/20 ltr:rounded-lg rtl:rounded-lg flex items-center justify-center gap-2 h-[42px] font-black active:scale-95 transition-all"
+                                            onClick={fetchTripSummary}
+                                        >
+                                            <IconSearch className="w-4 h-4" /> 
+                                            FETCH & CALCULATE TONS
+                                        </button>
+                                        {tripIds.length > 0 && (
+                                            <div className="mt-2 bg-success/10 p-2 rounded-lg border border-success/20 flex items-center justify-between">
+                                                <div className="text-[9px] text-success font-black uppercase tracking-widest leading-none">Trips Linked</div>
+                                                <div className="text-xs font-black text-success ltr:ml-2 rtl:mr-2">#{tripIds.length} Trips</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 {formData.paymentType === 'Credit' && (
                                     <div>
                                         <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Due Date</label>
@@ -543,9 +752,11 @@ const SalesEntryForm = () => {
                                     <IconPlus className="w-4 h-4" />
                                     Item Details
                                 </div>
-                                <button type="button" className="btn btn-sm btn-outline-primary" onClick={addItem}>
-                                    <IconPlus className="w-4 h-4 ltr:mr-1 rtl:ml-1" /> Add Item
-                                </button>
+                                {tripIds.length === 0 && (
+                                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={addItem}>
+                                        <IconPlus className="w-4 h-4 ltr:mr-1 rtl:ml-1" /> Add Item
+                                    </button>
+                                )}
                             </div>
 
                             <div className="table-responsive">
@@ -579,7 +790,16 @@ const SalesEntryForm = () => {
                                                     <input type="text" name="hsnCode" className="form-input text-sm w-24" placeholder="HSN" value={item.hsnCode} onChange={(e) => handleItemChange(idx, e)} />
                                                 </td>
                                                 <td>
-                                                    <input type="number" name="quantity" className="form-input text-sm w-28" placeholder="0" value={item.quantity} onChange={(e) => handleItemChange(idx, e)} required />
+                                                    <input
+                                                        type="number"
+                                                        name="quantity"
+                                                        className={`form-input text-sm w-28 ${tripIds.length > 0 ? 'bg-success/5 text-success font-bold cursor-not-allowed' : ''}`}
+                                                        placeholder="0"
+                                                        value={item.quantity}
+                                                        onChange={(e) => handleItemChange(idx, e)}
+                                                        required
+                                                        readOnly={tripIds.length > 0}
+                                                    />
                                                 </td>
                                                 <td>
                                                     <select name="unit" className="form-select text-sm w-24" value={item.unit} onChange={(e) => handleItemChange(idx, e)}>
@@ -649,63 +869,100 @@ const SalesEntryForm = () => {
                                     GST & Totals
                                 </div>
                                     <div className="bg-dark-light/5 dark:bg-dark p-6 rounded-xl space-y-6">
-                                        {/* Material Subtotal Details */}
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center text-[10px] font-bold text-white-dark uppercase tracking-widest border-b border-primary/10 pb-2">
-                                                <span>Material Base Values</span>
-                                                <span>Amount</span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {items.map((item, idx) => (
-                                                    <div key={idx} className="flex justify-between items-center text-sm">
-                                                        <span className="text-white-dark font-medium">
-                                                            {idx + 1}. {item.item || 'Select Material'} 
-                                                            <span className="text-[11px] ml-2 opacity-60 italic">({item.quantity} × ₹{item.rate})</span>
-                                                        </span>
-                                                        <span className="font-bold">₹{item.amount?.toLocaleString()}</span>
+                                        {formData.saleType === 'Direct' ? (
+                                            <>
+                                                {/* Material Subtotal Details */}
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between items-center text-[10px] font-bold text-white-dark uppercase tracking-widest border-b border-primary/10 pb-2">
+                                                        <span>Material Base Values</span>
+                                                        <span>Amount</span>
                                                     </div>
-                                                ))}
-                                            </div>
-                                            <div className="flex justify-between items-center pt-3 border-t border-dashed border-primary/20 bg-primary/5 p-3 rounded-lg">
-                                                <span className="text-[10px] uppercase font-black text-primary tracking-wider">Total Net Value (Subtotal):</span>
-                                                <span className="font-black text-primary text-xl">₹{subtotal.toLocaleString()}</span>
-                                            </div>
-                                        </div>
+                                                    <div className="space-y-2">
+                                                        {items.map((item, idx) => (
+                                                            <div key={idx} className="flex justify-between items-center text-sm">
+                                                                <span className="text-white-dark font-medium">
+                                                                    {idx + 1}. {item.item || 'Select Material'} 
+                                                                    <span className="text-[11px] ml-2 opacity-60 italic">({item.quantity} × ₹{item.rate})</span>
+                                                                </span>
+                                                                <span className="font-bold">₹{item.amount?.toLocaleString()}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex justify-between items-center pt-3 border-t border-dashed border-primary/20 bg-primary/5 p-3 rounded-lg">
+                                                        <span className="text-[10px] uppercase font-black text-primary tracking-wider">Total Net Value (Subtotal):</span>
+                                                        <span className="font-black text-primary text-xl">₹{subtotal.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
 
-                                        {/* Material Tax Breakdown */}
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center text-[10px] font-bold text-white-dark uppercase tracking-widest border-b border-primary/10 pb-2">
-                                                <span>Tax Identification</span>
-                                                <span>GST Amount</span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {items.map((item, idx) => (
-                                                    item.gstAmount > 0 && (
-                                                        <div key={idx} className="flex justify-between items-center text-sm">
-                                                            <span className="text-white-dark font-medium lowercase">
-                                                                {idx + 1}. {item.item || 'Item'} (gst {item.gstPercentage}%)
-                                                            </span>
-                                                            <span className="font-bold text-warning-dark">₹{item.gstAmount?.toLocaleString()}</span>
+                                                {/* Material Tax Breakdown */}
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between items-center text-[10px] font-bold text-white-dark uppercase tracking-widest border-b border-primary/10 pb-2">
+                                                        <span>Tax Identification</span>
+                                                        <span>GST Amount</span>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {items.map((item, idx) => (
+                                                            item.gstAmount > 0 && (
+                                                                <div key={idx} className="flex justify-between items-center text-sm">
+                                                                    <span className="text-white-dark font-medium lowercase">
+                                                                        {idx + 1}. {item.item || 'Item'} (gst {item.gstPercentage}%)
+                                                                    </span>
+                                                                    <span className="font-bold text-warning-dark">₹{item.gstAmount?.toLocaleString()}</span>
+                                                                </div>
+                                                            )
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex justify-between items-center pt-3 border-t border-dashed border-primary/20 bg-warning/5 p-3 rounded-lg">
+                                                        <span className="text-[10px] uppercase font-black text-warning-dark tracking-wider">Total GST:</span>
+                                                        <span className="font-black text-warning-dark text-xl">₹{gstTotal.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {/* 3rd Party breakdown */}
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <span className="text-white-dark">Total Quantity (Tons):</span>
+                                                        <span className="font-bold">{items.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0)} Tons</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <span className="text-white-dark">Material Subtotal:</span>
+                                                        <span className="font-bold">₹{subtotal.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <span className="text-white-dark">Material Tax (GST):</span>
+                                                        <span className="font-bold text-success">₹{gstTotal.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <span className="text-white-dark font-bold underline decoration-warning/30">Total Permit Fee:</span>
+                                                        <span className="font-bold text-warning-dark">₹{((formData.permitAmountPerTon || 0) * items.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0)).toLocaleString()}</span>
+                                                    </div>
+                                                    {(formData.ourVehicleCostPerTon || 0) > 0 && (
+                                                        <div className="flex justify-between items-center text-sm">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-white-dark font-bold underline decoration-primary/30">Total Transport Cost:</span>
+                                                                <span className="text-[9px] text-white-dark/60 font-medium">(Applicable for {totalInternalTons} tons of Fleet trips)</span>
+                                                            </div>
+                                                            <span className="font-bold text-primary">₹{((formData.ourVehicleCostPerTon || 0) * totalInternalTons).toLocaleString()}</span>
                                                         </div>
-                                                    )
-                                                ))}
-                                            </div>
-                                            <div className="flex justify-between items-center pt-3 border-t border-dashed border-primary/20 bg-warning/5 p-3 rounded-lg">
-                                                <span className="text-[10px] uppercase font-black text-warning-dark tracking-wider">Total GST:</span>
-                                                <span className="font-black text-warning-dark text-xl">₹{gstTotal.toLocaleString()}</span>
-                                            </div>
-                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
 
                                         {/* Grand Total - The Bottom Line */}
                                         <div className="flex justify-between items-center p-5 bg-primary/10 rounded-xl border-2 border-primary/20 shadow-inner">
                                             <div className="flex flex-col">
                                                 <span className="font-black text-primary text-2xl uppercase tracking-tighter leading-none">Grand Total</span>
-                                                <span className="text-[10px] text-white-dark mt-1 font-bold italic">Net Value + All Applied Taxes</span>
+                                                <span className="text-[10px] text-white-dark mt-1 font-bold italic">
+                                                    {formData.saleType === 'Direct' ? 'Net Value + All Applied Taxes' : 'Permit + Transport Calculation'}
+                                                </span>
                                             </div>
                                             <span className="font-black text-primary text-4xl ltr:text-right rtl:text-left drop-shadow-sm">₹{grandTotal.toLocaleString()}</span>
                                         </div>
                                     </div>
-                                </div>
+                            </div>
                         )}
 
                         {/* Notes */}
@@ -790,14 +1047,7 @@ const SalesEntryForm = () => {
                                 <label className="text-[10px] font-bold uppercase mb-1 block">End Date</label>
                                 <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-bold uppercase mb-1 block">Delivery Status</label>
-                                <select className="form-select h-10" value={filterDelivery} onChange={(e) => setFilterDelivery(e.target.value)}>
-                                    <option value="">All</option>
-                                    <option value="open">🔄 Open</option>
-                                    <option value="completed">✅ Delivered</option>
-                                </select>
-                            </div>
+
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">Receipt #</label>
                                 <input
@@ -825,19 +1075,26 @@ const SalesEntryForm = () => {
                                     <th>#</th>
                                     <th>Invoice #</th>
                                     <th>Date</th>
+                                    <th>Trip Period</th>
                                     <th>Customer</th>
                                     <th>Location</th>
                                     <th>Items</th>
                                     {canSeeFinancials && <th>Type</th>}
                                     {canSeeFinancials && <th className="!text-right">Total</th>}
                                     <th className="!text-center">Payment</th>
-                                    <th className="!text-center">Delivery</th>
                                     <th className="!text-center">Receipt</th>
                                     <th className="!text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {(() => {
+                                {isLoadingSales ? (
+                                    <tr><td colSpan={12} className="text-center py-10">
+                                        <div className="flex flex-col items-center gap-3 text-white-dark">
+                                            <span className="animate-spin border-4 border-primary border-l-transparent rounded-full w-8 h-8 inline-block"></span>
+                                            <span className="text-sm font-semibold">Loading sales records...</span>
+                                        </div>
+                                    </td></tr>
+                                ) : (() => {
                                     const filtered = recentSales.filter(s => {
                                         const matchesSearch = !search ||
                                             s.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
@@ -850,7 +1107,6 @@ const SalesEntryForm = () => {
                                         const matchesStart = !filterStartDate || saleDate >= filterStartDate;
                                         const matchesEnd = !filterEndDate || saleDate <= filterEndDate;
 
-                                        const matchesDelivery = !filterDelivery || (s.deliveryStatus || 'open') === filterDelivery;
 
                                         const matchesReceipt = !filterReceipt ||
                                             s.receiptNumber?.toLowerCase().includes(filterReceipt.toLowerCase());
@@ -859,28 +1115,43 @@ const SalesEntryForm = () => {
                                             filterGst === 'gst' ? (s.gstPercentage > 0) : (s.gstPercentage === 0 || !s.gstPercentage)
                                         );
 
-                                        return matchesSearch && matchesCustomer && matchesStart && matchesEnd && matchesDelivery && matchesReceipt && matchesGst;
+                                        return matchesSearch && matchesCustomer && matchesStart && matchesEnd && matchesReceipt && matchesGst;
                                     });
 
                                     if (filtered.length === 0) {
-                                        return <tr><td colSpan={10} className="text-center py-6 text-white-dark">No sales records found</td></tr>;
+                                        return <tr><td colSpan={12} className="text-center py-6 text-white-dark">No sales records found</td></tr>;
                                     }
 
                                     return filtered.map((sale, idx) => (
                                         <tr key={sale._id} className={editId === sale._id ? 'bg-primary/5' : ''}>
                                             <td>{idx + 1}</td>
                                             <td className="font-bold">
-                                                {(sale.grandTotal || 0) > 0 ? (
-                                                    <Link href={`/sales-billing/invoices?id=${sale._id}`} target="_blank" className="text-primary hover:underline">
-                                                        {sale.invoiceNumber}
+                                                <div className="flex flex-col gap-1">
+                                                    {(sale.grandTotal || 0) > 0 ? (
+                                                        <Link href={`/sales-billing/invoices?id=${sale._id}`} target="_blank" className="text-primary hover:underline">
+                                                            {sale.invoiceNumber}
+                                                        </Link>
+                                                    ) : (
+                                                        <span className="text-white-dark/50 cursor-not-allowed" title="Cannot generate invoice — total is ₹0">
+                                                            {sale.invoiceNumber}
+                                                        </span>
+                                                    )}
+                                                    <Link href={`/sales-billing/trip-checklist?id=${sale._id}`} target="_blank" className="badge bg-secondary/10 text-secondary hover:underline hover:bg-secondary hover:text-white transition-all text-[9px] w-max">
+                                                        Trip Checklist
                                                     </Link>
-                                                ) : (
-                                                    <span className="text-white-dark/50 cursor-not-allowed" title="Cannot generate invoice — total is ₹0">
-                                                        {sale.invoiceNumber}
-                                                    </span>
-                                                )}
+                                                </div>
                                             </td>
                                             <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
+                                            <td className="text-[11px] whitespace-nowrap">
+                                                {sale.tripStartDate && sale.tripEndDate ? (
+                                                    <div className="font-semibold text-info">
+                                                        {new Date(sale.tripStartDate).toLocaleDateString('en-GB')} to <br />
+                                                        {new Date(sale.tripEndDate).toLocaleDateString('en-GB')}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-white-dark/50">—</span>
+                                                )}
+                                            </td>
                                             <td className="font-semibold">{sale.customer?.name || '—'}</td>
                                             <td>
                                                 {sale.toLocation ? (
@@ -896,9 +1167,14 @@ const SalesEntryForm = () => {
                                             </td>
                                             {canSeeFinancials && (
                                                 <td>
-                                                    <span className={`badge ${sale.paymentType === 'Cash' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                                                        {sale.paymentType === 'Cash' ? '💵 Cash' : '📒 Credit'}
-                                                    </span>
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className={`badge ${sale.saleType === '3rd Party' ? 'bg-warning/10 text-warning border-warning/20' : 'bg-primary/10 text-primary border-primary/20'} text-[9px] font-black uppercase tracking-widest`}>
+                                                            {sale.saleType || 'Direct'}
+                                                        </span>
+                                                        <span className={`badge ${sale.paymentType === 'Cash' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'} text-[10px]`}>
+                                                            {sale.paymentType === 'Cash' ? '💵 Cash' : '📒 Credit'}
+                                                        </span>
+                                                    </div>
                                                 </td>
                                             )}
                                             {canSeeFinancials && (
@@ -918,18 +1194,7 @@ const SalesEntryForm = () => {
                                                     {sale.paymentStatus}
                                                 </span>
                                             </td>
-                                            <td className="!text-center">
-                                                <button
-                                                    title={sale.deliveryStatus === 'completed' ? 'Click to Re-open' : 'Click to Mark Complete'}
-                                                    onClick={() => handleToggleDeliveryStatus(sale)}
-                                                    className={`badge cursor-pointer border-0 ${sale.deliveryStatus === 'completed'
-                                                        ? 'bg-teal-500/10 text-teal-500 hover:bg-danger/10 hover:text-danger'
-                                                        : 'bg-orange-400/10 text-orange-400 hover:bg-teal-500/10 hover:text-teal-500'
-                                                        } transition-colors`}
-                                                >
-                                                    {sale.deliveryStatus === 'completed' ? '✅ Delivered' : '🔄 Open'}
-                                                </button>
-                                            </td>
+
                                             <td className="!text-center">
                                                 {sale.receiptNumber && <div className="text-[10px] font-bold text-white-dark mb-1">{sale.receiptNumber}</div>}
                                                 {sale.receiptFile ? (
@@ -994,7 +1259,7 @@ const SalesEntryForm = () => {
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteId(null)}
             />
-        </div >
+        </div>
     );
 };
 

@@ -9,7 +9,7 @@ import IconX from '@/components/icon/icon-x';
 import api from '@/utils/api';
 
 interface InvoiceGenerationProps {
-    mode?: 'invoice' | 'bill';
+    mode?: 'invoice' | 'bill' | 'checklist';
 }
 
 const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
@@ -114,10 +114,10 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
             <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div>
                     <h2 className="text-2xl font-bold dark:text-white-light">
-                        {mode === 'invoice' ? 'பில் உருவாக்குதல்' : 'பில் பட்டியல் (Cash Bill)'}
+                        {mode === 'invoice' ? 'பில் உருவாக்குதல்' : mode === 'checklist' ? 'டிரிப் சரிபார்ப்புப் பட்டியல்' : 'பில் பட்டியல் (Cash Bill)'}
                     </h2>
                     <p className="text-white-dark text-sm mt-1">
-                        {mode === 'invoice' ? 'Invoice Generation — View and print tax invoices' : 'Bill Generation — View and print non-tax bills'}
+                        {mode === 'invoice' ? 'Invoice Generation — View and print tax invoices' : mode === 'checklist' ? 'Trip Checklist — View and print connected trips for invoices' : 'Bill Generation — View and print non-tax bills'}
                     </p>
                 </div>
             </div>
@@ -381,7 +381,7 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                     {/* Sales List */}
                     <div className="panel">
                         <h5 className="text-lg font-bold dark:text-white-light mb-4">
-                            {mode === 'invoice' ? 'Tax Invoice List' : 'Normal Bill List'}
+                            {mode === 'invoice' ? 'Tax Invoice List' : mode === 'checklist' ? 'Checklist - Select Invoice' : 'Normal Bill List'}
                         </h5>
                         <div className="table-responsive">
                             <table className="table-hover">
@@ -403,6 +403,7 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                                         <tr><td colSpan={9} className="text-center py-8 text-white-dark">Loading...</td></tr>
                                     ) : (() => {
                                         const filtered = sales.filter(s => {
+                                            if (mode === 'checklist') return true;
                                             const isGST = (s.gstAmount || 0) > 0;
                                             return mode === 'invoice' ? isGST : !isGST;
                                         });
@@ -436,7 +437,10 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                                                     </span>
                                                 </td>
                                                 <td className="!text-center">
-                                                    <button className="btn btn-sm btn-outline-primary" onClick={() => viewInvoice(sale._id)}>
+                                                    <button className="btn btn-sm btn-outline-primary" onClick={() => {
+                                                        if (mode === 'checklist') router.push(`/sales-billing/trip-checklist?id=${sale._id}`);
+                                                        else viewInvoice(sale._id);
+                                                    }}>
                                                         <IconPrinter className="w-4 h-4 ltr:mr-1 rtl:ml-1" /> View
                                                     </button>
                                                 </td>
