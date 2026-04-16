@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -20,14 +20,11 @@ const LabourListPage = () => {
     const canSeeFinancials = currentUser?.role?.toLowerCase() !== 'supervisor';
 
     const [data, setData] = useState<any[]>([]);
-    const [contractors, setContractors] = useState<any[]>([]);
     const [workTypes, setWorkTypes] = useState<any[]>([]);
-    const [selectedContractor, setSelectedContractor] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [formView, setFormView] = useState(false);
     const [editItem, setEditItem] = useState<any>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState('direct');
     const { showToast } = useToast();
     const [formData, setFormData] = useState({
         name: '',
@@ -54,13 +51,11 @@ const LabourListPage = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [labourRes, contractorRes, workTypesRes] = await Promise.all([
+            const [labourRes, workTypesRes] = await Promise.all([
                 api.get('/labour'),
-                api.get('/vendors/labour'),
                 api.get('/master/work-types')
             ]);
             if (labourRes.data.success) setData(labourRes.data.data);
-            if (contractorRes.data.success) setContractors(contractorRes.data.data);
             if (workTypesRes.data.success) setWorkTypes(workTypesRes.data.data);
         } catch (error) {
             console.error(error);
@@ -76,24 +71,7 @@ const LabourListPage = () => {
 
     const handleChange = (e: any) => {
         const { name, value } = e.target;
-        setFormData(prev => {
-            const updated = { ...prev, [name]: value };
-
-            if (name === 'labourType') {
-                if (value === 'Direct') {
-                    updated.contractor = '';
-                    updated.wage = '';
-                    updated.workType = workTypes[0]?.name || '';
-                }
-            }
-
-            if (name === 'contractor') {
-                const vendor = contractors.find(c => c._id === value);
-                setSelectedContractor(vendor);
-            }
-
-            return updated;
-        });
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
 
@@ -129,22 +107,18 @@ const LabourListPage = () => {
             workType: workTypes[0]?.name || '',
             wage: '',
             wageType: 'Daily',
-            labourType: activeTab === 'direct' ? 'Direct' : 'Vendor',
+            labourType: 'Direct',
             contractor: '',
             joiningDate: new Date().toISOString().split('T')[0],
             description: '',
             status: 'active'
         });
-        setSelectedContractor(null);
         setEditItem(null);
         setFormView(false);
     };
 
     const handleEdit = (item: any) => {
         setEditItem(item);
-        const vendor = item.contractor?._id ? contractors.find(c => c._id === item.contractor._id) : null;
-        setSelectedContractor(vendor);
-
         setFormData({
             name: item.name,
             mobile: item.mobile || '',
@@ -152,8 +126,8 @@ const LabourListPage = () => {
             workType: item.workType || '',
             wage: item.wage || '',
             wageType: item.wageType || 'Daily',
-            labourType: item.labourType || 'Direct',
-            contractor: item.contractor?._id || item.contractor || '',
+            labourType: 'Direct',
+            contractor: '',
             joiningDate: item.joiningDate ? new Date(item.joiningDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             description: item.description || '',
             status: item.status || 'active'
@@ -192,13 +166,6 @@ const LabourListPage = () => {
     };
 
     const filteredLabours = data.filter(item => {
-        // Tab filter
-        const matchesTab = activeTab === 'direct'
-            ? (item.labourType === 'Direct' || !item.labourType)
-            : item.labourType === 'Vendor';
-
-        if (!matchesTab) return false;
-
         // Search filter (Name)
         if (filters.search && !item.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
 
@@ -226,29 +193,10 @@ const LabourListPage = () => {
                     <p className="text-white-dark text-sm mt-1">Manage and track all direct and contractor labour records.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex bg-gray-100 dark:bg-dark-light/5 p-1 rounded-xl">
-                        <button
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${activeTab === 'direct' ? 'bg-white dark:bg-dark text-primary shadow-sm' : 'text-white-dark hover:text-primary'}`}
-                            onClick={() => setActiveTab('direct')}
-                        >
-                            DIRECT LABOUR
-                        </button>
-                        <button
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${activeTab === 'vendor' ? 'bg-white dark:bg-dark text-primary shadow-sm' : 'text-white-dark hover:text-primary'}`}
-                            onClick={() => setActiveTab('vendor')}
-                        >
-                            CONTRACTOR
-                        </button>
-                    </div>
-                    {activeTab === 'vendor' && (
-                        <Link href="/vendors/labour" className="btn btn-outline-warning btn-sm gap-2">
-                            Manage Contractors
-                        </Link>
-                    )}
                     <button
                         className="btn btn-primary gap-2"
                         onClick={() => {
-                            setFormData(prev => ({ ...prev, labourType: activeTab === 'direct' ? 'Direct' : 'Vendor' }));
+                            setFormData(prev => ({ ...prev, labourType: 'Direct' }));
                             setFormView(true);
                         }}
                     >
@@ -277,41 +225,11 @@ const LabourListPage = () => {
                     </div>
 
                     <form className="max-w-4xl mx-auto space-y-8" onSubmit={handleSubmit}>
-                        {/* Section 1: Registration Type */}
-                        <div className="space-y-5 bg-primary/5 p-6 rounded-2xl border border-primary/10 shadow-sm">
-                            <div className="flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-widest border-b border-primary/10 pb-2 mb-4">
-                                <IconPlus className="w-4 h-4" />
-                                1. Registration Type (பதிவு வகை)
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Labour Category (வகை)</label>
-                                    <select name="labourType" className="form-select border-primary font-bold rounded-xl h-11" value={formData.labourType} onChange={handleChange}>
-                                        <option value="Direct">Direct Labour (நேரடி தொழிலாளர்)</option>
-                                        <option value="Vendor">Contractor/Vendor Labour (ஒப்பந்த தொழிலாளர்)</option>
-                                    </select>
-                                </div>
-                                {formData.labourType === 'Vendor' && (
-                                    <div>
-                                        <label className="text-[10px] font-black text-white-dark uppercase mb-2 block">Select Contractor (ஒப்பந்ததாரர்)</label>
-                                        <select name="contractor" className="form-select border-warning font-bold rounded-xl h-11" value={formData.contractor} onChange={handleChange} required>
-                                            <option value="">Select Vendor...</option>
-                                            {contractors.map(c => (
-                                                <option key={c._id} value={c._id}>{c.name} {c.companyName ? `(${c.companyName})` : ''}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
-
-
-                        </div>
-
-                        {/* Section 2: Personal & Work Info */}
+                        {/* Section 1: Personal & Work Info */}
                         <div className="space-y-5 bg-info/5 p-6 rounded-2xl border border-info/10 shadow-sm">
                             <div className="flex items-center gap-2 text-info font-black uppercase text-[10px] tracking-widest border-b border-info/10 pb-2 mb-4">
                                 <IconPlus className="w-4 h-4" />
-                                2. Personal &amp; Work Information (தனிப்பட்ட விவரங்கள்)
+                                1. Personal &amp; Work Information (தனிப்பட்ட விவரங்கள்)
                             </div>
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                                 <div className="md:col-span-2 lg:col-span-1">
@@ -476,7 +394,6 @@ const LabourListPage = () => {
                                     <tr>
                                         <th className="font-black uppercase tracking-widest text-[10px] py-4">Labour Name</th>
                                         <th className="font-black uppercase tracking-widest text-[10px] py-4 text-center">Work Type</th>
-                                        {activeTab === 'vendor' && <th className="font-black uppercase tracking-widest text-[10px] py-4">Contractor</th>}
                                         <th className="font-black uppercase tracking-widest text-[10px] py-4">Mobile</th>
                                         {canSeeFinancials && <th className="font-black uppercase tracking-widest text-[10px] py-4">Wage Rate</th>}
                                         <th className="font-black uppercase tracking-widest text-[10px] py-4">Join Date</th>
@@ -501,12 +418,6 @@ const LabourListPage = () => {
                                                 <td className="py-4 text-center">
                                                     <span className="badge badge-outline-info rounded-lg font-black text-[9px] uppercase tracking-widest bg-info/5 px-2.5 py-1.5">{item.workType}</span>
                                                 </td>
-                                                {activeTab === 'vendor' && (
-                                                    <td className="font-black text-warning whitespace-nowrap py-4">
-                                                        {item.contractor?.name || 'Unknown'}
-                                                        <div className="text-[9px] opacity-60 font-bold uppercase mt-1 tracking-tighter">{item.contractor?.companyName}</div>
-                                                    </td>
-                                                )}
                                                 <td className="py-4 text-white-dark">{item.mobile || '-'}</td>
                                                 {canSeeFinancials && (
                                                     <td className="py-4">

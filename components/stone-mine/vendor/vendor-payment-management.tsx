@@ -41,11 +41,10 @@ const VendorPaymentManagement = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [payRes, balRes, expRes, labRes, transRes] = await Promise.all([
+            const [payRes, balRes, expRes, transRes] = await Promise.all([
                 api.get('/vendors/payments'),
                 api.get('/vendors/outstanding'),
                 api.get('/vendors/explosive'),
-                api.get('/vendors/labour'),
                 api.get('/vendors/transport')
             ]);
 
@@ -61,7 +60,6 @@ const VendorPaymentManagement = () => {
 
             const vendors: any[] = [];
             if (expRes.data.success) vendors.push(...expRes.data.data.map((v: any) => ({ ...v, type: 'ExplosiveSupplier', label: `[Explosive] ${v.name}` })));
-            if (labRes.data.success) vendors.push(...labRes.data.data.map((v: any) => ({ ...v, type: 'LabourContractor', label: `[Labour] ${v.name}` })));
             if (transRes.data.success) {
                 vendors.push(...transRes.data.data.map((v: any) => ({
                     ...v,
@@ -154,8 +152,6 @@ const VendorPaymentManagement = () => {
                 let potentialCost = 0;
                 if (vType === 'TransportVendor') {
                     potentialCost = vendor.vehicles?.reduce((acc: number, veh: any) => acc + (Number(veh.ratePerTrip || 0) + Number(veh.padiKasu || 0)), 0) || 0;
-                } else if (vType === 'LabourContractor') {
-                    potentialCost = vendor.contracts?.reduce((acc: number, c: any) => acc + (Number(c.agreedRate || 0) * Number(c.labourCount || 0)), 0) || 0;
                 }
 
                 const outstanding = (potentialCost + (vendor.outstandingBalance || 0)) - (vendor.advancePaid || 0) + ledgerBal;
@@ -457,9 +453,8 @@ const VendorPaymentManagement = () => {
                                     <tr key={p._id}>
                                         <td className="whitespace-nowrap">{new Date(p.date).toLocaleDateString('en-GB')}</td>
                                         <td>
-                                            <span className={`badge ${p.vendorType === 'ExplosiveSupplier' ? 'badge-outline-danger' :
-                                                p.vendorType === 'LabourContractor' ? 'badge-outline-warning' : 'badge-outline-info'} py-0.5 px-1.5 text-[10px]`}>
-                                                {p.vendorType.replace('Supplier', '').replace('Contractor', '').replace('Vendor', '')}
+                                            <span className={`badge ${p.vendorType === 'ExplosiveSupplier' ? 'badge-outline-danger' : 'badge-outline-info'} py-0.5 px-1.5 text-[10px]`}>
+                                                {p.vendorType.replace('Supplier', '').replace('Vendor', '')}
                                             </span>
                                         </td>
                                         <td>

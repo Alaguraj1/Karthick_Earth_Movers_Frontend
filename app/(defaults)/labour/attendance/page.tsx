@@ -20,7 +20,6 @@ const AttendancePage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterType, setFilterType] = useState<'all' | 'Direct' | 'Vendor'>('all');
     const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
     const [monthPaidLabours, setMonthPaidLabours] = useState<string[]>([]);
 
@@ -195,14 +194,12 @@ const AttendancePage = () => {
         return labours.filter(l => {
             const matchSearch = l.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 l.workType?.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchType = filterType === 'all' || l.labourType === filterType;
-            return matchSearch && matchType;
+            return matchSearch;
         });
-    }, [labours, searchQuery, filterType]);
+    }, [labours, searchQuery]);
 
-    // Group labours by type
-    const directLabours = filteredLabours.filter(l => l.labourType === 'Direct' || !l.labourType);
-    const vendorLabours = filteredLabours.filter(l => l.labourType === 'Vendor');
+    // Grouping by type is no longer needed since contractor module is removed.
+    // Instead, we just use filteredLabours directly.
 
     // Stats
     const stats = {
@@ -270,12 +267,6 @@ const AttendancePage = () => {
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                                 <h4 className="font-bold text-gray-900 dark:text-white truncate text-[15px]">{labour.name}</h4>
-                                {isVendor && (
-                                    <span className="flex-shrink-0 inline-flex items-center gap-1 rounded-md bg-violet-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
-                                        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" /></svg>
-                                        Contractor
-                                    </span>
-                                )}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
                                 <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{labour.workType || 'General'}</span>
@@ -385,9 +376,6 @@ const AttendancePage = () => {
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-gray-900 dark:text-white text-sm">{labour.name}</span>
-                                {isVendor && (
-                                    <span className="inline-flex rounded bg-violet-100 px-1 py-0.5 text-[8px] font-black uppercase text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Contractor</span>
-                                )}
                             </div>
                             <span className="text-[10px] text-gray-400 uppercase tracking-wider">{labour.workType || 'General'}</span>
                         </div>
@@ -603,25 +591,7 @@ const AttendancePage = () => {
                     />
                 </div>
 
-                {/* Type Filter */}
-                <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 p-1 gap-1">
-                    {[
-                        { key: 'all' as const, label: 'All', en: 'All' },
-                        { key: 'Direct' as const, label: 'Direct', en: 'Direct' },
-                        { key: 'Vendor' as const, label: 'Contractor', en: 'Contractor' },
-                    ].map(f => (
-                        <button
-                            key={f.key}
-                            onClick={() => setFilterType(f.key)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${filterType === f.key
-                                ? 'bg-primary text-white shadow-sm'
-                                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                        >
-                            {f.label}
-                        </button>
-                    ))}
-                </div>
+<div className="flex-1"></div>
 
                 {/* View Toggle */}
                 <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 p-1 gap-1">
@@ -666,85 +636,22 @@ const AttendancePage = () => {
             ) : viewMode === 'table' ? (
                 /* ===== TABLE VIEW ===== */
                 <div className="panel !p-0 overflow-hidden rounded-2xl">
-                    {directLabours.length > 0 && (
-                        <>
-                            <div className="bg-primary/5 px-5 py-3 border-b border-gray-100 dark:border-gray-700">
-                                <span className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-primary"></span>
-                                    Direct Workers — {directLabours.length}
-                                </span>
-                            </div>
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="bg-gray-50 dark:bg-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                                        <th className="px-4 py-2.5 text-left">Worker</th>
-                                        <th className="px-3 py-2.5 text-left">Wage</th>
-                                        <th className="px-3 py-2.5 text-left">Status</th>
-                                        <th className="px-3 py-2.5 text-left">OT Hrs</th>
-                                    </tr>
-                                </thead>
-                                <tbody>{directLabours.map(renderWorkerRow)}</tbody>
-                            </table>
-                        </>
-                    )}
-                    {vendorLabours.length > 0 && (
-                        <>
-                            <div className="bg-gradient-to-r from-violet-500/10 to-transparent px-5 py-3 border-y border-gray-100 dark:border-gray-700">
-                                <span className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-violet-500"></span>
-                                    Contractor Workers — {vendorLabours.length}
-                                </span>
-                            </div>
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="bg-gray-50 dark:bg-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                                        <th className="px-4 py-2.5 text-left">Worker</th>
-                                        <th className="px-3 py-2.5 text-left">Wage</th>
-                                        <th className="px-3 py-2.5 text-left">Status</th>
-                                        <th className="px-3 py-2.5 text-left">OT Hrs</th>
-                                    </tr>
-                                </thead>
-                                <tbody>{vendorLabours.map(renderWorkerRow)}</tbody>
-                            </table>
-                        </>
-                    )}
+                    <table className="w-full">
+                        <thead>
+                            <tr className="bg-gray-50 dark:bg-gray-800 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                <th className="px-4 py-2.5 text-left">Worker</th>
+                                <th className="px-3 py-2.5 text-left">Wage</th>
+                                <th className="px-3 py-2.5 text-left">Status</th>
+                                <th className="px-3 py-2.5 text-left">OT Hrs</th>
+                            </tr>
+                        </thead>
+                        <tbody>{filteredLabours.map(renderWorkerRow)}</tbody>
+                    </table>
                 </div>
             ) : (
                 /* ===== CARD VIEW ===== */
-                <div className="space-y-6">
-                    {/* Direct Workers Section */}
-                    {directLabours.length > 0 && (
-                        <div>
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent dark:from-primary/50"></div>
-                                <span className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2 bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20">
-                                    <span className="w-2 h-2 rounded-full bg-primary"></span>
-                                    Direct Workers — {directLabours.length}
-                                </span>
-                                <div className="h-px flex-1 bg-gradient-to-l from-primary/30 to-transparent dark:from-primary/50"></div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                                {directLabours.map(renderWorkerCard)}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Contractor Workers Section */}
-                    {vendorLabours.length > 0 && (
-                        <div>
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="h-px flex-1 bg-gradient-to-r from-violet-300 to-transparent dark:from-violet-700"></div>
-                                <span className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest flex items-center gap-2 bg-violet-50 dark:bg-violet-900/30 px-4 py-1.5 rounded-full border border-violet-200 dark:border-violet-800">
-                                    <span className="w-2 h-2 rounded-full bg-violet-500"></span>
-                                    Contractor Workers — {vendorLabours.length}
-                                </span>
-                                <div className="h-px flex-1 bg-gradient-to-l from-violet-300 to-transparent dark:from-violet-700"></div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                                {vendorLabours.map(renderWorkerCard)}
-                            </div>
-                        </div>
-                    )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {filteredLabours.map(renderWorkerCard)}
                 </div>
             )}
 

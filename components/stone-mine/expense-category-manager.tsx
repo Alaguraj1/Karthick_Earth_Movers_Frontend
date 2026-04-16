@@ -1729,33 +1729,14 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-secondary">Labour Type (தொழிலாளர் வகை)</label>
-                                            <select name="labourType" className="form-select border-2 font-bold rounded-xl h-12 border-secondary/20 font-bold" value={formData.labourType} onChange={handleChange}>
-                                                <option value="">All Types</option>
-                                                <option value="Direct">நேரடி (Direct)</option>
-                                                <option value="Vendor">கான்ட்ராக்டர் (Contractor)</option>
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Name (தொழிலாளர் பெயர்)</label>
+                                            <select name="labourName" className="form-select border-2 font-bold rounded-xl h-12" value={formData.labourId} onChange={handleChange} required>
+                                                <option value="">Select Labour</option>
+                                                {labours
+                                                    .filter(l => !formData.workType || l.workType === formData.workType)
+                                                    .map((l: any) => <option key={l._id} value={l._id}>{l.name}</option>)}
                                             </select>
                                         </div>
-                                        {formData.labourType === 'Vendor' ? (
-                                            <div>
-                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Contractor Name (கான்ட்ராக்டர் பெயர்)</label>
-                                                <select name="labourName" className="form-select border-2 font-bold rounded-xl h-12 border-primary/20" value={formData.labourId} onChange={handleChange} required>
-                                                    <option value="">Select Contractor</option>
-                                                    {contractors.map((c: any) => <option key={c._id} value={c._id}>{c.name || c.companyName}</option>)}
-                                                </select>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Name (தொழிலாளர் பெயர்)</label>
-                                                <select name="labourName" className="form-select border-2 font-bold rounded-xl h-12" value={formData.labourId} onChange={handleChange} required>
-                                                    <option value="">Select Labour</option>
-                                                    {labours
-                                                        .filter(l => (!formData.workType || l.workType === formData.workType) &&
-                                                            l.labourType !== 'Vendor') // Direct only or specified
-                                                        .map((l: any) => <option key={l._id} value={l._id}>{l.name}</option>)}
-                                                </select>
-                                            </div>
-                                        )}
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Wage Type</label>
                                             <select name="wageType" className="form-select border-2 font-bold rounded-xl h-12 bg-gray-50 dark:bg-dark-light/10" value={formData.wageType} onChange={handleChange} disabled>

@@ -20,25 +20,22 @@ const AdvancePage = () => {
         date: new Date().toISOString().split('T')[0],
         amount: '',
         paymentMode: 'Cash',
-        remarks: '',
-        labourType: 'Direct'
+        remarks: ''
     });
     const [editItem, setEditItem] = useState<any>(null);
     const [deleteId, setDeleteId] = useState<any>(null);
 
-    const [contractors, setContractors] = useState<any[]>([]);
+
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [labourRes, advanceRes, contractorRes] = await Promise.all([
+            const [labourRes, advanceRes] = await Promise.all([
                 api.get('/labour'),
-                api.get('/labour/advance'),
-                api.get('/vendors/labour')
+                api.get('/labour/advance')
             ]);
             if (labourRes.data.success) setLabours(labourRes.data.data);
             if (advanceRes.data.success) setAdvances(advanceRes.data.data);
-            if (contractorRes.data.success) setContractors(contractorRes.data.data);
         } catch (error) {
             console.error(error);
             showToast('Error fetching data', 'error');
@@ -65,11 +62,10 @@ const AdvancePage = () => {
         setSaving(true);
         try {
             let response;
-            const onModel = formData.labourType === 'Direct' ? 'Labour' : 'LabourContractor';
             if (editItem) {
-                response = await api.put(`/labour/advance/${editItem._id}`, { ...formData, onModel });
+                response = await api.put(`/labour/advance/${editItem._id}`, formData);
             } else {
-                response = await api.post('/labour/advance', { ...formData, onModel });
+                response = await api.post('/labour/advance', formData);
             }
 
             if (response.data.success) {
@@ -79,8 +75,7 @@ const AdvancePage = () => {
                     date: new Date().toISOString().split('T')[0],
                     amount: '',
                     paymentMode: 'Cash',
-                    remarks: '',
-                    labourType: 'Direct'
+                    remarks: ''
                 });
                 setEditItem(null);
                 fetchData();
@@ -100,8 +95,7 @@ const AdvancePage = () => {
             date: new Date(item.date).toISOString().split('T')[0],
             amount: item.amount.toString(),
             paymentMode: item.paymentMode,
-            remarks: item.remarks || '',
-            labourType: item.onModel === 'LabourContractor' ? 'Vendor' : 'Direct'
+            remarks: item.remarks || ''
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -146,7 +140,7 @@ const AdvancePage = () => {
                                             type="button"
                                             onClick={() => {
                                                 setEditItem(null);
-                                                 setFormData({ labour: '', date: new Date().toISOString().split('T')[0], amount: '', paymentMode: 'Cash', remarks: '', labourType: 'Direct' });
+                                                 setFormData({ labour: '', date: new Date().toISOString().split('T')[0], amount: '', paymentMode: 'Cash', remarks: '' });
                                             }}
                                             className="text-[10px] font-black uppercase text-danger hover:underline"
                                         >
@@ -154,26 +148,13 @@ const AdvancePage = () => {
                                         </button>
                                     </div>
                                 )}
-                                 <div>
-                                    <label className="text-[10px] font-black uppercase text-white-dark mb-1 block">Labour Type (தொழிலாளர் வகை)</label>
-                                    <select name="labourType" className="form-select font-bold rounded-xl mb-3" value={formData.labourType} onChange={handleChange} required>
-                                        <option value="Direct">நேரடி (Direct)</option>
-                                        <option value="Vendor">கான்ட்ராக்டர் (Contractor)</option>
-                                    </select>
-                                </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase text-white-dark mb-1 block">Select {formData.labourType === 'Vendor' ? 'Contractor (கான்ட்ராக்டர்)' : 'Labour (தொழிலாளர்)'}</label>
+                                    <label className="text-[10px] font-black uppercase text-white-dark mb-1 block">Select Labour (தொழிலாளர்)</label>
                                     <select name="labour" className="form-select font-bold rounded-xl" value={formData.labour} onChange={handleChange} required>
-                                        <option value="">Select {formData.labourType === 'Vendor' ? 'Contractor' : 'Worker'}</option>
-                                        {formData.labourType === 'Direct' ? (
-                                            labours.filter(l => l.labourType === 'Direct').map(l => (
-                                                <option key={l._id} value={l._id}>{l.name} ({l.workType})</option>
-                                            ))
-                                        ) : (
-                                            contractors.map(c => (
-                                                <option key={c._id} value={c._id}>{c.name || c.companyName} {c.companyName ? `(${c.companyName})` : ''}</option>
-                                            ))
-                                        )}
+                                        <option value="">Select Worker</option>
+                                        {labours.map(l => (
+                                            <option key={l._id} value={l._id}>{l.name} ({l.workType})</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div>

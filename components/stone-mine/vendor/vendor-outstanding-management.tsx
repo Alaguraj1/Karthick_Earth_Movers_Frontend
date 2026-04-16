@@ -17,24 +17,20 @@ const VendorOutstandingManagement = () => {
             const res = await api.get('/vendors/outstanding');
             if (res.data.success) {
                 const balData = res.data.data;
-                const [expRes, labRes, transRes] = await Promise.all([
+                const [expRes, transRes] = await Promise.all([
                     api.get('/vendors/explosive'),
-                    api.get('/vendors/labour'),
                     api.get('/vendors/transport')
                 ]);
 
                 const combined = balData.map((b: any) => {
                     let master: any = null;
                     if (b.vendorType === 'ExplosiveSupplier') master = expRes.data.data.find((v: any) => v._id === b.vendorId);
-                    else if (b.vendorType === 'LabourContractor') master = labRes.data.data.find((v: any) => v._id === b.vendorId);
                     else if (b.vendorType === 'TransportVendor') master = transRes.data.data.find((v: any) => v._id === b.vendorId);
 
                     if (master) {
                         let potentialCost = 0;
                         if (b.vendorType === 'TransportVendor') {
                             potentialCost = master.vehicles?.reduce((acc: number, veh: any) => acc + (Number(veh.ratePerTrip || 0) + Number(veh.padiKasu || 0)), 0) || 0;
-                        } else if (b.vendorType === 'LabourContractor') {
-                            potentialCost = master.contracts?.reduce((acc: number, c: any) => acc + (Number(c.agreedRate || 0) * Number(c.labourCount || 0)), 0) || 0;
                         }
 
                         const netInvoice = (b.totalInvoice || 0) + potentialCost + (master.outstandingBalance || 0);
@@ -138,9 +134,8 @@ const VendorOutstandingManagement = () => {
                                     <tr key={index}>
                                         <td className="font-bold">{v.vendorName || 'Unknown Vendor'}</td>
                                         <td>
-                                            <span className={`badge ${v.vendorType === 'ExplosiveSupplier' ? 'badge-outline-danger' :
-                                                v.vendorType === 'LabourContractor' ? 'badge-outline-warning' : 'badge-outline-info'}`}>
-                                                {v.vendorType.replace('Supplier', '').replace('Contractor', '').replace('Vendor', '')}
+                                            <span className={`badge ${v.vendorType === 'ExplosiveSupplier' ? 'badge-outline-danger' : 'badge-outline-info'}`}>
+                                                {v.vendorType.replace('Supplier', '').replace('Vendor', '')}
                                             </span>
                                         </td>
                                         <td className="!text-right">₹{v.totalInvoice?.toLocaleString()}</td>

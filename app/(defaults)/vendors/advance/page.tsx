@@ -32,10 +32,9 @@ const VendorAdvancePage = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [payRes, expRes, labRes, transRes] = await Promise.all([
+            const [payRes, expRes, transRes] = await Promise.all([
                 api.get('/vendors/payments'),
                 api.get('/vendors/explosive'),
-                api.get('/vendors/labour'),
                 api.get('/vendors/transport')
             ]);
             
@@ -46,7 +45,6 @@ const VendorAdvancePage = () => {
 
             const vendors: any[] = [];
             if (expRes.data.success) vendors.push(...expRes.data.data.map((v: any) => ({ ...v, type: 'ExplosiveSupplier', label: `[Explosive] ${v.name}` })));
-            if (labRes.data.success) vendors.push(...labRes.data.data.map((v: any) => ({ ...v, type: 'LabourContractor', label: `[Labour] ${v.name}` })));
             if (transRes.data.success) vendors.push(...transRes.data.data.map((v: any) => ({ ...v, type: 'TransportVendor', label: `[Transport] ${v.name}` })));
             setAllVendors(vendors);
 

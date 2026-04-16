@@ -324,9 +324,6 @@ const Sidebar = () => {
                                             <ul className="sub-menu text-gray-500">
 
                                                 <li>
-                                                    <Link href="/vendors/labour">Labour Contractors</Link>
-                                                </li>
-                                                <li>
                                                     <Link href="/vendors/transport">Transport Vendors</Link>
                                                 </li>
                                                 <li>
