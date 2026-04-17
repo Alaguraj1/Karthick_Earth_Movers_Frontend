@@ -48,7 +48,7 @@ const workflowData: WorkflowSection[] = [
                 ],
                 tips: [
                     'முதலில் "Masters" மெனுவில் அனைத்து வகைகளையும் (Categories) உருவாக்கவும்.',
-                    'Vendor Management மற்றும் Sales-ல் வாடிக்கையாளர்களை பதிவு செய்யவும்.',
+                    'Transport Vendor Management மற்றும் Sales-ல் வாடிக்கையாளர்களை பதிவு செய்யவும்.',
                     'Machine & Vehicle மற்றும் Labour Management-ல் அடிப்படை தரவுகளை பதிவு செய்யவும்.',
                 ],
             },
@@ -348,7 +348,7 @@ const workflowData: WorkflowSection[] = [
         id: 'vendors',
         icon: '🏪',
         titleTamil: 'விற்பனையாளர் மேலாண்மை (முழு வழிகாட்டி)',
-        titleEnglish: 'Vendor Management (Full Guide)',
+        titleEnglish: 'Transport Vendor Management (Full Guide)',
         color: '#06b6d4',
         gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)',
         overviewTamil: 'வெடிமருந்து சப்ளையர், தொழிலாளர் கான்ட்ராக்டர் மற்றும் போக்குவரத்து விநியோகஸ்தர்களின் கணக்குகளை ஆரம்பம் முதல் முடிவு வரை நிர்வகிக்கும் முறை.',

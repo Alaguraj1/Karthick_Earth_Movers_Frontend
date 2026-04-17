@@ -34,7 +34,6 @@ const DriverPaymentManagement = () => {
         paymentType: 'Per Trip',
         amount: '',
         padiKasu: '',
-        advanceAmount: '',
         tripCount: '1',
         paymentMode: 'Cash',
         notes: ''
@@ -140,10 +139,9 @@ const DriverPaymentManagement = () => {
                 const contractorName = selectedTrip.vehicleId?.contractor?.name;
                 const vNum = selectedTrip.vehicleId?.vehicleNumber || selectedTrip.vehicleId?.registrationNumber || 'No Plate';
 
-                // Calculate how many trips this specific DRIVER did with this specific vehicle on this day
-                const driverTripsCount = tripsByDate.filter(t =>
-                    ((t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.vehicleId?._id) === (selectedTrip.vehicleId?.vehicleNumber || selectedTrip.vehicleId?.registrationNumber || selectedTrip.vehicleId?._id)) &&
-                    (t.driverName === selectedTrip.driverName)
+                // Calculate how many trips this specific vehicle did on this day
+                const vehicleTripsCount = tripsByDate.filter(t =>
+                    (t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.vehicleId?._id) === (selectedTrip.vehicleId?.vehicleNumber || selectedTrip.vehicleId?.registrationNumber || selectedTrip.vehicleId?._id)
                 ).length;
 
                 setFormData(prev => ({
@@ -151,27 +149,9 @@ const DriverPaymentManagement = () => {
                     tripId: value,
                     vehicleType: selectedTrip.vehicleType || 'Lorry',
                     driverName: isContract && contractorName ? `[VENDOR] ${contractorName}` : selectedTrip.driverName,
-                    tripCount: driverTripsCount.toString(),
+                    tripCount: vehicleTripsCount.toString(),
                     notes: `Trip: ${selectedTrip.fromLocation} to ${selectedTrip.toLocation} (${vNum})${contractorName ? ` | Vendor: ${contractorName}` : ''}`
                 }));
-
-                // Fetch advances for this driver (Match by ID or Name)
-                api.get(`/labour/advance`).then(res => {
-                    if (res.data.success) {
-                        const totalAdv = res.data.data
-                            .filter((a: any) => {
-                                const isSameDriver = (selectedTrip.driverId && a.labour?._id === selectedTrip.driverId) ||
-                                                   (a.labour?.name?.trim().toLowerCase() === selectedTrip.driverName?.trim().toLowerCase());
-                                
-                                // Only deduct advances from the same date to match user expectation for today's payment
-                                const advDate = new Date(a.date).toISOString().split('T')[0];
-                                const selDate = formData.date;
-                                return isSameDriver && advDate === selDate;
-                            })
-                            .reduce((sum: number, a: any) => sum + a.amount, 0);
-                        setFormData(prev => ({ ...prev, advanceAmount: totalAdv.toString() }));
-                    }
-                });
             }
         }
     };
@@ -205,7 +185,6 @@ const DriverPaymentManagement = () => {
                 ...formData,
                 amount: Number(formData.amount),
                 padiKasu: Number(formData.padiKasu || 0),
-                advanceAmount: Number(formData.advanceAmount || 0),
                 tripCount: Number(formData.tripCount || 1),
             };
             if (editId) {
@@ -232,7 +211,6 @@ const DriverPaymentManagement = () => {
             paymentType: payment.paymentType,
             amount: payment.amount.toString(),
             padiKasu: payment.padiKasu.toString(),
-            advanceAmount: (payment.advanceAmount || 0).toString(),
             tripCount: (payment.tripCount || 1).toString(),
             paymentMode: payment.paymentMode,
             notes: payment.notes || ''
@@ -277,7 +255,7 @@ const DriverPaymentManagement = () => {
                                     <option value="">Choose Trip ID</option>
                                     {tripsByDate.map((t) => (
                                         <option key={t._id} value={t._id}>
-                                            {t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || 'No Plate'} - {t.driverName} | {t.fromLocation} → {t.toLocation} | {t.vehicleId?.ownershipType === 'Contract' ? `(CONTRACT - ${t.vehicleId?.contractor?.name || 'Vendor'})` : '(OWN)'}
+                                            {t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || 'No Plate'} | {t.fromLocation} → {t.toLocation} | {t.vehicleId?.ownershipType === 'Contract' ? `(CONTRACT - ${t.vehicleId?.contractor?.name || 'Vendor'})` : '(OWN)'}
                                         </option>
                                     ))}
                                     {tripsByDate.length === 0 && <option disabled>No unpaid trips found on this date</option>}
@@ -407,18 +385,13 @@ const DriverPaymentManagement = () => {
                                 <input type="number" name="padiKasu" className="form-input border-warning text-warning font-bold text-lg" value={formData.padiKasu} onChange={handleChange} placeholder="0" />
                             </div>
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-danger font-black underline decoration-danger/20">Advance (₹)</label>
-                                <input type="number" name="advanceAmount" className="form-input border-danger text-danger font-bold text-lg bg-[#eee] cursor-not-allowed" value={formData.advanceAmount} onChange={handleChange} placeholder="0" readOnly />
-                            </div>
-                            <div className="md:col-span-1">
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-info font-black">No. of Trips</label>
                                 <div className="flex items-center gap-2">
-                                    <input type="number" name="tripCount" className="form-input border-info text-info font-black text-lg text-center bg-[#eee] cursor-not-allowed" value={formData.tripCount} onChange={handleChange} required min="1" readOnly />
+                                    <input type="number" name="tripCount" className="form-input border-info text-info font-black text-lg text-center" value={formData.tripCount} onChange={handleChange} required min="1" />
                                     {formData.tripId && (
                                         <div className="badge badge-outline-info whitespace-nowrap">
                                             Auto: {tripsByDate.filter(t =>
-                                                ((t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.vehicleId?._id) === (tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?.vehicleNumber || tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?.registrationNumber || tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?._id)) &&
-                                                (t.driverName === (tripsByDate.find(x => x._id === formData.tripId)?.driverName))
+                                                (t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.vehicleId?._id) === (tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?.vehicleNumber || tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?.registrationNumber || tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?._id)
                                             ).length}
                                         </div>
                                     )}
@@ -430,11 +403,11 @@ const DriverPaymentManagement = () => {
                             <div className="flex flex-col">
                                 <span className="text-white-dark font-bold uppercase text-xs tracking-wider">Total Payable Amount:</span>
                                 <span className="text-[10px] text-white-dark italic">
-                                    ((₹{Number(formData.amount || 0).toLocaleString()} + ₹{Number(formData.padiKasu || 0).toLocaleString()}) × {formData.tripCount} trips) - ₹{Number(formData.advanceAmount || 0).toLocaleString()} Adv
+                                    (₹{Number(formData.amount || 0).toLocaleString()} + ₹{Number(formData.padiKasu || 0).toLocaleString()}) × {formData.tripCount} trips
                                 </span>
                             </div>
-                            <span className="text-3xl font-black text-black dark:text-white-light font-mono shadow-sm text-success">
-                                ₹{(((Number(formData.amount || 0) + Number(formData.padiKasu || 0)) * Number(formData.tripCount || 1)) - Number(formData.advanceAmount || 0)).toLocaleString()}
+                            <span className="text-3xl font-black text-black dark:text-white-light font-mono shadow-sm">
+                                ₹{((Number(formData.amount || 0) + Number(formData.padiKasu || 0)) * Number(formData.tripCount || 1)).toLocaleString()}
                             </span>
                         </div>
 
@@ -474,7 +447,6 @@ const DriverPaymentManagement = () => {
                                     <th className="!text-center">Mode</th>
                                     <th className="!text-right">Salary (₹)</th>
                                     <th className="!text-right text-warning">Padi (₹)</th>
-                                    <th className="!text-right text-danger">Adv (₹)</th>
                                     <th className="!text-right text-success bg-success/5 font-black">Total (₹)</th>
                                     <th>Trips</th>
                                     <th className="!text-center">Action</th>
@@ -508,8 +480,7 @@ const DriverPaymentManagement = () => {
                                             </td>
                                             <td className="!text-right font-bold text-lg font-mono">₹{pay.amount?.toLocaleString()}</td>
                                             <td className="!text-right font-bold text-lg font-mono text-warning">₹{pay.padiKasu?.toLocaleString() || '0'}</td>
-                                            <td className="!text-right font-bold text-lg font-mono text-danger">₹{pay.advanceAmount?.toLocaleString() || '0'}</td>
-                                            <td className="!text-right font-black text-lg font-mono text-success bg-success/5">₹{((Number(pay.amount || 0) + Number(pay.padiKasu || 0)) * (pay.tripCount || 1) - (pay.advanceAmount || 0)).toLocaleString()}</td>
+                                            <td className="!text-right font-black text-lg font-mono text-success bg-success/5">₹{((Number(pay.amount || 0) + Number(pay.padiKasu || 0)) * (pay.tripCount || 1)).toLocaleString()}</td>
                                             <td className="text-center font-bold">x {pay.tripCount || 1}</td>
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">

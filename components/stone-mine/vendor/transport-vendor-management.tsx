@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
@@ -90,7 +90,7 @@ const TransportVendorManagement = () => {
         try {
             const payload = {
                 ...formData,
-                vehicles: [] as any[],
+                vehicles: formData.vehicles,
                 advancePaid: Number(formData.advancePaid),
                 outstandingBalance: Number(formData.outstandingBalance)
             };

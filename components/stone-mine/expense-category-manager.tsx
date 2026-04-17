@@ -143,8 +143,45 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
 
     const fetchVehicles = async () => {
         try {
-            const { data } = await api.get('/master/vehicles');
-            if (data.success) setVehicles(data.data);
+            // Fetch both Master Owned Vehicles and Contractor Vehicles
+            const [masterRes, transportRes] = await Promise.all([
+                api.get('/master/vehicles'),
+                api.get('/vendors/transport')
+            ]);
+
+            let allVehicles: any[] = [];
+            
+            // 1. Add Master Vehicles (Own or pre-registered Contract vehicles)
+            if (masterRes.data.success) {
+                allVehicles = [...masterRes.data.data];
+            }
+
+            // 2. Add Vehicles linked to Transport Vendors
+            if (transportRes.data.success) {
+                transportRes.data.data.forEach((vendor: any) => {
+                    const contractorVehicles = (vendor.vehicles || []).map((v: any) => ({
+                        _id: `${vendor._id}_${v.vehicleNumber}`, // Pseudo ID
+                        vehicleNumber: v.vehicleNumber,
+                        registrationNumber: v.vehicleNumber,
+                        type: 'Vehicle',
+                        ownershipType: 'Contract',
+                        contractor: vendor,
+                        category: v.vehicleType || 'Lorry',
+                        name: v.vehicleName || v.vehicleType || 'Lorry',
+                        driverName: v.driverName || '',
+                        mobile: v.driverMobile || ''
+                    }));
+                    
+                    // Avoid duplicates if they already exist in master
+                    contractorVehicles.forEach((cv: any) => {
+                        if (!allVehicles.some(av => av.vehicleNumber === cv.vehicleNumber)) {
+                            allVehicles.push(cv);
+                        }
+                    });
+                });
+            }
+
+            setVehicles(allVehicles);
         } catch (error) {
             console.error('Error fetching vehicles:', error);
         }
@@ -310,8 +347,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const uniqueVehicleTypes = Array.from(new Set(vehicles
         .filter(v => {
             if (category === 'Machine Maintenance') {
-                const isOwn = v.ownershipType === 'Own' || !v.ownershipType;
-                if (!isOwn) return false;
+                // Allow both Own and Contract for maintenance
+                // const isOwn = v.ownershipType === 'Own' || !v.ownershipType;
+                // if (!isOwn) return false;
             }
 
             if (formData.assetType) return v.type === formData.assetType;
@@ -326,8 +364,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         const matchesAssetType = formData.assetType ? v.type === formData.assetType : true;
 
         if (category === 'Machine Maintenance') {
-            const isOwn = v.ownershipType === 'Own' || !v.ownershipType;
-            return matchesType && matchesAssetType && isOwn;
+            return matchesType && matchesAssetType;
         }
 
         return matchesType && matchesAssetType;

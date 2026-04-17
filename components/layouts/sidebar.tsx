@@ -234,9 +234,14 @@ const Sidebar = () => {
                                                     <Link href="/transport/trips">Vehicle Trip Management</Link>
                                                 </li>
                                                 {isManagement && (
-                                                    <li>
-                                                        <Link href="/transport/driver-payments">Driver Payment</Link>
-                                                    </li>
+                                                    <>
+                                                        <li>
+                                                            <Link href="/transport/driver-payments">Driver Payment</Link>
+                                                        </li>
+                                                        <li>
+                                                            <Link href="/transport/driver-advance">Driver Advance</Link>
+                                                        </li>
+                                                    </>
                                                 )}
                                             </ul>
                                         </AnimateHeight>
@@ -307,12 +312,12 @@ const Sidebar = () => {
                                         </AnimateHeight>
                                     </li>
 
-                                    {/* 6. Vendor Management */}
+                                    {/* 6. Transport Vendor Management */}
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'vendor-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('vendor-mgmt')}>
                                             <div className="flex items-center">
                                                 <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Vendor Management</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Transport Vendor Manage</span>
                                             </div>
 
                                             <div className={currentMenu !== 'vendor-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
@@ -326,15 +331,16 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/vendors/transport">Transport Vendors</Link>
                                                 </li>
-                                                <li>
-                                                    <Link href="/vendors/payments">Vendor Payment History</Link>
-                                                </li>
+
                                                 <li>
                                                     <Link href="/vendors/advance">Vendor Advance</Link>
                                                 </li>
                                                 <li>
-                                                    <Link href="/vendors/outstanding">Vendor Outstanding</Link>
+                                                    <Link href="/vendors/payments">Vendor Payment</Link>
                                                 </li>
+                                                {/* <li>
+                                                    <Link href="/vendors/outstanding">Vendor Outstanding</Link>
+                                                </li> */}
                                             </ul>
                                         </AnimateHeight>
                                     </li>

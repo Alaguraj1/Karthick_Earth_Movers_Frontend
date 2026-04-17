@@ -16,7 +16,7 @@ const VendorAdvancePage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const { showToast } = useToast();
-    
+
     const [formData, setFormData] = useState({
         vendorSelected: '', // "id|type|name"
         date: new Date().toISOString().split('T')[0],
@@ -37,7 +37,7 @@ const VendorAdvancePage = () => {
                 api.get('/vendors/explosive'),
                 api.get('/vendors/transport')
             ]);
-            
+
             // Filter only advances
             if (payRes.data.success) {
                 setAdvances(payRes.data.data.filter((p: any) => p.paymentType === 'Advance'));
@@ -45,7 +45,11 @@ const VendorAdvancePage = () => {
 
             const vendors: any[] = [];
             if (expRes.data.success) vendors.push(...expRes.data.data.map((v: any) => ({ ...v, type: 'ExplosiveSupplier', label: `[Explosive] ${v.name}` })));
-            if (transRes.data.success) vendors.push(...transRes.data.data.map((v: any) => ({ ...v, type: 'TransportVendor', label: `[Transport] ${v.name}` })));
+            if (transRes.data.success) vendors.push(...transRes.data.data.map((v: any) => ({
+                ...v,
+                type: 'TransportVendor',
+                label: `${v.companyName ? `${v.companyName} - ` : ''}${v.name} (${v.vehicles?.length || 0} Vehicles)`
+            })));
             setAllVendors(vendors);
 
         } catch (error) {
@@ -58,7 +62,7 @@ const VendorAdvancePage = () => {
 
     useEffect(() => {
         fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleChange = (e: any) => {
@@ -162,7 +166,7 @@ const VendorAdvancePage = () => {
                                     <select name="vendorSelected" className="form-select font-bold rounded-xl" value={formData.vendorSelected} onChange={handleChange} required>
                                         <option value="">Select Vendor...</option>
                                         {allVendors.map(v => (
-                                            <option key={`${v._id}|${v.type}`} value={`${v._id}|${v.type}|${v.name}`}>
+                                            <option key={`${v._id}|${v.type}`} value={`${v._id}|${v.type}|${v.type === 'TransportVendor' && v.companyName ? `${v.companyName} - ${v.name}` : v.name}`}>
                                                 {v.label}
                                             </option>
                                         ))}
@@ -229,9 +233,11 @@ const VendorAdvancePage = () => {
                                                 <tr key={adv._id} className="group hover:bg-primary/5 transition-all">
                                                     <td className="py-4 whitespace-nowrap">{new Date(adv.date).toLocaleDateString()}</td>
                                                     <td className="py-4">
-                                                        <div className="font-black text-black dark:text-white-light">{adv.vendorName}</div>
-                                                        <div className="text-[9px] font-bold text-primary uppercase opacity-60">
-                                                            {adv.vendorType.replace('Supplier', '').replace('Contractor', '').replace('Vendor', '')}
+                                                        <div className="font-black text-black dark:text-white-light flex items-center gap-2">
+                                                            <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded uppercase font-black">
+                                                                {adv.vendorType.replace('Vendor', '').replace('Supplier', '')}
+                                                            </span>
+                                                            {adv.vendorName}
                                                         </div>
                                                     </td>
                                                     <td className="py-4 text-danger font-black text-lg whitespace-nowrap">₹{adv.paidAmount.toLocaleString()}</td>
