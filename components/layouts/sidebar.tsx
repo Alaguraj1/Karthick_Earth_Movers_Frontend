@@ -283,6 +283,9 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/labour/report">Labour Report</Link>
                                                 </li>
+                                                <li>
+                                                    <Link href="/labour/operator-salary">Machine Operator Salary</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>
