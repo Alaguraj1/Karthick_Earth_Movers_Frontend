@@ -344,9 +344,12 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/vendors/payments">Vendor Payment</Link>
                                                 </li>
-                                                {/* <li>
-                                                    <Link href="/vendors/outstanding">Vendor Outstanding</Link>
-                                                </li> */}
+                                                <li>
+                                                    <Link href="/vendors/trip-search">Trip Search & Export</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/outstanding">Vendor Pending Payment</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>
@@ -380,7 +383,16 @@ const Sidebar = () => {
                                         </li>
                                     )}
 
-                                    {/* 7. Accounts & Reports */}
+                                    {/* Rental Management */}
+                                    <li className="nav-item">
+                                        <Link href="/rentals" className="group">
+                                            <div className="flex items-center">
+                                                <IconMenuCalendar className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Rental Management</span>
+                                            </div>
+                                        </Link>
+                                    </li>
+
                                     {isOwner && (
                                         <li className="menu nav-item">
                                             <button type="button" className={`${currentMenu === 'accounts-reports' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('accounts-reports')}>

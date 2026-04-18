@@ -14,6 +14,27 @@ import IconEye from '@/components/icon/icon-eye';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconX from '@/components/icon/icon-x';
+import IconDownload from '@/components/icon/icon-download';
+import * as XLSX from 'xlsx';
+
+const exportToExcel = (data: any[], fileName: string) => {
+    if (!data || data.length === 0) return;
+    const worksheet = XLSX.utils.json_to_sheet(data.map((item: any) => ({
+        Date: new Date(item.date).toLocaleDateString(),
+        Vehicle: (item.vehicleId?.vehicleNumber || item.vehicleId?.registrationNumber || item.manualVehicleNumber || 'N/A').toUpperCase(),
+        Material: item.stoneTypeId?.name || 'General',
+        From: item.fromLocation || '',
+        To: item.toLocation || '',
+        'Tons/Qty': item.loadQuantity || 0,
+        'Payable Amount': item.invoiceAmount || 0,
+        'Expenses/Deductions': item.deductionsAmount || 0,
+        'Cash Paid': item.paidAmount || 0,
+        Status: item.isVendorSettled ? 'Settled' : 'Pending'
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Trips');
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+};
 
 const VendorPaymentManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -43,14 +64,24 @@ const VendorPaymentManagement = () => {
     const [policeExpenses, setPoliceExpenses] = useState<number>(0);
     const [otherExpenses, setOtherExpenses] = useState<number>(0);
     const [materialRates, setMaterialRates] = useState<Record<string, string>>({});
-    
+
     // Payment Logic
     const [paymentMode, setPaymentMode] = useState<string>('Bank');
     const [billUrl, setBillUrl] = useState<string>('');
     const [isUploading, setIsUploading] = useState<boolean>(false);
+    const [manualPaidAmount, setManualPaidAmount] = useState<string | null>(null);
     const [alreadySettledWarning, setAlreadySettledWarning] = useState<boolean>(false);
-    const [viewingTrips, setViewingTrips] = useState<any[]>([]);
     const [isFetchingDetailedTrips, setIsFetchingDetailedTrips] = useState(false);
+    const [viewingTrips, setViewingTrips] = useState<any[]>([]);
+
+    // Global Trip Search State
+    const [searchTripParams, setSearchTripParams] = useState({
+        vendorId: '',
+        startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0]
+    });
+    const [allTripsForSearch, setAllTripsForSearch] = useState<any[]>([]);
+    const [isSearchingTrips, setIsSearchingTrips] = useState(false);
 
     const [formData, setFormData] = useState({
         startDate: new Date().toISOString().split('T')[0],
@@ -111,20 +142,20 @@ const VendorPaymentManagement = () => {
         if (!sDate || !eDate || !vendorId) return;
         try {
             setIsFetchingSubData(true);
-            
+
             // Dates for queries
             const endOfDay = `${eDate}T23:59:59.999Z`;
 
             const [tripRes, expenseRes, advanceRes, spareRes] = await Promise.all([
                 api.get(`/trips?startDate=${sDate}&endDate=${endOfDay}`),
                 api.get(`/expenses?startDate=${sDate}&endDate=${endOfDay}`),
-                api.get(`/vendors/payments?startDate=${sDate}&endDate=${endOfDay}&paymentType=Advance`),
+                api.get(`/vendors/payments?startDate=${sDate}&endDate=${endOfDay}`),
                 api.get(`/spare-parts-sales?startDate=${sDate}&endDate=${endOfDay}`)
             ]);
 
             const vendor = allVendors.find(v => v._id === vendorId && v.type === vendorType);
             const vendorVehicles = vendor?.vehicles || [];
-            
+
             const normalize = (v: string) => (v || '').replace(/[\s-]/g, '').toLowerCase();
             const extractNum = (v: string) => {
                 const match = (v || '').match(/\((.*?)\)/);
@@ -135,6 +166,10 @@ const VendorPaymentManagement = () => {
 
             if (tripRes.data.success) {
                 const filtered = tripRes.data.data.filter((t: any) => {
+                    // 1. Must NOT be settled with vendor already (unless we are editing)
+                    if (t.isVendorSettled && !currentEditingId) return false;
+
+                    // 2. Must match the vendor's vehicles
                     const tripVNum = normalize(t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.manualVehicleNumber || '');
                     return vehicleNumbers.includes(tripVNum);
                 });
@@ -150,7 +185,7 @@ const VendorPaymentManagement = () => {
                 expenseRes.data.data.forEach((e: any) => {
                     // 1. Direct match by transportVendorId (if available)
                     const isVendorMatch = e.transportVendorId === vendorId;
-                    
+
                     // 2. Match by vehicle number
                     const rawNum = e.vehicleNumber || extractNum(e.vehicleOrMachine);
                     const isVehicleMatch = vehicleNumbers.includes(normalize(rawNum));
@@ -158,7 +193,7 @@ const VendorPaymentManagement = () => {
                     if (isVendorMatch || isVehicleMatch) {
                         if (e.category === 'Diesel') diesel += e.amount;
                         else if (e.category === 'Machine Maintenance') maintenance += e.amount;
-                        else if (e.category === 'Police' || e.category === 'Police Expense') police += e.amount;
+                        else if (e.category === 'Police' || e.category === 'Police Expense' || e.category === 'Police Expenses') police += e.amount;
                         else if (e.category === 'Transport Contractor' || e.category === 'Transport Vendor Other' || e.category === 'Transport Contractor Exp') other += e.amount;
                     }
                 });
@@ -182,7 +217,7 @@ const VendorPaymentManagement = () => {
             setSparePartsExpenses(spares);
 
             if (advanceRes.data.success) {
-                const dayPayments = advanceRes.data.data.filter((p: any) => 
+                const dayPayments = advanceRes.data.data.filter((p: any) =>
                     p.vendorId === vendorId
                 );
 
@@ -192,7 +227,7 @@ const VendorPaymentManagement = () => {
                 const advances = dayPayments
                     .filter((p: any) => p.paymentType === 'Advance')
                     .reduce((sum: number, p: any) => sum + p.paidAmount, 0);
-                    
+
                 setDailyAdvances(advances);
             }
         } catch (error) {
@@ -211,8 +246,13 @@ const VendorPaymentManagement = () => {
 
     const totalTons = vendorTrips.reduce((sum, t) => sum + (t.loadQuantity || 0), 0);
     const grossTotal = Object.keys(tonsByMaterial).reduce((sum, material) => sum + (tonsByMaterial[material] * Number(materialRates[material] || 0)), 0);
+
+    // Get Previous Balance
+    const [cvId, cvType] = formData.vendorSelected.split('|');
+    const previousBalance = balances[`${cvId}|${cvType}`] || 0;
+
     const totalDeductionsCalc = dieselExpenses + maintenanceExpenses + dailyAdvances + sparePartsExpenses + policeExpenses + otherExpenses;
-    const netPayable = grossTotal - totalDeductionsCalc;
+    const netPayable = (grossTotal + previousBalance) - totalDeductionsCalc;
 
     const convertJfifToJpg = (file: File): Promise<File> => {
         return new Promise((resolve, reject) => {
@@ -275,6 +315,7 @@ const VendorPaymentManagement = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
 
         if (name === 'startDate' || name === 'endDate' || name === 'vendorSelected') {
+            setManualPaidAmount(null); // Reset manual amount on change
             const sDateToUse = name === 'startDate' ? value : formData.startDate;
             const eDateToUse = name === 'endDate' ? value : formData.endDate;
             const vendorToUse = name === 'vendorSelected' ? value : formData.vendorSelected;
@@ -298,20 +339,28 @@ const VendorPaymentManagement = () => {
             const sanitizedUserNotes = (formData.notes || '')
                 .replace(/Daily Settlement:.*?(?=Deductions:)/g, '')
                 .replace(/Deductions:.*?(?=\s[A-Z]|$)/g, '')
-                .replace(/^\.+|\s*\d+\/\d+\/\d+.*$/g, '') 
+                .replace(/^\.+|\s*\d+\/\d+\/\d+.*$/g, '')
                 .trim();
 
             const data = {
                 ...formData,
-                date: formData.endDate, // Store end date as the primary record date for history
+                date: formData.endDate,
+                startDate: formData.startDate,
+                endDate: formData.endDate,
                 vendorId: vId,
                 vendorType: vType,
                 vendorName: vName,
-                invoiceAmount: (netPayable > 0 ? netPayable : 0),
-                paidAmount: (netPayable > 0 ? netPayable : 0) + totalDeductionsCalc,
+                // Invoice Amount is what they EARNED in this period (Gross Earnings)
+                invoiceAmount: grossTotal,
+                // Deductions Amount is what they SPENT (Diesel, Maint, etc.)
+                deductionsAmount: totalDeductionsCalc,
+                // Paid Amount is the actual PHYSICAL CASH/BANK we give them now
+                paidAmount: Number(manualPaidAmount !== null ? manualPaidAmount : (netPayable > 0 ? netPayable : 0)),
+                totalTons: totalTons,
+                tripCount: vendorTrips.length,
                 paymentMode: paymentMode,
                 billUrl: billUrl,
-                notes: `Daily Settlement (${formData.startDate} to ${formData.endDate}): ${Object.keys(tonsByMaterial).map(m => `${tonsByMaterial[m].toFixed(2)} Tons of ${m} @ ₹${materialRates[m] || 0}`).join(' | ')}. Deductions: Diesel ₹${dieselExpenses}, Maint ₹${maintenanceExpenses}, Adv ₹${dailyAdvances}, Spares ₹${sparePartsExpenses}, Police ₹${policeExpenses}, Other ₹${otherExpenses}. ${sanitizedUserNotes}`
+                notes: `Daily Settlement (${formData.startDate} to ${formData.endDate}): ${Object.keys(tonsByMaterial).map(m => `${tonsByMaterial[m].toFixed(2)} Tons of ${m} @ ₹${materialRates[m] || 0}`).join(' | ')}. Prev Bal: ₹${previousBalance.toFixed(2)}. Deductions: Diesel ₹${dieselExpenses}, Maint ₹${maintenanceExpenses}, Adv ₹${dailyAdvances}, Spares ₹${sparePartsExpenses}, Police ₹${policeExpenses}, Other ₹${otherExpenses}. ${sanitizedUserNotes}`
             };
 
             if (editingId) {
@@ -355,28 +404,28 @@ const VendorPaymentManagement = () => {
 
     const handleEdit = (record: any) => {
         const [vId, vType] = record.vendorId && typeof record.vendorId === 'object' ? [record.vendorId._id, record.vendorType] : [record.vendorId, record.vendorType];
-        
+
         // Parse material rates out of notes
         const parsedMaterialRates: Record<string, string> = {};
-        const ratesMatch = (record.notes || '').match(/Daily Settlement.*?: (.*?)\. Deductions:/);
-        const startDateMatch = (record.notes || '').match(/Daily Settlement \((.*?) to/);
-        const endDateMatch = (record.notes || '').match(/to (.*?)\)/);
+        // Match the section between the colon and either ". Prev Bal" or ". Deductions"
+        const ratesMatch = (record.notes || '').match(/Daily Settlement.*?: (.*?)\. (?:Prev Bal|Deductions):/);
 
         if (ratesMatch && ratesMatch[1]) {
             const sections = ratesMatch[1].split(' | ');
             sections.forEach((sec: string) => {
-                const parts = sec.match(/Tons of (.*?) @ ₹(\d+(?:\.\d+)?)/);
-                if (parts && parts.length === 3) {
-                    parsedMaterialRates[parts[1].trim()] = parts[2];
+                const parts = sec.match(/(\d+(?:\.\d+)?) Tons of (.*?) @ ₹(\d+(?:\.\d+)?)/);
+                if (parts && parts.length === 4) {
+                    parsedMaterialRates[parts[2].trim()] = parts[3];
                 }
             });
         }
         setMaterialRates(parsedMaterialRates);
 
-        const details = parseSettlementNotes(record.notes || '');
+        const details = parseSettlementNotes(record.notes || '', record);
 
-        const sDate = startDateMatch ? startDateMatch[1] : new Date(record.date).toISOString().split('T')[0];
-        const eDate = endDateMatch ? endDateMatch[1] : new Date(record.date).toISOString().split('T')[0];
+        // Use formal fields if available, fall back to notes or date
+        const sDate = record.startDate ? new Date(record.startDate).toISOString().split('T')[0] : (record.notes?.match(/Daily Settlement \((.*?) to/)?.[1] || new Date(record.date).toISOString().split('T')[0]);
+        const eDate = record.endDate ? new Date(record.endDate).toISOString().split('T')[0] : (record.notes?.match(/to (.*?)\)/)?.[1] || new Date(record.date).toISOString().split('T')[0]);
 
         setFormData({
             startDate: sDate,
@@ -393,7 +442,6 @@ const VendorPaymentManagement = () => {
         setAlreadySettledWarning(false);
         setShowForm(true);
 
-        // Trigger sub-data fetch for the edited date/vendor
         fetchSettlementData(sDate, eDate, vId, record.vendorType, record._id);
     };
 
@@ -409,26 +457,52 @@ const VendorPaymentManagement = () => {
         }
     };
 
-    const parseSettlementNotes = (notes: string) => {
+    const handleSearchAllTrips = async () => {
+        if (!searchTripParams.vendorId) return showToast('Please select a vendor to search trips', 'error');
+        try {
+            setIsSearchingTrips(true);
+            const { startDate, endDate, vendorId } = searchTripParams;
+            const res = await api.get(`/trips?startDate=${startDate}&endDate=${endDate}T23:59:59.999Z`);
+
+            if (res.data.success) {
+                const vendor = allVendors.find(v => v._id === vendorId);
+                const vehicleNumbers = (vendor?.vehicles || []).map((v: any) => (v.vehicleNumber || '').replace(/[\s-]/g, '').toLowerCase());
+
+                const filtered = res.data.data.filter((t: any) => {
+                    const tripVNum = (t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.manualVehicleNumber || '').replace(/[\s-]/g, '').toLowerCase();
+                    return vehicleNumbers.includes(tripVNum);
+                });
+                setAllTripsForSearch(filtered);
+                if (filtered.length === 0) showToast('No trips found for this period', 'info');
+            }
+        } catch {
+            showToast('Error searching trips', 'error');
+        } finally {
+            setIsSearchingTrips(false);
+        }
+    };
+
+    const parseSettlementNotes = (notes: string, p: any = {}) => {
         const dieselMatch = notes.match(/Diesel ₹(\d+)/);
         const maintMatch = notes.match(/Maint ₹(\d+)/);
         const advMatch = notes.match(/Adv ₹(\d+)/);
-        
-        let totalTons = 0;
-        let grossFromNotes = 0;
-        
-        // Extract only the FIRST settlement block to avoid double/triple counting if data was corrupted
-        const blocks = notes.split('Daily Settlement:');
-        const firstBlock = blocks[1] || ''; // everything between 1st and 2nd "Daily Settlement"
-        const relevantContent = firstBlock.split('Daily Settlement:')[0]; 
-        
-        const materialRegex = /([\d.]+) Tons of (.*?) @ ₹([\d.]+)/g;
-        let m;
-        while ((m = materialRegex.exec(relevantContent)) !== null) {
-            const t = parseFloat(m[1]);
-            const r = parseFloat(m[3]);
-            totalTons += t;
-            grossFromNotes += (t * r);
+
+        // Priority 1: Use direct fields from DB if they exist (for new records)
+        let totalTons = p.totalTons || 0;
+        let grossFromNotes = p.invoiceAmount || 0;
+        let inferredTrips = p.tripCount || 0;
+
+        // Priority 2: Fallback to parsing notes (for old records)
+        if (totalTons === 0 || grossFromNotes === 0) {
+            // Updated split to handle "Daily Settlement (" format
+            const relevantContent = notes.split(/Daily Settlement(?::| \(.*?\):)/)[1] || notes;
+            const materialRegex = /([\d.]+) Tons of (.*?) @ (?:₹)?([\d.]+)/g;
+            let m;
+            while ((m = materialRegex.exec(relevantContent)) !== null) {
+                totalTons += parseFloat(m[1]);
+                grossFromNotes += (parseFloat(m[1]) * parseFloat(m[3]));
+                inferredTrips++;
+            }
         }
 
         const diesel = parseInt(dieselMatch?.[1] || '0');
@@ -446,8 +520,13 @@ const VendorPaymentManagement = () => {
 
         // Clean up user notes by removing all system prefixes
         let manualNotes = notes;
-        manualNotes = manualNotes.replace(/Daily Settlement:.*?(?=\.|$)/g, '').replace(/Deductions:.*?(?=\.|$)/g, '').trim();
-        // Remove leading dots and spaces
+        // Use a more inclusive regex for the "Daily Settlement" block
+        manualNotes = manualNotes
+            .replace(/Daily Settlement \(.*?\):.*?(?=( \. )|(\. Prev Bal)|$)/g, '')
+            .replace(/\.? Prev Bal:.*?(?=(\. Deductions)|(\. )|$)/g, '')
+            .replace(/\.? Deductions:.*?(?=(\. )|$)/g, '')
+            .trim();
+        // Remove trailing or leading periods and extra spaces
         manualNotes = manualNotes.replace(/^\.+|\.+$/g, '').trim();
 
         return {
@@ -462,6 +541,7 @@ const VendorPaymentManagement = () => {
             deductions,
             net,
             userNotes: manualNotes,
+            tripCount: inferredTrips,
             sDate,
             eDate
         };
@@ -474,7 +554,7 @@ const VendorPaymentManagement = () => {
 
     const handlePrint = () => {
         if (!selectedRecord) return;
-        
+
         // Ensure data is ready
         if (isFetchingDetailedTrips) {
             alert("Record details are still loading. Please wait a moment.");
@@ -484,12 +564,12 @@ const VendorPaymentManagement = () => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
-        const details = parseSettlementNotes(selectedRecord.notes || '');
+        const details = parseSettlementNotes(selectedRecord.notes || '', selectedRecord);
         const totalDeductions = details.deductions;
         const grossEarning = details.grossTotal;
         const currentNet = details.net;
         const totalTonsReported = details.totalTons;
-        
+
         const invoiceHtml = `
             <html>
                 <head>
@@ -601,7 +681,7 @@ const VendorPaymentManagement = () => {
                             <tbody>
                                 ${viewingTrips.map((t, idx) => `
                                     <tr>
-                                        <td>${ (idx + 1).toString().padStart(2, '0') }</td>
+                                        <td>${(idx + 1).toString().padStart(2, '0')}</td>
                                         <td>${t.stoneTypeId?.name || 'Material'} <span style="font-size: 9px; opacity: 0.5;">(${t.fromLocation} → ${t.toLocation})</span></td>
                                         <td class="fw-800">${(t.vehicleId?.vehicleNumber || t.manualVehicleNumber || 'N/A').toUpperCase()}</td>
                                         <td class="text-right fw-800">${(t.loadQuantity || 0).toFixed(2)} T</td>
@@ -610,7 +690,7 @@ const VendorPaymentManagement = () => {
                             </tbody>
                         </table>
 
-                        <div class="section-title" style="color: #ef4444;">Deductions & Adjustments</div>
+                        <div class="section-title" style="color: #ef4444;">Expenses/Deductions & Adjustments</div>
                         <table>
                             <thead>
                                 <tr>
@@ -652,7 +732,7 @@ const VendorPaymentManagement = () => {
                                 <span class="summary-val">₹ ${grossEarning.toLocaleString()}</span>
                             </div>
                             <div class="summary-row">
-                                <span class="summary-label">Total Period Deductions</span>
+                                <span class="summary-label">Total Period Expenses/Deductions</span>
                                 <span class="summary-val deduct-val">- ₹ ${totalDeductions.toLocaleString()}</span>
                             </div>
                             <div class="total-divider"></div>
@@ -689,16 +769,22 @@ const VendorPaymentManagement = () => {
         const fetchViewTrips = async () => {
             if (!selectedRecord && !showForm) return;
             try {
-                if (dateRaw && vId && vType) {
+                const target = selectedRecord || formData;
+                const vSplit = (selectedRecord?.vendorId?._id ? `${selectedRecord.vendorId._id}|${selectedRecord.vendorType}` : (formData.vendorSelected || '')).split('|');
+                const vId = vSplit[0];
+                const vType = vSplit[1];
+                const dateRaw = selectedRecord?.date || formData.endDate;
+
+                if (vId && vType && dateRaw) {
                     setIsFetchingDetailedTrips(true);
-                    
+
                     const details = parseSettlementNotes(selectedRecord?.notes || '');
-                    const sDate = details.sDate || new Date(dateRaw).toISOString().split('T')[0];
-                    const eDate = details.eDate || new Date(dateRaw).toISOString().split('T')[0];
+                    const sDate = details.sDate || formData.startDate; // Use form start date if no notes (new entry)
+                    const eDate = details.eDate || (selectedRecord?.date ? new Date(selectedRecord.date).toISOString().split('T')[0] : formData.endDate);
                     const endOfDay = `${eDate}T23:59:59.999Z`;
 
                     const tripRes = await api.get(`/trips?startDate=${sDate}&endDate=${endOfDay}`);
-                    
+
                     const vendor = allVendors.find(v => v._id === vId && v.type === vType);
                     const vendorVehicles = vendor?.vehicles || [];
                     const normalize = (v: string) => (v || '').replace(/[\s-]/g, '').toLowerCase();
@@ -815,14 +901,14 @@ const VendorPaymentManagement = () => {
                                             <div key={material} className="p-3 bg-gray-50/50 rounded-xl border border-dashed border-gray-300 dark:border-dark-light/20">
                                                 <div className="text-[10px] font-bold uppercase text-primary truncate" title={material}>{material}</div>
                                                 <div className="text-[10px] opacity-60 mb-2">{tonsByMaterial[material].toFixed(2)} Tons</div>
-                                                <input 
-                                                    type="number" 
-                                                    step="0.01" 
-                                                    className="form-input text-sm font-black border-primary/30 h-8" 
-                                                    value={materialRates[material] || ''} 
-                                                    onChange={(e) => setMaterialRates(prev => ({ ...prev, [material]: e.target.value }))} 
-                                                    placeholder="0" 
-                                                    required 
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    className="form-input text-sm font-black border-primary/30 h-8"
+                                                    value={materialRates[material] || ''}
+                                                    onChange={(e) => setMaterialRates(prev => ({ ...prev, [material]: e.target.value }))}
+                                                    placeholder="0"
+                                                    required
                                                 />
                                             </div>
                                         ))}
@@ -836,7 +922,15 @@ const VendorPaymentManagement = () => {
                                 <hr />
                                 <div className="p-4 bg-success/10 border-l-4 border-success rounded mt-4 mb-4 font-black">
                                     <div className="text-[10px] uppercase opacity-70 mb-1">Final Amount To Pay</div>
-                                    <div className="text-2xl text-success">₹ {(netPayable > 0 ? netPayable : 0).toLocaleString()}</div>
+                                    <div className="flex items-center text-2xl text-success font-black">
+                                        <span>₹</span>
+                                        <input
+                                            type="number"
+                                            className="bg-transparent border-none outline-none text-success w-full ml-1"
+                                            value={manualPaidAmount !== null ? manualPaidAmount : (netPayable > 0 ? Math.round(netPayable) : 0)}
+                                            onChange={(e) => setManualPaidAmount(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -854,7 +948,7 @@ const VendorPaymentManagement = () => {
                                             {isUploading ? (
                                                 <span className="animate-spin inline-block w-4 h-4 border-[2px] border-current border-t-transparent rounded-full"></span>
                                             ) : (
-                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4V20M12 4L8 8M12 4L16 8M4 12V16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4V20M12 4L8 8M12 4L16 8M4 12V16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                             )}
                                             <span className="text-[10px]">{billUrl ? 'Receipt Attached (✓)' : isUploading ? 'Uploading...' : 'Upload File'}</span>
                                         </label>
@@ -871,14 +965,14 @@ const VendorPaymentManagement = () => {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="panel bg-primary text-white p-6 rounded-2xl shadow-xl">
-                                <h6 className="text-[10px] font-black uppercase opacity-60 mb-8">Gross Earnings</h6>
+                                <h6 className="text-[10px] font-black uppercase opacity-60 mb-8">Payable Amount</h6>
                                 <div className="text-3xl font-black">₹{grossTotal.toLocaleString()}</div>
                                 <div className="text-xs mt-2 opacity-70">{totalTons.toFixed(2)} Tons Brought</div>
                             </div>
                             <div className="panel bg-white dark:bg-dark p-6 rounded-2xl shadow-xl border-l-4 border-danger flex flex-col justify-between">
                                 <div>
-                                    <h6 className="text-[10px] font-black uppercase opacity-60 mb-2 text-danger">Total Deductions</h6>
-                                    <div className="text-3xl font-black text-danger">₹{(dieselExpenses + maintenanceExpenses + dailyAdvances).toLocaleString()}</div>
+                                    <h6 className="text-[10px] font-black uppercase opacity-60 mb-2 text-danger">Expenses/Deductions</h6>
+                                    <div className="text-3xl font-black text-danger">₹{totalDeductionsCalc.toLocaleString()}</div>
                                 </div>
                                 <div className="mt-4 space-y-2 border-t border-danger/10 pt-4">
                                     <div className="flex justify-between text-[10px] font-black uppercase">
@@ -907,18 +1001,39 @@ const VendorPaymentManagement = () => {
                                     </div>
                                 </div>
                             </div>
+                            <div className="panel bg-[#e79b21]/10 border-l-4 border-[#e79b21] p-6 rounded-2xl shadow-xl flex flex-col justify-between">
+                                <div>
+                                    <h6 className="text-[10px] font-black uppercase opacity-60 mb-2 text-[#e79b21]">Previous Pending Balance</h6>
+                                    <div className={`text-3xl font-black ${previousBalance < 0 ? 'text-danger' : 'text-slate-800'}`}>
+                                        ₹{previousBalance.toLocaleString()}
+                                    </div>
+                                    <p className="text-[9px] opacity-50 mt-1 uppercase">Carry forward from last settlements</p>
+                                </div>
+                            </div>
                         </div>
+
                         <div className="panel p-8 text-center bg-success/5 rounded-2xl border-2 border-dashed border-success/20">
                             <div className="text-[10px] font-black uppercase text-success mb-1">Final Net Payable</div>
-                            <div className={`text-5xl font-black ${netPayable < 0 ? 'text-danger' : 'text-success'}`}>₹{Math.abs(netPayable).toLocaleString()}</div>
+                            <div className={`text-5xl font-black ${netPayable < 0 ? 'text-danger' : 'text-success'}`}>
+                                ₹{Math.abs(netPayable).toLocaleString()}
+                            </div>
+                            <div className="text-[10px] opacity-50 mt-2 uppercase font-bold italic tracking-tighter">
+                                Formula: (₹{grossTotal.toLocaleString()} Payable Amount + ₹{previousBalance.toLocaleString()} Prev Bal) - ₹{totalDeductionsCalc.toLocaleString()} Expenses/Deductions
+                            </div>
                         </div>
-                        <div className="panel rounded-2xl overflow-hidden">
-                            <h6 className="text-[10px] font-black uppercase p-4 border-b bg-gray-50/50">Daily Trip Log (Verification)</h6>
+
+                        <div className="panel rounded-2xl overflow-hidden shadow-lg border-none">
+                            <div className="flex items-center justify-between p-4 border-b bg-gray-50/50">
+                                <h6 className="text-[10px] font-black uppercase">Current Period Trip Log</h6>
+                                <button type="button" onClick={() => exportToExcel(vendorTrips, `Trips_${formData.startDate}_to_${formData.endDate}`)} className="btn btn-sm btn-outline-success text-[9px] font-black uppercase py-1">
+                                    Export XL
+                                </button>
+                            </div>
                             <div className="table-responsive">
                                 <table className="table-sm">
                                     <thead><tr className="text-[10px] uppercase font-bold text-dark/40"><th>Vehicle</th><th>Material</th><th>Route</th><th className="text-right">Tons</th></tr></thead>
                                     <tbody>
-                                        {vendorTrips.length === 0 ? <tr><td colSpan={3} className="text-center py-8 opacity-20 italic">No trips found.</td></tr> : 
+                                        {vendorTrips.length === 0 ? <tr><td colSpan={3} className="text-center py-8 opacity-20 italic">No trips found.</td></tr> :
                                             vendorTrips.map((t, idx) => (
                                                 <tr key={idx}>
                                                     <td className="font-bold text-xs">{(t.vehicleId?.vehicleNumber || t.manualVehicleNumber || 'N/A').toUpperCase()}</td>
@@ -956,31 +1071,48 @@ const VendorPaymentManagement = () => {
                         <table className="table-hover">
                             <thead>
                                 <tr className="text-[10px] font-black uppercase text-white-dark tracking-widest opacity-60">
-                                    <th className="py-4">Date</th>
+                                    <th className="py-4">Settled Date</th>
                                     <th className="py-4">Vendor Name</th>
-                                    <th className="py-4 text-right">Net Amount</th>
-                                    <th className="py-4">Breakdown Notes</th>
+                                    <th className="py-4">Period</th>
+                                    <th className="py-4 text-center">Trips</th>
+                                    <th className="py-4 text-center">Tons</th>
+                                    <th className="py-4 text-right">Payable Amount</th>
+                                    <th className="py-4 text-right">Expenses</th>
+                                    <th className="py-4 text-right">Cash Paid</th>
+                                    <th className="py-4">Reference</th>
                                     <th className="py-4">Status</th>
                                     <th className="py-4 text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan={6} className="text-center py-20 uppercase font-black text-[10px] tracking-widest italic opacity-30">Loading database...</td></tr>
+                                    <tr><td colSpan={11} className="text-center py-20 uppercase font-black text-[10px] tracking-widest italic opacity-30">Loading database...</td></tr>
                                 ) : filteredPayments.length === 0 ? (
-                                    <tr><td colSpan={6} className="text-center py-20 uppercase font-black text-[10px] tracking-widest italic opacity-30">No settlement history found</td></tr>
+                                    <tr><td colSpan={11} className="text-center py-20 uppercase font-black text-[10px] tracking-widest italic opacity-30">No settlement history found</td></tr>
                                 ) : (
                                     filteredPayments.map((p) => (
                                         <tr key={p._id} className="group cursor-pointer hover:bg-gray-50/50 transition-all">
                                             <td className="text-xs font-bold">{new Date(p.date).toLocaleDateString()}</td>
                                             <td className="text-xs font-black uppercase text-dark">{p.vendorName}</td>
-                                            <td className="text-right text-primary font-black">₹{p.invoiceAmount.toLocaleString()}</td>
-                                            <td className="text-[10px] opacity-70 italic max-w-sm leading-relaxed">{p.notes}</td>
+                                            <td className="text-[10px] font-bold text-slate-400">
+                                                {p.startDate ? new Date(p.startDate).toLocaleDateString() : 'N/A'}
+                                                <span className="mx-1 opacity-30">→</span>
+                                                {p.endDate ? new Date(p.endDate).toLocaleDateString() : 'N/A'}
+                                            </td>
+                                            <td className="text-center font-black text-xs text-slate-500">
+                                                <span className="badge bg-primary/10 text-primary border-none text-[10px] font-black px-2">
+                                                    {p.tripCount || parseSettlementNotes(p.notes || '', p).tripCount || 0}
+                                                </span>
+                                            </td>
+                                            <td className="text-center font-black text-xs text-slate-500">{(p.totalTons || parseSettlementNotes(p.notes || '', p).totalTons || 0).toFixed(2)}</td>
+                                            <td className="text-right text-primary font-black">₹{(p.invoiceAmount || 0).toLocaleString()}</td>
+                                            <td className="text-right text-danger font-bold">₹{(p.deductionsAmount || 0).toLocaleString()}</td>
+                                            <td className="text-right text-success font-black">₹{(p.paidAmount || 0).toLocaleString()}</td>
+                                            <td className="text-[10px] opacity-70 italic max-w-sm leading-relaxed">{parseSettlementNotes(p.notes || '', p).userNotes || 'N/A'}</td>
                                             <td><span className="badge bg-success/20 text-success border-none text-[9px] font-black uppercase tracking-wider px-3 py-1">Settled ✓</span></td>
                                             <td>
                                                 <div className="flex gap-2 items-center justify-center">
                                                     <button onClick={() => setSelectedRecord(p)} className="text-primary p-2 hover:bg-primary/10 rounded-full transition-all" title="View Detailed Report"><IconEye className="w-5 h-5" /></button>
-                                                    <button onClick={() => handleEdit(p)} className="text-info p-2 hover:bg-info/10 rounded-full transition-all"><IconPencil className="w-4.5 h-4.5" /></button>
                                                     {isOwner && <button onClick={() => setDeleteId(p._id)} className="text-danger p-2 hover:bg-danger/10 rounded-full transition-all"><IconTrashLines className="w-4.5 h-4.5" /></button>}
                                                 </div>
                                             </td>
@@ -1015,14 +1147,6 @@ const VendorPaymentManagement = () => {
                             </div>
                             <div className="flex flex-col items-end gap-3">
                                 <div className="flex gap-2">
-                                    <button 
-                                        onClick={handlePrint} 
-                                        disabled={isFetchingDetailedTrips}
-                                        className="btn btn-primary btn-sm rounded-xl font-black uppercase text-[10px] flex items-center gap-2 shadow-lg shadow-primary/20"
-                                    >
-                                        <IconPrinter className="w-4 h-4" />
-                                        {isFetchingDetailedTrips ? 'Loading Data...' : 'Print / Download'}
-                                    </button>
                                     <button onClick={() => setSelectedRecord(null)} className="btn btn-outline-danger btn-sm rounded-xl border-2 p-2 hover:bg-danger hover:text-white transition-all"><IconX className="w-4 h-4" /></button>
                                 </div>
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mt-2">Vendor Operations</div>
@@ -1034,7 +1158,7 @@ const VendorPaymentManagement = () => {
                         {/* 📊 DASHBOARD STATS (BLASTING STYLE) */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                             {(() => {
-                                const details = parseSettlementNotes(selectedRecord.notes || '');
+                                const details = parseSettlementNotes(selectedRecord.notes || '', selectedRecord);
                                 return (
                                     <>
                                         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -1117,7 +1241,7 @@ const VendorPaymentManagement = () => {
                                 <div className="panel bg-slate-50 border border-slate-200 p-6 rounded-2xl">
                                     <h6 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6 border-b border-slate-200 pb-2">Deduction Details</h6>
                                     {(() => {
-                                        const details = parseSettlementNotes(selectedRecord.notes || '');
+                                        const details = parseSettlementNotes(selectedRecord.notes || '', selectedRecord);
                                         return (
                                             <div className="space-y-4">
                                                 {[
@@ -1146,7 +1270,7 @@ const VendorPaymentManagement = () => {
                                 <div className="panel bg-white border border-slate-100 p-6 rounded-2xl shadow-sm">
                                     <h6 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4">Financial Notes</h6>
                                     {(() => {
-                                        const details = parseSettlementNotes(selectedRecord.notes || '');
+                                        const details = parseSettlementNotes(selectedRecord.notes || '', selectedRecord);
                                         return (
                                             <p className="text-xs font-bold text-slate-600 leading-relaxed italic border-l-4 border-[#e79b21]/30 pl-4 py-1">
                                                 {details.userNotes || 'No manual notes available for this settlement.'}
@@ -1159,7 +1283,7 @@ const VendorPaymentManagement = () => {
                                 <div className="p-6 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                                     <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">Bank Remit (Ref)</div>
                                     <div className="text-[10px] font-bold text-slate-400 leading-tight">
-                                        IDBI Bank (Kallandhiri Branch)<br/>
+                                        IDBI Bank (Kallandhiri Branch)<br />
                                         ACC: 120110200..059
                                     </div>
                                 </div>
@@ -1169,7 +1293,15 @@ const VendorPaymentManagement = () => {
                 </div>
             )}
 
-            <DeleteConfirmModal show={!!deleteId} onCancel={() => setDeleteId(null)} onConfirm={confirmDelete} title="Confirm" message="Delete this record?" />
+
+
+            <DeleteConfirmModal
+                show={!!deleteId}
+                onCancel={() => setDeleteId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Record"
+                message="Are you sure? This will also revert the settlement status of included trips."
+            />
         </div>
     );
 };
