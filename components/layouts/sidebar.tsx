@@ -160,6 +160,12 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/expenses/office-misc">Office & Misc</Link>
                                                 </li>
+                                                <li>
+                                                    <Link href="/expenses/police">Police Expense</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/expenses/transport-contractor">Vendor Other Expenses</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>
