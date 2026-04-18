@@ -58,6 +58,8 @@ const SalesEntryForm = () => {
     });
 
     const [tripIds, setTripIds] = useState<string[]>([]);
+    
+
 
     const [items, setItems] = useState<any[]>([
         { item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }
@@ -71,6 +73,14 @@ const SalesEntryForm = () => {
     const [filterGst, setFilterGst] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingSales, setIsLoadingSales] = useState(true);
+
+    // Find the latest trip end date to prevent overlapping sales
+    const maxEndDate = recentSales.reduce((max, sale) => {
+        if (!sale.tripEndDate) return max;
+        const d = new Date(sale.tripEndDate).getTime();
+        return d > max ? d : max;
+    }, 0);
+    const minTripStartDate = maxEndDate ? new Date(maxEndDate + 86400000).toISOString().split('T')[0] : '';
 
     const fetchSales = async () => {
         try {
@@ -696,7 +706,7 @@ const SalesEntryForm = () => {
                                 <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-5 group">
                                     <div className="relative">
                                         <label className="text-[10px] font-black text-white-dark uppercase mb-2 block tracking-tighter group-hover:text-primary transition-colors">Trip Start Date (தொடக்கம்)</label>
-                                        <input type="date" name="tripStartDate" className="form-input border-primary/20 hover:border-primary focus:border-primary transition-all font-bold" value={formData.tripStartDate} onChange={handleChange} />
+                                        <input type="date" name="tripStartDate" className="form-input border-primary/20 hover:border-primary focus:border-primary transition-all font-bold" value={formData.tripStartDate} onChange={handleChange} min={editId ? '' : minTripStartDate} />
                                     </div>
                                     <div className="relative">
                                         <label className="text-[10px] font-black text-white-dark uppercase mb-2 block tracking-tighter group-hover:text-primary transition-colors">Trip End Date (முடிவு)</label>

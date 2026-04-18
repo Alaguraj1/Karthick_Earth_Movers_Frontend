@@ -134,7 +134,7 @@ const TripChecklist = () => {
                     {/* ===== TOP HEADER: Company Logo + Address ===== */}
                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                         <div>
-                            <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#00ab55', margin: 0, textTransform: 'uppercase' }}>
+                            <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#e79b21', margin: 0, textTransform: 'uppercase' }}>
                                 Trip Checklist Annexure
                             </h1>
                             <p style={{ fontSize: '13px', color: '#555', marginTop: '4px', fontWeight: 'bold' }}>
@@ -185,7 +185,7 @@ const TripChecklist = () => {
                                     </tr>
                                     <tr>
                                         <td style={{ padding: '4px 8px 4px 0', color: '#888' }}>Grand Total:</td>
-                                        <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#00ab55' }}>₹{selectedSale.grandTotal?.toLocaleString()}</td>
+                                        <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#e79b21' }}>₹{selectedSale.grandTotal?.toLocaleString()}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -198,13 +198,13 @@ const TripChecklist = () => {
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '25px', position: 'relative', zIndex: 1 }}>
                         <thead>
                             <tr>
-                                <th style={{ background: '#00ab55', color: 'white', padding: '10px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>S.No</th>
-                                <th style={{ background: '#00ab55', color: 'white', padding: '10px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>Date</th>
-                                <th style={{ background: '#00ab55', color: 'white', padding: '10px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>Vehicle</th>
-                                <th style={{ background: '#00ab55', color: 'white', padding: '10px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>Material</th>
-                                <th style={{ background: '#00ab55', color: 'white', padding: '10px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Route</th>
-                                <th style={{ background: '#00ab55', color: 'white', padding: '10px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Bill / LR</th>
-                                <th style={{ background: '#00ab55', color: 'white', padding: '10px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>Qty</th>
+                                <th style={{ background: '#e79b21', color: 'white', padding: '10px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>S.No</th>
+                                <th style={{ background: '#e79b21', color: 'white', padding: '10px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>Date</th>
+                                <th style={{ background: '#e79b21', color: 'white', padding: '10px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>Vehicle</th>
+                                <th style={{ background: '#e79b21', color: 'white', padding: '10px', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase' }}>Material</th>
+                                <th style={{ background: '#e79b21', color: 'white', padding: '10px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Route</th>
+                                <th style={{ background: '#e79b21', color: 'white', padding: '10px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Bill / LR</th>
+                                <th style={{ background: '#e79b21', color: 'white', padding: '10px', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>Qty</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -251,7 +251,7 @@ const TripChecklist = () => {
                                     return (
                                         <div key={unit as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '14px', fontWeight: 'bold' }}>
                                             <span>Total {unit as string}:</span>
-                                            <span style={{ color: '#00ab55' }}>{totalForUnit}</span>
+                                            <span style={{ color: '#e79b21' }}>{totalForUnit}</span>
                                         </div>
                                     );
                                 })}
