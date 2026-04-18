@@ -8,7 +8,7 @@ import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import api from '@/utils/api';
 
-const SHIFT_TYPES = ['Day', 'Day/Night'];
+const RENTAL_TYPES = ['Day', 'Day/Night', 'Trip', 'Kilometer'];
 const PAYMENT_STATUSES = ['Pending', 'Partial', 'Paid'];
 
 const defaultForm = {
@@ -17,7 +17,7 @@ const defaultForm = {
     customerName: '',
     vehicleId: '',
     driverName: '',
-    shiftType: 'Day',
+    rentalType: 'Day',
     duration: 1,
     rate: 0,
     totalAmount: 0,
@@ -25,6 +25,7 @@ const defaultForm = {
     description: '',
     startTime: '',
     endTime: '',
+    operatorBata: 0,
 };
 
 const RentalManagement = () => {
@@ -85,15 +86,17 @@ const RentalManagement = () => {
             // Auto-calculate total amount
             const duration = parseFloat(name === 'duration' ? value : prev.duration) || 0;
             const rate = parseFloat(name === 'rate' ? value : prev.rate) || 0;
-            updated.totalAmount = parseFloat((duration * rate).toFixed(2));
+            const bata = parseFloat(name === 'operatorBata' ? value : prev.operatorBata) || 0;
+            updated.totalAmount = parseFloat((duration * rate + bata).toFixed(2));
 
             // Reset asset-specific fields on asset type change
             if (name === 'assetType') {
                 updated.vehicleId = '';
                 updated.driverName = '';
-                updated.shiftType = value === 'Vehicle' ? 'Day' : '';
+                updated.rentalType = value === 'Vehicle' ? 'Day' : '';
                 updated.startTime = '';
                 updated.endTime = '';
+                updated.operatorBata = 0;
                 setDriverNameMode('select');
             }
 
@@ -151,7 +154,7 @@ const RentalManagement = () => {
             customerName: record.customerName || '',
             vehicleId: record.vehicleId?._id || record.vehicleId || '',
             driverName: record.driverName || '',
-            shiftType: record.shiftType || 'Day',
+            rentalType: record.rentalType || 'Day',
             duration: record.duration || 1,
             rate: record.rate || 0,
             totalAmount: record.totalAmount || 0,
@@ -159,6 +162,7 @@ const RentalManagement = () => {
             description: record.description || '',
             startTime: record.startTime || '',
             endTime: record.endTime || '',
+            operatorBata: record.operatorBata || 0,
         });
         setEditId(record._id);
         setShowForm(true);
@@ -381,12 +385,16 @@ const RentalManagement = () => {
                                 )}
                             </div>
 
-                            {/* Shift Type — only for Vehicles */}
+                            {/* Rental Type — only for Vehicles */}
                             {isVehicle && (
                                 <div>
-                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Shift Type *</label>
-                                    <select name="shiftType" className="form-select border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.shiftType} onChange={handleChange} required>
-                                        {SHIFT_TYPES.map(s => <option key={s} value={s}>{s === 'Day' ? '☀️ Day' : '🌙 Day / Night'}</option>)}
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Rental Type *</label>
+                                    <select name="rentalType" className="form-select border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.rentalType} onChange={handleChange} required>
+                                        {RENTAL_TYPES.map(s => (
+                                            <option key={s} value={s}>
+                                                {s === 'Day' ? '☀️ Day' : s === 'Day/Night' ? '🌙 Day / Night' : s === 'Trip' ? '🔄 Trip' : '🛣️ Kilometer'}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                             )}
@@ -394,7 +402,11 @@ const RentalManagement = () => {
                             {/* Duration */}
                             <div>
                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">
-                                    {isVehicle ? 'No. of Days *' : 'No. of Hours *'}
+                                    {isVehicle ? (
+                                        formData.rentalType === 'Trip' ? 'No. of Trips *' : 
+                                        formData.rentalType === 'Kilometer' ? 'No. of KMs *' : 
+                                        'No. of Days *'
+                                    ) : 'No. of Hours *'}
                                 </label>
                                 <input type="number" name="duration" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.duration} onChange={handleChange} min="0.5" step="0.5" required />
                             </div>
@@ -402,7 +414,12 @@ const RentalManagement = () => {
                             {/* Rate */}
                             <div>
                                 <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">
-                                    {isVehicle ? 'Rate per Day (₹) *' : 'Rate per Hour (₹) *'}
+                                    {isVehicle ? (
+                                        formData.rentalType === 'Trip' ? 'Rate per Trip (₹) *' : 
+                                        formData.rentalType === 'Kilometer' ? 'Rate per KM (₹) *' : 
+                                        formData.rentalType === 'Day/Night' ? 'Rate per Day/Night (₹) *' :
+                                        'Rate per Day (₹) *'
+                                    ) : 'Rate per Hour (₹) *'}
                                 </label>
                                 <input type="number" name="rate" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.rate} onChange={handleChange} min="0" required />
                             </div>
@@ -415,7 +432,7 @@ const RentalManagement = () => {
                                 </div>
                             </div>
 
-                            {/* Time fields for Machines */}
+                            {/* Specific fields for Machines */}
                             {!isVehicle && (
                                 <>
                                     <div>
@@ -425,6 +442,10 @@ const RentalManagement = () => {
                                     <div>
                                         <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">End Time</label>
                                         <input type="time" name="endTime" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.endTime} onChange={handleChange} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Operator Bata (₹)</label>
+                                        <input type="number" name="operatorBata" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.operatorBata} onChange={handleChange} min="0" />
                                     </div>
                                 </>
                             )}
@@ -479,7 +500,7 @@ const RentalManagement = () => {
                                     <th className="py-3 px-3 text-left">Customer</th>
                                     <th className="py-3 px-3 text-left">Asset</th>
                                     <th className="py-3 px-3 text-left">Driver / Operator</th>
-                                    <th className="py-3 px-3 text-left">Shift / Time</th>
+                                    <th className="py-3 px-3 text-left">Rental Detail</th>
                                     <th className="py-3 px-3 text-left">Duration</th>
                                     <th className="py-3 px-3 text-left">Rate</th>
                                     <th className="py-3 px-3 text-left">Total</th>
@@ -504,7 +525,7 @@ const RentalManagement = () => {
                                         <td className="py-3 px-3 font-medium">{r.driverName || '-'}</td>
                                         <td className="py-3 px-3">
                                             {r.assetType === 'Vehicle' ? (
-                                                <span className="badge badge-outline-primary text-[10px]">{r.shiftType || 'Day'}</span>
+                                                <span className="badge badge-outline-primary text-[10px]">{r.rentalType || 'Day'}</span>
                                             ) : (
                                                 <span className="text-xs text-white-dark">
                                                     {r.startTime && r.endTime ? `${r.startTime} – ${r.endTime}` : 'Per Hour'}
@@ -512,10 +533,21 @@ const RentalManagement = () => {
                                             )}
                                         </td>
                                         <td className="py-3 px-3 font-bold">
-                                            {r.duration} {r.assetType === 'Vehicle' ? 'Day(s)' : 'Hr(s)'}
+                                            {r.duration} {r.assetType === 'Vehicle' ? (
+                                                r.rentalType === 'Trip' ? 'Trips' : 
+                                                r.rentalType === 'Kilometer' ? 'KMs' : 
+                                                'Day(s)'
+                                            ) : 'Hr(s)'}
                                         </td>
                                         <td className="py-3 px-3">₹{(r.rate || 0).toLocaleString()}</td>
-                                        <td className="py-3 px-3 font-black text-primary">₹{(r.totalAmount || 0).toLocaleString()}</td>
+                                        <td className="py-3 px-3 font-black text-primary">
+                                            ₹{(r.totalAmount || 0).toLocaleString()}
+                                            {r.operatorBata > 0 && (
+                                                <div className="text-[9px] text-white-dark font-bold uppercase tracking-tighter">
+                                                    Incl. ₹{r.operatorBata} Bata
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="py-3 px-3">
                                             <span className={`badge text-[10px] font-black ${
                                                 r.paymentStatus === 'Paid' ? 'badge-outline-success' :

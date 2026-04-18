@@ -37,11 +37,14 @@ const DriverPaymentManagement = () => {
         advanceAmount: '',
         tripCount: '1',
         paymentMode: 'Cash',
+        sourceType: 'Sale',
+        rentalId: '',
         notes: ''
     };
 
     const [formData, setFormData] = useState(initialForm);
     const [tripsByDate, setTripsByDate] = useState<any[]>([]);
+    const [rentalsByDate, setRentalsByDate] = useState<any[]>([]);
 
     const fetchData = async () => {
         try {
@@ -118,9 +121,32 @@ const DriverPaymentManagement = () => {
         }
     };
 
+    const fetchRentalsForDate = async (date: string, currentEditRentalId?: string) => {
+        try {
+            const [rentalsRes, paymentsRes] = await Promise.all([
+                api.get(`/rentals?date=${date}`),
+                api.get('/driver-payments')
+            ]);
+            if (rentalsRes.data.success) {
+                const allRentals = rentalsRes.data.data;
+                const paidRentalIds = (paymentsRes.data.success ? paymentsRes.data.data : [])
+                    .filter((p: any) => p.rentalId)
+                    .map((p: any) => p.rentalId.toString());
+                const availableRentals = allRentals.filter((r: any) => {
+                    if (currentEditRentalId && r._id.toString() === currentEditRentalId) return true;
+                    return !paidRentalIds.includes(r._id.toString());
+                });
+                setRentalsByDate(availableRentals);
+            }
+        } catch (error) {
+            console.error('Error fetching rentals:', error);
+        }
+    };
+
     useEffect(() => {
         fetchData();
         fetchTripsForDate(formData.date);
+        fetchRentalsForDate(formData.date);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -130,7 +156,8 @@ const DriverPaymentManagement = () => {
 
         if (name === 'date') {
             fetchTripsForDate(value, editId || undefined);
-            setFormData(prev => ({ ...prev, date: value, tripId: '', vehicleType: '', driverName: '' }));
+            fetchRentalsForDate(value, editId || undefined);
+            setFormData(prev => ({ ...prev, date: value, tripId: '', rentalId: '', vehicleType: '', driverName: '' }));
         }
 
         if (name === 'tripId') {
@@ -174,14 +201,53 @@ const DriverPaymentManagement = () => {
                 });
             }
         }
+
+        if (name === 'rentalId') {
+            const selectedRental = rentalsByDate.find(r => r._id === value);
+            if (selectedRental) {
+                const vNum = selectedRental.vehicleId?.vehicleNumber || selectedRental.vehicleId?.registrationNumber || 'No Plate';
+                const rType = selectedRental.rentalType || 'Day';
+                
+                setFormData(prev => ({
+                    ...prev,
+                    rentalId: value,
+                    vehicleType: selectedRental.vehicleId?.type || 'Lorry',
+                    driverName: selectedRental.driverName,
+                    tripCount: selectedRental.duration.toString(),
+                    paymentType: 'Per Trip',
+                    notes: `Rental: ${selectedRental.customerName} (${vNum}) | Type: ${rType}`
+                }));
+
+                // If rentalType is 'Trip', set paymentType to 'Per Trip'
+                if (rType === 'Trip') {
+                    setFormData(p => ({ ...p, paymentType: 'Per Trip' }));
+                }
+
+                // Fetch advances
+                api.get(`/labour/advance`).then(res => {
+                    if (res.data.success) {
+                        const totalAdv = res.data.data
+                            .filter((a: any) => {
+                                const isSameDriver = (a.labour?.name?.trim().toLowerCase() === selectedRental.driverName?.trim().toLowerCase());
+                                const advDate = new Date(a.date).toISOString().split('T')[0];
+                                return isSameDriver && advDate === formData.date;
+                            })
+                            .reduce((sum: number, a: any) => sum + a.amount, 0);
+                        setFormData(prev => ({ ...prev, advanceAmount: totalAdv.toString() }));
+                    }
+                });
+            }
+        }
     };
 
     const resetForm = () => {
         setFormData(initialForm);
         setEditId(null);
         setTripsByDate([]);
+        setRentalsByDate([]);
         setShowForm(false);
         fetchTripsForDate(initialForm.date);
+        fetchRentalsForDate(initialForm.date);
     };
 
     const confirmDelete = async () => {
@@ -201,13 +267,16 @@ const DriverPaymentManagement = () => {
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         try {
-            const payload = {
+            const payload: any = {
                 ...formData,
                 amount: Number(formData.amount),
                 padiKasu: Number(formData.padiKasu || 0),
                 advanceAmount: Number(formData.advanceAmount || 0),
                 tripCount: Number(formData.tripCount || 1),
             };
+
+            if (!payload.tripId || payload.tripId === '') delete payload.tripId;
+            if (!payload.rentalId || payload.rentalId === '') delete payload.rentalId;
             if (editId) {
                 await api.put(`/driver-payments/${editId}`, payload);
                 showToast('Payment updated successfully!', 'success');
@@ -235,13 +304,15 @@ const DriverPaymentManagement = () => {
             advanceAmount: (payment.advanceAmount || 0).toString(),
             tripCount: (payment.tripCount || 1).toString(),
             paymentMode: payment.paymentMode,
+            sourceType: payment.sourceType || 'Sale',
+            rentalId: payment.rentalId || '',
             notes: payment.notes || ''
         });
         setEditId(payment._id);
         setShowForm(true);
         if (payment.date) {
-            // Pass the current trip ID so it always appears in the list when editing
             fetchTripsForDate(payment.date.split('T')[0], payment.tripId || undefined);
+            fetchRentalsForDate(payment.date.split('T')[0], payment.rentalId || undefined);
         }
     };
 
@@ -272,6 +343,24 @@ const DriverPaymentManagement = () => {
                                 <input type="date" name="date" className="form-input font-bold" value={formData.date} onChange={handleChange} required />
                             </div>
                             <div>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Source Category</label>
+                                <div className="flex bg-primary/5 p-1 rounded-xl w-full gap-1 border border-primary/10">
+                                    {['Sale', 'Rental'].map(source => (
+                                        <button
+                                            key={source}
+                                            type="button"
+                                            onClick={() => setFormData(p => ({ ...p, sourceType: source, tripId: '', rentalId: '', vehicleType: '', driverName: '' }))}
+                                            className={`flex-1 py-1.5 rounded-lg text-xs font-black uppercase transition-all ${formData.sourceType === source ? 'bg-primary text-white shadow-md' : 'text-primary hover:bg-primary/10'}`}
+                                        >
+                                            {source === 'Sale' ? '📦 Sale Trips' : '🏗️ Rentals'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {formData.sourceType === 'Sale' ? (
+                            <div>
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary font-black">Select Trip Record</label>
                                 <select name="tripId" className="form-select border-primary font-bold bg-primary/5" value={formData.tripId} onChange={handleChange} required>
                                     <option value="">Choose Trip ID</option>
@@ -283,96 +372,88 @@ const DriverPaymentManagement = () => {
                                     {tripsByDate.length === 0 && <option disabled>No unpaid trips found on this date</option>}
                                 </select>
                             </div>
-                        </div>
+                        ) : (
+                            <div>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-info font-black">Select Rental Record</label>
+                                <select name="rentalId" className="form-select border-info font-bold bg-info/5" value={formData.rentalId} onChange={handleChange} required>
+                                    <option value="">Choose Rental ID</option>
+                                    {rentalsByDate.map((r) => (
+                                        <option key={r._id} value={r._id}>
+                                            {r.vehicleId?.name} ({r.vehicleId?.vehicleNumber || r.vehicleId?.registrationNumber}) - {r.driverName} | {r.customerName} ({r.rentalType})
+                                        </option>
+                                    ))}
+                                    {rentalsByDate.length === 0 && <option disabled>No unpaid rentals found on this date</option>}
+                                </select>
+                            </div>
+                        )}
 
-                        {/* Trip Day Summary */}
-                        {tripsByDate.length > 0 && (
-                            <div className="grid grid-cols-3 gap-2 bg-gray-50 dark:bg-white/5 p-2 rounded-lg border border-dashed border-white-dark/20 text-center">
-                                <div>
-                                    <p className="text-[10px] text-white-dark font-bold uppercase">Total Trips</p>
-                                    <p className="text-sm font-black text-primary">{tripsByDate.length}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-white-dark font-bold uppercase">Own / Contract</p>
-                                    <p className="text-sm font-black">
-                                        <span className="text-success">{tripsByDate.filter(t => t.vehicleId?.ownershipType === 'Own').length}</span>
-                                        <span className="text-white-dark mx-1">/</span>
-                                        <span className="text-warning">{tripsByDate.filter(t => t.vehicleId?.ownershipType === 'Contract').length}</span>
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-white-dark font-bold uppercase">Vehicles</p>
-                                    <p className="text-sm font-black text-info">
-                                        {new Set(tripsByDate.map(t => t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.vehicleId?._id)).size}
-                                    </p>
+                        {/* Selection Summary */}
+                        {(formData.tripId || formData.rentalId) && (
+                            <div className={`p-3 rounded-lg border -mt-2 ${formData.sourceType === 'Sale' ? 'bg-primary/5 border-primary/20' : 'bg-info/5 border-info/20'}`}>
+                                <p className={`text-[11px] font-bold flex items-center gap-1 mb-2 ${formData.sourceType === 'Sale' ? 'text-primary' : 'text-info'}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${formData.sourceType === 'Sale' ? 'bg-primary' : 'bg-info'}`} />
+                                    Linked {formData.sourceType}: {formData.sourceType === 'Sale' ? 
+                                        tripsByDate.find(t => t._id === formData.tripId)?.vehicleId?.vehicleNumber : 
+                                        rentalsByDate.find(r => r._id === formData.rentalId)?.vehicleId?.vehicleNumber || rentalsByDate.find(r => r._id === formData.rentalId)?.vehicleId?.registrationNumber}
+                                </p>
+                                <div className="flex items-center justify-between bg-white dark:bg-black/20 p-2 rounded border border-white-dark/10">
+                                    <span className="text-[10px] font-bold text-white-dark uppercase">Details:</span>
+                                    <div className="flex flex-col items-end">
+                                        <span className={`badge text-[10px] py-0 ${formData.sourceType === 'Sale' ? 'badge-outline-primary' : 'badge-outline-info'}`}>
+                                            {formData.sourceType === 'Sale' ? 'SALE TRIP' : 'RENTAL SERVICE'}
+                                        </span>
+                                        <span className="text-[11px] font-black uppercase mt-0.5">
+                                            {formData.sourceType === 'Sale' ? 
+                                                (tripsByDate.find(t => t._id === formData.tripId)?.fromLocation + ' -> ' + tripsByDate.find(t => t._id === formData.tripId)?.toLocation) : 
+                                                (rentalsByDate.find(r => r._id === formData.rentalId)?.customerName + ' [' + rentalsByDate.find(r => r._id === formData.rentalId)?.rentalType + ']')}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Vehicle Type</label>
-                                <select
-                                    name="vehicleType"
-                                    className={`form-select font-bold ${formData.tripId ? 'bg-[#eee] cursor-not-allowed text-black' : ''}`}
-                                    value={formData.vehicleType}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={!!formData.tripId}
-                                >
-                                    <option value="">{formData.tripId ? formData.vehicleType : 'Select Type'}</option>
-                                    {!formData.tripId && (
-                                        <>
-                                            <option value="Lorry">Lorry</option>
-                                            <option value="Tipper">Tipper</option>
-                                            <option value="Tractor">Tractor</option>
-                                            <option value="JCB">JCB</option>
-                                            <option value="Poclain">Poclain</option>
-                                            <option value="Other">Other</option>
-                                        </>
-                                    )}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Driver Name</label>
-                                <select
-                                    name="driverName"
-                                    className={`form-select font-bold ${formData.tripId ? 'bg-[#eee] cursor-not-allowed text-black' : ''}`}
-                                    value={formData.driverName}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={!!formData.tripId}
-                                >
-                                    <option value="">{formData.tripId ? formData.driverName : 'Select Driver'}</option>
-                                    {!formData.tripId && drivers.map((d, index) => (
-                                        <option key={index} value={d.name}>
-                                            {d.name} {d.type === 'Vehicle' ? `(From: ${d.vehicle})` : '(Employee)'}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        {formData.tripId && (
-                            <div className="bg-primary/5 p-3 rounded-lg border border-primary/20 -mt-2">
-                                <p className="text-[11px] text-primary font-bold flex items-center gap-1 mb-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                    Trip Linked: {tripsByDate.find(t => t._id === formData.tripId)?.vehicleId?.vehicleNumber || 'No Plate'}
-                                </p>
-                                <div className="flex items-center justify-between bg-white dark:bg-black/20 p-2 rounded border border-white-dark/10">
-                                    <span className="text-[10px] font-bold text-white-dark uppercase">Payment Target:</span>
-                                    {tripsByDate.find(t => t._id === formData.tripId)?.vehicleId?.ownershipType === 'Contract' ? (
-                                        <div className="flex flex-col items-end">
-                                            <span className="badge badge-outline-warning text-[10px] py-0">TRANSPORT VENDOR</span>
-                                            <span className="text-[11px] font-black text-warning uppercase mt-0.5">
-                                                {tripsByDate.find(t => t._id === formData.tripId)?.vehicleId?.contractor?.name || 'External Vendor'}
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-end">
-                                            <span className="badge badge-outline-success text-[10px] py-0">OWN FLEET</span>
-                                            <span className="text-[11px] font-black text-success uppercase mt-0.5">Company Driver</span>
-                                        </div>
-                                    )}
+                        {formData.sourceType !== 'Rental' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Vehicle Type</label>
+                                    <select
+                                        name="vehicleType"
+                                        className={`form-select font-bold ${formData.tripId ? 'bg-[#eee] cursor-not-allowed text-black' : ''}`}
+                                        value={formData.vehicleType}
+                                        onChange={handleChange}
+                                        required
+                                        disabled={!!formData.tripId}
+                                    >
+                                        <option value="">{formData.tripId ? formData.vehicleType : 'Select Type'}</option>
+                                        {!formData.tripId && (
+                                            <>
+                                                <option value="Lorry">Lorry</option>
+                                                <option value="Tipper">Tipper</option>
+                                                <option value="Tractor">Tractor</option>
+                                                <option value="JCB">JCB</option>
+                                                <option value="Poclain">Poclain</option>
+                                                <option value="Other">Other</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Driver Name</label>
+                                    <select
+                                        name="driverName"
+                                        className={`form-select font-bold ${formData.tripId ? 'bg-[#eee] cursor-not-allowed text-black' : ''}`}
+                                        value={formData.driverName}
+                                        onChange={handleChange}
+                                        required
+                                        disabled={!!formData.tripId}
+                                    >
+                                        <option value="">{formData.tripId ? formData.driverName : 'Select Driver'}</option>
+                                        {!formData.tripId && drivers.map((d, index) => (
+                                            <option key={index} value={d.name}>
+                                                {d.name} {d.type === 'Vehicle' ? `(From: ${d.vehicle})` : '(Employee)'}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
                         )}
@@ -382,9 +463,6 @@ const DriverPaymentManagement = () => {
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Payment Type</label>
                                 <select name="paymentType" className="form-select" value={formData.paymentType} onChange={handleChange} required>
                                     <option value="Per Trip">Per Trip Payment (ஒரு trip-க்கு)</option>
-                                    <option value="Monthly Salary">Monthly Salary (மாத சம்பளம்)</option>
-                                    <option value="Bata">Bata / Allowance (படா)</option>
-                                    <option value="Advance">Advance (முன்பணம்)</option>
                                 </select>
                             </div>
                             <div>
@@ -411,17 +489,17 @@ const DriverPaymentManagement = () => {
                                 <input type="number" name="advanceAmount" className="form-input border-danger text-danger font-bold text-lg bg-[#eee] cursor-not-allowed" value={formData.advanceAmount} onChange={handleChange} placeholder="0" readOnly />
                             </div>
                             <div className="md:col-span-1">
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-info font-black">No. of Trips</label>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-info font-black">
+                                    {formData.sourceType === 'Sale' ? 'No. of Trips' : (
+                                        formData.rentalId ? (
+                                            rentalsByDate.find(r => r._id === formData.rentalId)?.rentalType === 'Trip' ? 'No. of Trips' :
+                                            rentalsByDate.find(r => r._id === formData.rentalId)?.rentalType === 'Kilometer' ? 'No. of KMs' :
+                                            'No. of Days'
+                                        ) : 'Count'
+                                    )}
+                                </label>
                                 <div className="flex items-center gap-2">
                                     <input type="number" name="tripCount" className="form-input border-info text-info font-black text-lg text-center bg-[#eee] cursor-not-allowed" value={formData.tripCount} onChange={handleChange} required min="1" readOnly />
-                                    {formData.tripId && (
-                                        <div className="badge badge-outline-info whitespace-nowrap">
-                                            Auto: {tripsByDate.filter(t =>
-                                                ((t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.vehicleId?._id) === (tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?.vehicleNumber || tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?.registrationNumber || tripsByDate.find(x => x._id === formData.tripId)?.vehicleId?._id)) &&
-                                                (t.driverName === (tripsByDate.find(x => x._id === formData.tripId)?.driverName))
-                                            ).length}
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -430,7 +508,7 @@ const DriverPaymentManagement = () => {
                             <div className="flex flex-col">
                                 <span className="text-white-dark font-bold uppercase text-xs tracking-wider">Total Payable Amount:</span>
                                 <span className="text-[10px] text-white-dark italic">
-                                    ((₹{Number(formData.amount || 0).toLocaleString()} + ₹{Number(formData.padiKasu || 0).toLocaleString()}) × {formData.tripCount} trips) - ₹{Number(formData.advanceAmount || 0).toLocaleString()} Adv
+                                    ((₹{Number(formData.amount || 0).toLocaleString()} + ₹{Number(formData.padiKasu || 0).toLocaleString()}) × {formData.tripCount} {formData.sourceType === 'Sale' ? 'trips' : 'units'}) - ₹{Number(formData.advanceAmount || 0).toLocaleString()} Adv
                                 </span>
                             </div>
                             <span className="text-3xl font-black text-black dark:text-white-light font-mono shadow-sm text-success">
@@ -476,7 +554,8 @@ const DriverPaymentManagement = () => {
                                     <th className="!text-right text-warning">Padi (₹)</th>
                                     <th className="!text-right text-danger">Adv (₹)</th>
                                     <th className="!text-right text-success bg-success/5 font-black">Total (₹)</th>
-                                    <th>Trips</th>
+                                    <th>Source</th>
+                                    <th>Count</th>
                                     <th className="!text-center">Action</th>
                                 </tr>
                             </thead>
@@ -510,7 +589,14 @@ const DriverPaymentManagement = () => {
                                             <td className="!text-right font-bold text-lg font-mono text-warning">₹{pay.padiKasu?.toLocaleString() || '0'}</td>
                                             <td className="!text-right font-bold text-lg font-mono text-danger">₹{pay.advanceAmount?.toLocaleString() || '0'}</td>
                                             <td className="!text-right font-black text-lg font-mono text-success bg-success/5">₹{((Number(pay.amount || 0) + Number(pay.padiKasu || 0)) * (pay.tripCount || 1) - (pay.advanceAmount || 0)).toLocaleString()}</td>
-                                            <td className="text-center font-bold">x {pay.tripCount || 1}</td>
+                                            <td>
+                                                <span className={`badge ${pay.sourceType === 'Rental' ? 'badge-outline-info' : 'badge-outline-primary'} text-[10px] font-black`}>
+                                                    {pay.sourceType || 'Sale'}
+                                                </span>
+                                            </td>
+                                            <td className="text-center font-bold text-xs">
+                                                {pay.tripCount || 1} {pay.sourceType === 'Rental' ? 'Units' : 'Trips'}
+                                            </td>
                                             <td className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     {canEditRecord(currentUser, pay.createdAt || pay.date) ? (
