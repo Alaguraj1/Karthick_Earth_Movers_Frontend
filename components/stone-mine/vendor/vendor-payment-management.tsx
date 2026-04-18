@@ -39,6 +39,9 @@ const VendorPaymentManagement = () => {
     const [dieselExpenses, setDieselExpenses] = useState<number>(0);
     const [maintenanceExpenses, setMaintenanceExpenses] = useState<number>(0);
     const [dailyAdvances, setDailyAdvances] = useState<number>(0);
+    const [sparePartsExpenses, setSparePartsExpenses] = useState<number>(0);
+    const [policeExpenses, setPoliceExpenses] = useState<number>(0);
+    const [otherExpenses, setOtherExpenses] = useState<number>(0);
     const [materialRates, setMaterialRates] = useState<Record<string, string>>({});
     
     // Payment Logic
@@ -50,7 +53,8 @@ const VendorPaymentManagement = () => {
     const [isFetchingDetailedTrips, setIsFetchingDetailedTrips] = useState(false);
 
     const [formData, setFormData] = useState({
-        date: new Date().toISOString().split('T')[0],
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
         vendorSelected: '', // Value format: "id|type|name"
         paymentType: 'Bill',
         invoiceAmount: 0,
@@ -103,16 +107,19 @@ const VendorPaymentManagement = () => {
 
 
 
-    const fetchSettlementData = async (date: string, vendorId: string, vendorType: string, currentEditingId: string | null = null) => {
-        if (!date || !vendorId) return;
+    const fetchSettlementData = async (sDate: string, eDate: string, vendorId: string, vendorType: string, currentEditingId: string | null = null) => {
+        if (!sDate || !eDate || !vendorId) return;
         try {
             setIsFetchingSubData(true);
             
-            // Fetch with date range for better performance
-            const [tripRes, expenseRes, advanceRes] = await Promise.all([
-                api.get(`/trips?date=${date}`),
-                api.get(`/expenses?startDate=${date}&endDate=${date}T23:59:59.999Z`),
-                api.get(`/vendors/payments?date=${date}&paymentType=Advance`)
+            // Dates for queries
+            const endOfDay = `${eDate}T23:59:59.999Z`;
+
+            const [tripRes, expenseRes, advanceRes, spareRes] = await Promise.all([
+                api.get(`/trips?startDate=${sDate}&endDate=${endOfDay}`),
+                api.get(`/expenses?startDate=${sDate}&endDate=${endOfDay}`),
+                api.get(`/vendors/payments?startDate=${sDate}&endDate=${endOfDay}&paymentType=Advance`),
+                api.get(`/spare-parts-sales?startDate=${sDate}&endDate=${endOfDay}`)
             ]);
 
             const vendor = allVendors.find(v => v._id === vendorId && v.type === vendorType);
@@ -136,29 +143,47 @@ const VendorPaymentManagement = () => {
 
             let diesel = 0;
             let maintenance = 0;
+            let police = 0;
+            let other = 0;
+
             if (expenseRes.data.success) {
                 expenseRes.data.data.forEach((e: any) => {
-                    // Check date purely in frontend too for safety
-                    const recordDate = new Date(e.date).toISOString().split('T')[0];
-                    if (recordDate !== date) return;
-
-                    // CHECK vehicleNumber FIRST, then extract from vehicleOrMachine if needed
-                    const rawNum = e.vehicleNumber || extractNum(e.vehicleOrMachine);
-                    const expVNum = normalize(rawNum);
+                    // 1. Direct match by transportVendorId (if available)
+                    const isVendorMatch = e.transportVendorId === vendorId;
                     
-                    if (vehicleNumbers.includes(expVNum)) {
+                    // 2. Match by vehicle number
+                    const rawNum = e.vehicleNumber || extractNum(e.vehicleOrMachine);
+                    const isVehicleMatch = vehicleNumbers.includes(normalize(rawNum));
+
+                    if (isVendorMatch || isVehicleMatch) {
                         if (e.category === 'Diesel') diesel += e.amount;
-                        if (e.category === 'Machine Maintenance') maintenance += e.amount;
+                        else if (e.category === 'Machine Maintenance') maintenance += e.amount;
+                        else if (e.category === 'Police' || e.category === 'Police Expense') police += e.amount;
+                        else if (e.category === 'Transport Contractor' || e.category === 'Transport Vendor Other' || e.category === 'Transport Contractor Exp') other += e.amount;
                     }
                 });
             }
             setDieselExpenses(diesel);
             setMaintenanceExpenses(maintenance);
+            setPoliceExpenses(police);
+            setOtherExpenses(other);
+
+            // Spare Parts Deductions
+            let spares = 0;
+            if (spareRes.data.success) {
+                spareRes.data.data.forEach((s: any) => {
+                    const isVendorMatch = s.transportVendorId === vendorId;
+                    const isVehicleMatch = vehicleNumbers.includes(normalize(s.vehicleNumber));
+                    if (isVendorMatch || isVehicleMatch) {
+                        spares += (s.totalAmount || 0);
+                    }
+                });
+            }
+            setSparePartsExpenses(spares);
 
             if (advanceRes.data.success) {
                 const dayPayments = advanceRes.data.data.filter((p: any) => 
-                    p.vendorId === vendorId && 
-                    new Date(p.date).toISOString().split('T')[0] === date
+                    p.vendorId === vendorId
                 );
 
                 const existingSettlements = dayPayments.filter((p: any) => p.paymentType !== 'Advance' && p._id !== currentEditingId);
@@ -172,7 +197,7 @@ const VendorPaymentManagement = () => {
             }
         } catch (error) {
             console.error('SubData fetch error:', error);
-            showToast('Could not load daily trip/expense data', 'error');
+            showToast('Could not load settlement data', 'error');
         } finally {
             setIsFetchingSubData(false);
         }
@@ -186,7 +211,8 @@ const VendorPaymentManagement = () => {
 
     const totalTons = vendorTrips.reduce((sum, t) => sum + (t.loadQuantity || 0), 0);
     const grossTotal = Object.keys(tonsByMaterial).reduce((sum, material) => sum + (tonsByMaterial[material] * Number(materialRates[material] || 0)), 0);
-    const netPayable = grossTotal - dieselExpenses - maintenanceExpenses - dailyAdvances;
+    const totalDeductionsCalc = dieselExpenses + maintenanceExpenses + dailyAdvances + sparePartsExpenses + policeExpenses + otherExpenses;
+    const netPayable = grossTotal - totalDeductionsCalc;
 
     const convertJfifToJpg = (file: File): Promise<File> => {
         return new Promise((resolve, reject) => {
@@ -248,14 +274,15 @@ const VendorPaymentManagement = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
 
-        if (name === 'date' || name === 'vendorSelected') {
-            const dateToUse = name === 'date' ? value : formData.date;
+        if (name === 'startDate' || name === 'endDate' || name === 'vendorSelected') {
+            const sDateToUse = name === 'startDate' ? value : formData.startDate;
+            const eDateToUse = name === 'endDate' ? value : formData.endDate;
             const vendorToUse = name === 'vendorSelected' ? value : formData.vendorSelected;
-            if (dateToUse && vendorToUse) {
+            if (sDateToUse && eDateToUse && vendorToUse) {
                 const [vId, vType] = vendorToUse.split('|');
                 if (vType === 'TransportVendor') {
-                    if (!editingId) setMaterialRates({}); // wipe custom set temporarily
-                    fetchSettlementData(dateToUse, vId, vType, editingId);
+                    if (!editingId) setMaterialRates({});
+                    fetchSettlementData(sDateToUse, eDateToUse, vId, vType, editingId);
                 }
             }
         }
@@ -276,14 +303,15 @@ const VendorPaymentManagement = () => {
 
             const data = {
                 ...formData,
+                date: formData.endDate, // Store end date as the primary record date for history
                 vendorId: vId,
                 vendorType: vType,
                 vendorName: vName,
                 invoiceAmount: (netPayable > 0 ? netPayable : 0),
-                paidAmount: (netPayable > 0 ? netPayable : 0) + dieselExpenses + maintenanceExpenses + dailyAdvances,
+                paidAmount: (netPayable > 0 ? netPayable : 0) + totalDeductionsCalc,
                 paymentMode: paymentMode,
                 billUrl: billUrl,
-                notes: `Daily Settlement: ${Object.keys(tonsByMaterial).map(m => `${tonsByMaterial[m].toFixed(2)} Tons of ${m} @ ₹${materialRates[m] || 0}`).join(' | ')}. Deductions: Diesel ₹${dieselExpenses}, Maint ₹${maintenanceExpenses}, Adv ₹${dailyAdvances}. ${sanitizedUserNotes}`
+                notes: `Daily Settlement (${formData.startDate} to ${formData.endDate}): ${Object.keys(tonsByMaterial).map(m => `${tonsByMaterial[m].toFixed(2)} Tons of ${m} @ ₹${materialRates[m] || 0}`).join(' | ')}. Deductions: Diesel ₹${dieselExpenses}, Maint ₹${maintenanceExpenses}, Adv ₹${dailyAdvances}, Spares ₹${sparePartsExpenses}, Police ₹${policeExpenses}, Other ₹${otherExpenses}. ${sanitizedUserNotes}`
             };
 
             if (editingId) {
@@ -302,7 +330,8 @@ const VendorPaymentManagement = () => {
 
     const resetForm = () => {
         setFormData({
-            date: new Date().toISOString().split('T')[0],
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0],
             vendorSelected: '',
             paymentType: 'Bill',
             invoiceAmount: 0,
@@ -314,6 +343,9 @@ const VendorPaymentManagement = () => {
         setDieselExpenses(0);
         setMaintenanceExpenses(0);
         setDailyAdvances(0);
+        setSparePartsExpenses(0);
+        setPoliceExpenses(0);
+        setOtherExpenses(0);
         setPaymentMode('Bank');
         setBillUrl('');
         setEditingId(null);
@@ -326,7 +358,10 @@ const VendorPaymentManagement = () => {
         
         // Parse material rates out of notes
         const parsedMaterialRates: Record<string, string> = {};
-        const ratesMatch = (record.notes || '').match(/Daily Settlement: (.*?)\. Deductions:/);
+        const ratesMatch = (record.notes || '').match(/Daily Settlement.*?: (.*?)\. Deductions:/);
+        const startDateMatch = (record.notes || '').match(/Daily Settlement \((.*?) to/);
+        const endDateMatch = (record.notes || '').match(/to (.*?)\)/);
+
         if (ratesMatch && ratesMatch[1]) {
             const sections = ratesMatch[1].split(' | ');
             sections.forEach((sec: string) => {
@@ -340,8 +375,12 @@ const VendorPaymentManagement = () => {
 
         const details = parseSettlementNotes(record.notes || '');
 
+        const sDate = startDateMatch ? startDateMatch[1] : new Date(record.date).toISOString().split('T')[0];
+        const eDate = endDateMatch ? endDateMatch[1] : new Date(record.date).toISOString().split('T')[0];
+
         setFormData({
-            date: new Date(record.date).toISOString().split('T')[0],
+            startDate: sDate,
+            endDate: eDate,
             vendorSelected: `${vId}|${record.vendorType}|${record.vendorName}`,
             paymentType: record.paymentType || 'Bill',
             invoiceAmount: record.invoiceAmount || 0,
@@ -355,7 +394,7 @@ const VendorPaymentManagement = () => {
         setShowForm(true);
 
         // Trigger sub-data fetch for the edited date/vendor
-        fetchSettlementData(new Date(record.date).toISOString().split('T')[0], vId, record.vendorType, record._id);
+        fetchSettlementData(sDate, eDate, vId, record.vendorType, record._id);
     };
 
     const confirmDelete = async () => {
@@ -395,8 +434,15 @@ const VendorPaymentManagement = () => {
         const diesel = parseInt(dieselMatch?.[1] || '0');
         const maint = parseInt(maintMatch?.[1] || '0');
         const adv = parseInt(advMatch?.[1] || '0');
-        const deductions = diesel + maint + adv;
+        const spares = parseInt(notes.match(/Spares ₹(\d+)/)?.[1] || '0');
+        const police = parseInt(notes.match(/Police ₹(\d+)/)?.[1] || '0');
+        const other = parseInt(notes.match(/Other ₹(\d+)/)?.[1] || '0');
+
+        const deductions = diesel + maint + adv + spares + police + other;
         const net = grossFromNotes - deductions;
+
+        let sDate = notes.match(/Daily Settlement \((.*?) to/)?.[1] || '';
+        let eDate = notes.match(/to (.*?)\)/)?.[1] || '';
 
         // Clean up user notes by removing all system prefixes
         let manualNotes = notes;
@@ -410,9 +456,14 @@ const VendorPaymentManagement = () => {
             diesel,
             maint,
             adv,
+            spares,
+            police,
+            other,
             deductions,
             net,
-            userNotes: manualNotes
+            userNotes: manualNotes,
+            sDate,
+            eDate
         };
     };
 
@@ -503,7 +554,7 @@ const VendorPaymentManagement = () => {
                         <div class="header">
                             <div class="header-left">
                                 <h1 class="report-title">Vendor Settlement Report</h1>
-                                <p class="period-text">Report Period: ${new Date(selectedRecord.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                <p class="period-text">Report Period: ${details.sDate ? `${details.sDate} to ${details.eDate}` : new Date(selectedRecord.date).toLocaleDateString('en-GB')}</p>
                             </div>
                             <div class="header-right">
                                 <img src="/assets/images/logo.png" class="company-logo" />
@@ -580,6 +631,18 @@ const VendorPaymentManagement = () => {
                                     <td>Cash Advances / Padi Kasu</td>
                                     <td class="text-right fw-800">₹ ${Number(details.adv).toLocaleString()}</td>
                                 </tr>
+                                <tr>
+                                    <td>Spare Parts Issued</td>
+                                    <td class="text-right fw-800">₹ ${Number(details.spares || 0).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td>Police & Station Expenses</td>
+                                    <td class="text-right fw-800">₹ ${Number(details.police || 0).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td>Other Vendor Charges</td>
+                                    <td class="text-right fw-800">₹ ${Number(details.other || 0).toLocaleString()}</td>
+                                </tr>
                             </tbody>
                         </table>
 
@@ -626,16 +689,15 @@ const VendorPaymentManagement = () => {
         const fetchViewTrips = async () => {
             if (!selectedRecord && !showForm) return;
             try {
-                const dateRaw = selectedRecord ? selectedRecord.date : formData.date;
-                const vId = selectedRecord 
-                    ? (selectedRecord.vendorId?._id || selectedRecord.vendorId) 
-                    : formData.vendorSelected?.split('|')[0];
-                const vType = selectedRecord ? selectedRecord.vendorType : formData.vendorSelected?.split('|')[1];
-                
                 if (dateRaw && vId && vType) {
                     setIsFetchingDetailedTrips(true);
-                    const dateStr = new Date(dateRaw).toISOString().split('T')[0];
-                    const tripRes = await api.get(`/trips?date=${dateStr}`);
+                    
+                    const details = parseSettlementNotes(selectedRecord?.notes || '');
+                    const sDate = details.sDate || new Date(dateRaw).toISOString().split('T')[0];
+                    const eDate = details.eDate || new Date(dateRaw).toISOString().split('T')[0];
+                    const endOfDay = `${eDate}T23:59:59.999Z`;
+
+                    const tripRes = await api.get(`/trips?startDate=${sDate}&endDate=${endOfDay}`);
                     
                     const vendor = allVendors.find(v => v._id === vId && v.type === vType);
                     const vendorVehicles = vendor?.vehicles || [];
@@ -725,7 +787,10 @@ const VendorPaymentManagement = () => {
                         <div className="panel shadow-lg rounded-2xl">
                             <h5 className="font-black text-xs uppercase mb-5 border-b pb-2">Record Settlement</h5>
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                <div><label className="text-[10px] font-bold uppercase opacity-50">Date</label><input type="date" name="date" className="form-input font-bold" value={formData.date} onChange={handleChange} required /></div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div><label className="text-[10px] font-bold uppercase opacity-50">Start Date</label><input type="date" name="startDate" className="form-input font-bold" value={formData.startDate} onChange={handleChange} required /></div>
+                                    <div><label className="text-[10px] font-bold uppercase opacity-50">End Date</label><input type="date" name="endDate" className="form-input font-bold" value={formData.endDate} onChange={handleChange} required /></div>
+                                </div>
                                 <div><label className="text-[10px] font-bold uppercase opacity-50">Transport Vendor Name</label>
                                     <select name="vendorSelected" className="form-select font-bold text-sm" value={formData.vendorSelected} onChange={handleChange} required>
                                         <option value="">Select Vendor...</option>
@@ -737,8 +802,8 @@ const VendorPaymentManagement = () => {
                                     </select>
                                 </div>
                                 {alreadySettledWarning && (
-                                    <div className="p-3 bg-warning/20 border-l-4 border-warning rounded-lg text-[10px] font-black text-warning-dark uppercase">
-                                        ⚠️ A settlement has already been recorded for this transport vendor on this specific date. Overwriting or proceeding could result in duplication.
+                                    <div className="p-3 bg-warning/20 border-l-4 border-warning rounded-lg text-[10px] font-black text-warning-dark uppercase leading-tight">
+                                        ⚠️ A settlement already exists within this period for this vendor.
                                     </div>
                                 )}
                                 <hr />
@@ -827,6 +892,18 @@ const VendorPaymentManagement = () => {
                                     <div className="flex justify-between text-[10px] font-black uppercase">
                                         <span className="opacity-40">Daily Advance (முன்பணம்)</span>
                                         <span className="text-danger">₹{dailyAdvances.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black uppercase">
+                                        <span className="opacity-40">Spare Parts (விடிபாகங்கள்)</span>
+                                        <span className="text-danger">₹{sparePartsExpenses.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black uppercase">
+                                        <span className="opacity-40">Police Expenses (போலீஸ்)</span>
+                                        <span className="text-danger">₹{policeExpenses.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black uppercase">
+                                        <span className="opacity-40">Other Exp (இதர செலவு)</span>
+                                        <span className="text-danger">₹{otherExpenses.toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1047,15 +1124,18 @@ const VendorPaymentManagement = () => {
                                                     { label: 'Diesel', val: details.diesel, color: 'text-slate-800' },
                                                     { label: 'Maintenance', val: details.maint, color: 'text-slate-800' },
                                                     { label: 'Advances', val: details.adv, color: 'text-slate-800' },
+                                                    { label: 'Spares', val: details.spares, color: 'text-slate-800' },
+                                                    { label: 'Police', val: details.police, color: 'text-slate-800' },
+                                                    { label: 'Other', val: details.other, color: 'text-slate-800' },
                                                 ].map(d => (
                                                     <div key={d.label} className="flex justify-between items-center group">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase">{d.label}</span>
-                                                        <span className={`font-black text-sm ${d.color}`}>₹ {Number(d.val).toLocaleString()}</span>
+                                                        <span className={`font-black text-sm ${d.color}`}>₹ {Number(d.val || 0).toLocaleString()}</span>
                                                     </div>
                                                 ))}
                                                 <div className="pt-4 border-t border-slate-200 flex justify-between items-center">
                                                     <span className="text-[10px] font-black text-rose-500 uppercase">Total Deducted</span>
-                                                    <span className="font-black text-lg text-rose-600">₹ {(Number(details.diesel) + Number(details.maint) + Number(details.adv)).toLocaleString()}</span>
+                                                    <span className="font-black text-lg text-rose-600">₹ {details.deductions.toLocaleString()}</span>
                                                 </div>
                                             </div>
                                         );

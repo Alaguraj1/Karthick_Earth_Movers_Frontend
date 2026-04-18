@@ -33,6 +33,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
     const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
     const [workTypes, setWorkTypes] = useState<any[]>([]);
     const [maintenanceTypes, setMaintenanceTypes] = useState<any[]>([]);
+    const [sparePartsInventory, setSparePartsInventory] = useState<any[]>([]);
     const [selectedContractorSummary, setSelectedContractorSummary] = useState<any>(null);
 
     // View State
@@ -120,6 +121,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         paidTo: '',
         billNumber: '',
         nextServiceDate: '',
+        sparePartSource: 'Bought', // 'Own' or 'Bought'
+        sparePartName: '',
+        internalSpareId: '',
     });
 
     const fetchExpenses = async () => {
@@ -232,6 +236,15 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         }
     };
 
+    const fetchSparePartsInventory = async () => {
+        try {
+            const { data } = await api.get('/spare-parts');
+            if (data.success) setSparePartsInventory(data.data);
+        } catch (error) {
+            console.error('Error fetching spares:', error);
+        }
+    };
+
     useEffect(() => {
         const daysInMonth = new Date(lookupYear, lookupMonth, 0).getDate();
         if (category === 'Labour Wages' && formData.labourName && (labours.length > 0 || contractors.length > 0)) {
@@ -341,6 +354,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         fetchExpenseCategories();
         fetchWorkTypes();
         fetchMaintenanceTypes();
+        fetchSparePartsInventory();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [category]);
 
@@ -427,10 +441,15 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             }
 
             // Calculation for Machine Maintenance
-            if (category === 'Machine Maintenance' && (name === 'sparePartsCost' || name === 'labourCharge')) {
-                const parts = parseFloat(name === 'sparePartsCost' ? value : prev.sparePartsCost) || 0;
+            if (category === 'Machine Maintenance' && (name === 'sparePartsCost' || name === 'labourCharge' || name === 'sparePartSource')) {
+                const isOwn = (name === 'sparePartSource' ? value : prev.sparePartSource) === 'Own';
+                const parts = isOwn ? 0 : (parseFloat(name === 'sparePartsCost' ? value : prev.sparePartsCost) || 0);
                 const labour = parseFloat(name === 'labourCharge' ? value : prev.labourCharge) || 0;
                 updated.amount = (parts + labour).toString();
+                if (isOwn && name === 'sparePartSource') {
+                    updated.sparePartsCost = '0';
+                    updated.sparePartName = '';
+                }
             }
 
             // Calculation for Labour Wages
@@ -617,6 +636,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                 showToast('Record saved successfully!', 'success');
                 resetForm();
                 fetchExpenses();
+                fetchSparePartsInventory();
             }
         } catch (error: any) {
             console.error(error);
@@ -644,6 +664,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                 showToast('Record updated successfully!', 'success');
                 resetForm();
                 fetchExpenses();
+                fetchSparePartsInventory();
             }
         } catch (error: any) {
             console.error(error);
@@ -658,6 +679,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                 showToast('Record deleted successfully!', 'success');
                 setDeleteModal(false);
                 fetchExpenses();
+                fetchSparePartsInventory();
             }
         } catch (error) {
             console.error(error);
@@ -713,6 +735,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             paidTo: '',
             billNumber: '',
             nextServiceDate: '',
+            sparePartSource: 'Bought',
+            sparePartName: '',
+            internalSpareId: '',
         });
         setLookupMonth(listMonth);
         setLookupYear(listYear);
@@ -801,6 +826,9 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             billNumber: expense.billNumber || '',
             totalWorkingDays: expense.totalWorkingDays?.toString() || '',
             nextServiceDate: expense.nextServiceDate ? expense.nextServiceDate.split('T')[0] : '',
+            sparePartSource: expense.sparePartSource || 'Bought',
+            sparePartName: expense.sparePartName || '',
+            internalSpareId: expense.internalSpareId || '',
         });
         setSelectedFile(null);
         setSelectedInputFile(null);
@@ -1407,7 +1435,17 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                             {expense.billNumber && <div className="text-[10px] text-white-dark">Bill: {expense.billNumber}</div>}
                                                         </td>
                                                         <td className="py-2"><span className="badge badge-outline-info">{expense.maintenanceType || '-'}</span></td>
-                                                        <td className="py-2">₹{expense.sparePartsCost || '0'}</td>
+                                                        <td className="py-2">
+                                                            <div className="flex flex-col">
+                                                                <div className="font-bold">₹{expense.sparePartsCost || '0'}</div>
+                                                                {expense.sparePartName && (
+                                                                    <div className="text-[9px] uppercase font-black text-white-dark flex items-center gap-1">
+                                                                        <span className={`w-1.5 h-1.5 rounded-full ${expense.sparePartSource === 'Own' ? 'bg-success shadow-[0_0_5px_rgba(34,197,94,1)]' : 'bg-info'}`}></span>
+                                                                        {expense.sparePartName} {expense.sparePartSource === 'Own' ? '(STOCK)' : ''}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
                                                         <td className="py-2">₹{expense.labourCharge || '0'}</td>
                                                         <td className="py-2">{expense.meterReading || '-'} Hrs</td>
                                                     </>
@@ -1834,12 +1872,79 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 ))}
                                             </select>
                                         </div>
-                                        <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Spare Parts Cost (₹)</label>
-                                            <input type="number" name="sparePartsCost" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.sparePartsCost} onChange={handleChange} min="0" />
+                                        <div className="md:col-span-full">
+                                            <label className="text-[10px] font-black uppercase text-white-dark mb-2 block">Our Spare / Buy Spare</label>
+                                            <div className="flex bg-primary/5 p-1 rounded-2xl w-fit">
+                                                {['Own', 'Bought'].map((type) => (
+                                                    <button
+                                                        key={type}
+                                                        type="button"
+                                                        onClick={() => handleChange({ target: { name: 'sparePartSource', value: type } })}
+                                                        className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${
+                                                            formData.sparePartSource === type ? 'bg-primary text-white shadow-lg' : 'text-primary hover:bg-primary/10'
+                                                        }`}
+                                                    >
+                                                        {type === 'Own' ? 'Our Spare (நமது உதிரிபாகங்கள்)' : 'Buy Spare (புதிய உதிரிபாகங்கள்)'}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
+
+                                        {formData.sparePartSource === 'Own' ? (
+                                            <div className="md:col-span-2">
+                                                <label className="text-[10px] font-black uppercase text-white-dark mb-2 block">Select Spare Part from Stock *</label>
+                                                <select
+                                                    name="internalSpareId"
+                                                    className="form-select border-2 focus:border-primary transition-all font-bold rounded-xl h-12"
+                                                    value={formData.internalSpareId}
+                                                    onChange={(e) => {
+                                                        const id = e.target.value;
+                                                        const s = sparePartsInventory.find(item => item._id === id);
+                                                        setFormData(prev => ({ 
+                                                            ...prev, 
+                                                            internalSpareId: id, 
+                                                            sparePartName: s ? s.name : '' 
+                                                        }));
+                                                    }}
+                                                    required
+                                                >
+                                                    <option value="">Select Spare...</option>
+                                                    {sparePartsInventory.map(s => (
+                                                        <option key={s._id} value={s._id}>{s.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <label className="text-[10px] font-black uppercase text-white-dark mb-2 block">Spare Part Name *</label>
+                                                    <input
+                                                        type="text"
+                                                        name="sparePartName"
+                                                        className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12"
+                                                        value={formData.sparePartName}
+                                                        onChange={handleChange}
+                                                        placeholder="Enter part name..."
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-black uppercase text-white-dark mb-2 block">Spare Parts Cost (₹) *</label>
+                                                    <input
+                                                        type="number"
+                                                        name="sparePartsCost"
+                                                        className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12"
+                                                        value={formData.sparePartsCost}
+                                                        onChange={handleChange}
+                                                        min="0"
+                                                        required
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Labour Charge (₹)</label>
+                                            <label className="text-[10px] font-black uppercase text-white-dark mb-2 block">Labour Charge (₹)</label>
                                             <input type="number" name="labourCharge" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12" value={formData.labourCharge} onChange={handleChange} min="0" />
                                         </div>
                                         <div>

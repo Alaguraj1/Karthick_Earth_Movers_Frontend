@@ -17,6 +17,7 @@ const SparePartsSales = () => {
     const [editId, setEditId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [allAssets, setAllAssets] = useState<any[]>([]);
+    const [vendors, setVendors] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
         assetType: '',
@@ -27,6 +28,8 @@ const SparePartsSales = () => {
         vehicleName: '',
         vehicleNumber: '',
         machineType: '',
+        vehicleOwnership: 'Own', // 'Own', 'Vendor'
+        transportVendorId: '',
         date: new Date().toISOString().split('T')[0],
         notes: ''
     });
@@ -36,14 +39,16 @@ const SparePartsSales = () => {
     const fetchSales = async () => {
         try {
             setLoading(true);
-            const [salesRes, partsRes, assetsRes] = await Promise.all([
+            const [salesRes, partsRes, assetsRes, vendorsRes] = await Promise.all([
                 api.get('/spare-parts-sales'),
                 api.get('/spare-parts'),
-                api.get('/master/vehicles')
+                api.get('/master/vehicles'),
+                api.get('/vendors/transport')
             ]);
             if (salesRes.data.success) setSales(salesRes.data.data);
             if (partsRes.data.success) setSpareParts(partsRes.data.data);
             if (assetsRes.data.success) setAllAssets(assetsRes.data.data);
+            if (vendorsRes.data.success) setVendors(vendorsRes.data.data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -58,6 +63,10 @@ const SparePartsSales = () => {
     const handleChange = (e: any) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        
+        if (name === 'assetType' && value !== 'Vehicle') {
+            setFormData(prev => ({ ...prev, vehicleOwnership: 'Own', transportVendorId: '' }));
+        }
     };
 
     const handleAssetSelect = (e: any) => {
@@ -76,6 +85,17 @@ const SparePartsSales = () => {
         } else {
             setFormData(prev => ({ ...prev, assetId: '', vehicleName: '', vehicleNumber: '', machineType: '', customerName: '', phoneNumber: '' }));
         }
+    };
+
+    const handleVendorVehicleSelect = (vNum: string) => {
+        const selectedVendor = vendors.find(v => v._id === formData.transportVendorId);
+        setFormData(prev => ({
+            ...prev,
+            vehicleNumber: vNum,
+            vehicleName: selectedVendor?.name || '',
+            phoneNumber: selectedVendor?.mobile || '',
+            customerName: selectedVendor?.driverName || selectedVendor?.name || ''
+        }));
     };
 
     const handleItemChange = (index: number, e: any) => {
@@ -106,7 +126,20 @@ const SparePartsSales = () => {
     const grandTotal = items.reduce((sum, item) => sum + (item.total || 0), 0);
 
     const resetForm = () => {
-        setFormData({ assetType: '', assetCategory: '', assetId: '', customerName: '', phoneNumber: '', vehicleName: '', vehicleNumber: '', machineType: '', date: new Date().toISOString().split('T')[0], notes: '' });
+        setFormData({ 
+            assetType: '', 
+            assetCategory: '', 
+            assetId: '', 
+            customerName: '', 
+            phoneNumber: '', 
+            vehicleName: '', 
+            vehicleNumber: '', 
+            machineType: '', 
+            date: new Date().toISOString().split('T')[0], 
+            notes: '',
+            vehicleOwnership: 'Own',
+            transportVendorId: ''
+        });
         setItems([{ sparePart: '', spareName: '', quantity: 1, price: 0, total: 0 }]);
         setEditId(null);
         setShowForm(false);
@@ -120,14 +153,16 @@ const SparePartsSales = () => {
         );
 
         setFormData({
-            assetType: asset ? asset.type : '',
-            assetCategory: asset ? asset.category : '',
-            assetId: asset ? asset._id : '',
+            assetType: sale.assetType || (asset ? asset.type : ''),
+            assetCategory: sale.assetCategory || (asset ? asset.category : ''),
+            assetId: sale.assetId || (asset ? asset._id : ''),
             customerName: sale.customerName || '',
             phoneNumber: sale.phoneNumber || '',
             vehicleName: sale.vehicleName || '',
             vehicleNumber: sale.vehicleNumber || '',
             machineType: sale.machineType || '',
+            vehicleOwnership: sale.vehicleOwnership || 'Own',
+            transportVendorId: sale.transportVendorId || '',
             date: new Date(sale.date).toISOString().split('T')[0],
             notes: sale.notes || ''
         });
@@ -252,35 +287,105 @@ const SparePartsSales = () => {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-6 bg-dark-light/5 p-5 rounded-lg border border-primary/10 mb-6">
                             <h6 className="font-bold uppercase text-primary">1. Specify the Asset</h6>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="text-xs font-bold uppercase mb-1">Asset Type *</label>
-                                    <select name="assetType" className="form-select" required value={formData.assetType} onChange={handleChange}>
-                                        <option value="">Select Option</option>
-                                        <option value="Machine">Machine</option>
-                                        <option value="Vehicle">Vehicle</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold uppercase mb-1">Category</label>
-                                    <select name="assetCategory" className="form-select" value={formData.assetCategory} onChange={handleChange} disabled={!formData.assetType}>
-                                        <option value="">All Categories</option>
-                                        {Array.from(new Set(allAssets.filter(a => a.type === formData.assetType).map(a => a.category).filter(Boolean))).map(cat => (
-                                            <option key={cat as string} value={cat as string}>{cat as string}</option>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* Ownership Selection */}
+                                <div className="md:col-span-3">
+                                    <label className="text-xs font-bold uppercase mb-1">Ownership *</label>
+                                    <div className="flex gap-2">
+                                        {[
+                                            { id: 'Own', name: 'Own Asset' },
+                                            { id: 'Vendor', name: 'Vendor Asset' }
+                                        ].map(opt => (
+                                            <button
+                                                key={opt.id}
+                                                type="button"
+                                                className={`flex-1 h-12 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                                    formData.vehicleOwnership === opt.id ? 'bg-primary text-white shadow-lg' : 'bg-primary/5 text-primary hover:bg-primary/10'
+                                                }`}
+                                                onClick={() => setFormData(p => ({ ...p, vehicleOwnership: opt.id, transportVendorId: '', assetId: '', vehicleNumber: '', vehicleName: '', assetType: '' }))}
+                                            >
+                                                {opt.name}
+                                            </button>
                                         ))}
-                                    </select>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold uppercase mb-1">Select Asset *</label>
-                                    <select name="assetId" className="form-select border-primary" required value={formData.assetId} onChange={handleAssetSelect} disabled={!formData.assetType}>
-                                        <option value="">Select Vehicle / Machine</option>
-                                        {allAssets
-                                            .filter(a => a.type === formData.assetType && (!formData.assetCategory || a.category === formData.assetCategory))
-                                            .map(a => (
-                                                <option key={a._id} value={a._id}>{a.name} {a.vehicleNumber || a.registrationNumber ? `(${a.vehicleNumber || a.registrationNumber})` : ''}</option>
+
+                                {/* Vendor Selection (Conditional) */}
+                                {formData.vehicleOwnership === 'Vendor' && (
+                                    <div className="md:col-span-3 animate-fadeIn">
+                                        <label className="text-xs font-bold uppercase mb-1">Vendor / Transport Name *</label>
+                                        <select 
+                                            className="form-select h-12 rounded-xl" 
+                                            required 
+                                            value={formData.transportVendorId} 
+                                            onChange={(e) => setFormData(p => ({ ...p, transportVendorId: e.target.value, assetType: '', vehicleNumber: '', vehicleName: '' }))}
+                                        >
+                                            <option value="">Choose Vendor...</option>
+                                            {vendors.map(v => (
+                                                <option key={v._id} value={v._id}>
+                                                    {v.name}{v.companyName ? ` (${v.companyName})` : ''}
+                                                </option>
                                             ))}
-                                    </select>
-                                </div>
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Asset Type Selection */}
+                                {(formData.vehicleOwnership === 'Own' || formData.transportVendorId) && (
+                                    <div className="animate-fadeIn">
+                                        <label className="text-xs font-bold uppercase mb-1">Mechine / Vehicle *</label>
+                                        <select name="assetType" className="form-select h-12 rounded-xl font-bold" required value={formData.assetType} onChange={handleChange}>
+                                            <option value="">Select Option</option>
+                                            <option value="Machine">Machine</option>
+                                            <option value="Vehicle">Vehicle</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Specific Asset Selection (Machine) */}
+                                {formData.assetType === 'Machine' && (
+                                    <div className="md:col-span-2 animate-fadeIn">
+                                        <label className="text-xs font-bold uppercase mb-1">Select Machine *</label>
+                                        <select name="assetId" className="form-select h-12 rounded-xl border-primary" required value={formData.assetId} onChange={handleAssetSelect}>
+                                            <option value="">Choose Machine...</option>
+                                            {allAssets
+                                                .filter(a => a.type === 'Machine')
+                                                .map(a => (
+                                                    <option key={a._id} value={a._id}>{a.name}</option>
+                                                ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Specific Asset Selection (Vehicle) */}
+                                {formData.assetType === 'Vehicle' && (
+                                    <div className="md:col-span-2 animate-fadeIn">
+                                        <label className="text-xs font-bold uppercase mb-1">Vehicle Number Select *</label>
+                                        {formData.vehicleOwnership === 'Own' ? (
+                                            <select name="assetId" className="form-select h-12 rounded-xl border-primary font-bold" required value={formData.assetId} onChange={handleAssetSelect}>
+                                                <option value="">Select Own Vehicle...</option>
+                                                {allAssets
+                                                    .filter(a => a.type === 'Vehicle' && (a.ownershipType === 'Own' || !a.ownershipType))
+                                                    .map(a => (
+                                                        <option key={a._id} value={a._id}>{a.name} ({a.vehicleNumber || a.registrationNumber})</option>
+                                                    ))}
+                                            </select>
+                                        ) : (
+                                            <select 
+                                                className="form-select h-12 rounded-xl border-primary font-bold" 
+                                                required 
+                                                value={formData.vehicleNumber} 
+                                                onChange={(e) => handleVendorVehicleSelect(e.target.value)}
+                                            >
+                                                <option value="">Select Vendor Vehicle...</option>
+                                                {vendors.find(v => v._id === formData.transportVendorId)?.vehicles?.map((v: any, idx: number) => (
+                                                    <option key={idx} value={v.vehicleNumber}>{v.vehicleNumber}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
