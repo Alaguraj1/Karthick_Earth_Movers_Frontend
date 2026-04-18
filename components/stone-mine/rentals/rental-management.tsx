@@ -549,7 +549,7 @@ const RentalManagement = () => {
             </div>
             )}
 
-            <DeleteConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} title="Delete Rental Record" message="Are you sure you want to delete this rental record? This action cannot be undone." />
+            <DeleteConfirmModal show={!!deleteId} onCancel={() => setDeleteId(null)} onConfirm={handleDelete} title="Delete Rental Record" message="Are you sure you want to delete this rental record? This action cannot be undone." />
         </div>
     );
 };

@@ -410,7 +410,7 @@ const LabourListPage = () => {
                                             </div>
                                         </td></tr>
                                     ) : filteredLabours.length === 0 ? (
-                                        <tr><td colSpan={7} className="text-center py-24 text-white-dark uppercase font-black tracking-widest text-sm opacity-20">No {activeTab} labours found</td></tr>
+                                        <tr><td colSpan={7} className="text-center py-24 text-white-dark uppercase font-black tracking-widest text-sm opacity-20">No {filters.status || 'matching'} labours found</td></tr>
                                     ) : (
                                         filteredLabours.map((item: any) => (
                                             <tr key={item._id} className="group hover:bg-primary/5 transition-all">
