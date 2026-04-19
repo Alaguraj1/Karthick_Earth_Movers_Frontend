@@ -160,11 +160,15 @@ const TripChecklist = () => {
                                 <tbody>
                                     <tr>
                                         <td style={{ padding: '4px 8px 4px 0', color: '#888' }}>Name :</td>
-                                        <td style={{ padding: '4px 0', fontWeight: 'bold' }}>{selectedSale.customer?.name || '—'}</td>
+                                        <td style={{ padding: '4px 0', fontWeight: 'bold' }}>
+                                            {selectedSale.saleType === '3rd Party' ? (selectedSale.contractor?.name || '—') : (selectedSale.customer?.name || '—')}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td style={{ padding: '4px 8px 4px 0', color: '#888' }}>Address:</td>
-                                        <td style={{ padding: '4px 0', fontWeight: 'bold', whiteSpace: 'normal', maxWidth: '300px' }}>{selectedSale.customer?.address || '—'}</td>
+                                        <td style={{ padding: '4px 0', fontWeight: 'bold', whiteSpace: 'normal', maxWidth: '300px' }}>
+                                            {selectedSale.saleType === '3rd Party' ? (selectedSale.contractor?.address || '—') : (selectedSale.customer?.address || '—')}
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -189,20 +189,28 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                                         <tbody>
                                             <tr>
                                                 <td style={{ padding: '4px 0', color: '#888' }}>customer name :</td>
-                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{selectedSale.customer?.name || '—'}</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>
+                                                    {selectedSale.saleType === '3rd Party' ? (selectedSale.contractor?.name || '—') : (selectedSale.customer?.name || '—')}
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <td style={{ padding: '4px 0', color: '#888' }}>address:</td>
-                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', whiteSpace: 'normal', maxWidth: '150px' }}>{selectedSale.customer?.address || '—'}</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', whiteSpace: 'normal', maxWidth: '150px' }}>
+                                                    {selectedSale.saleType === '3rd Party' ? (selectedSale.contractor?.address || '—') : (selectedSale.customer?.address || '—')}
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <td style={{ padding: '4px 0', color: '#888' }}>phone number:</td>
-                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>{selectedSale.customer?.phone || '—'}</td>
+                                                <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right' }}>
+                                                    {selectedSale.saleType === '3rd Party' ? (selectedSale.contractor?.mobileNumber || '—') : (selectedSale.customer?.phone || '—')}
+                                                </td>
                                             </tr>
-                                            {selectedSale.customer?.gstNumber && (
+                                            {(selectedSale.saleType === '3rd Party' ? selectedSale.contractor?.gstNumber : selectedSale.customer?.gstNumber) && (
                                                 <tr>
                                                     <td style={{ padding: '4px 0', color: '#888' }}>GST:</td>
-                                                    <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', color: '#e79b21' }}>{selectedSale.customer.gstNumber}</td>
+                                                    <td style={{ padding: '4px 0', fontWeight: 'bold', textAlign: 'right', color: '#e79b21' }}>
+                                                        {selectedSale.saleType === '3rd Party' ? selectedSale.contractor?.gstNumber : selectedSale.customer?.gstNumber}
+                                                    </td>
                                                 </tr>
                                             )}
                                         </tbody>
@@ -419,7 +427,9 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                                                     {mode === 'invoice' || mode === 'checklist' ? sale.invoiceNumber : sale.invoiceNumber.replace('INV-', 'BILL-')}
                                                 </td>
                                                 <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
-                                                <td className="font-semibold">{sale.customer?.name || '—'}</td>
+                                                <td className="font-semibold">
+                                                    {sale.saleType === '3rd Party' ? (sale.contractor?.name || '—') : (sale.customer?.name || '—')}
+                                                </td>
                                                 <td>
                                                     <span className="badge bg-dark/10 text-dark dark:bg-dark-light/10 dark:text-white-dark">
                                                         {sale.items?.length || 0} items

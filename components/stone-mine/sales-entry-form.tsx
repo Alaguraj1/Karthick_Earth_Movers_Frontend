@@ -294,7 +294,7 @@ const SalesEntryForm = () => {
         thirdPartyCalcAmount = permitTotal + transportTotal;
     }
 
-    const grandTotal = subtotal + gstTotal - (formData.saleType === '3rd Party' ? thirdPartyCalcAmount : 0);
+    const grandTotal = subtotal + gstTotal + (formData.saleType === '3rd Party' ? thirdPartyCalcAmount : 0);
 
     const resetForm = () => {
         setEditId(null);
@@ -517,6 +517,9 @@ const SalesEntryForm = () => {
                 })),
                 subtotal,
                 gstAmount: gstTotal,
+                thirdPartyAmount: formData.saleType === '3rd Party' ? thirdPartyCalcAmount : 0,
+                totalPermitAmount: formData.saleType === '3rd Party' ? ((formData.permitAmountPerTon || 0) * items.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0)) : 0,
+                totalTransportAmount: formData.saleType === '3rd Party' ? ((formData.ourVehicleCostPerTon || 0) * rentableTons) : 0,
                 grandTotal,
                 amountPaid: formData.paymentType === 'Cash' ? grandTotal : 0,
                 tripIds,
@@ -1054,16 +1057,16 @@ const SalesEntryForm = () => {
                                                         <span className="font-bold text-success">₹{gstTotal.toLocaleString()}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center text-sm">
-                                                        <span className="text-white-dark font-bold underline decoration-warning/30">Less: Total Permit Fee:</span>
-                                                        <span className="font-bold text-danger">- ₹{((formData.permitAmountPerTon || 0) * items.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0)).toLocaleString()}</span>
+                                                        <span className="text-white-dark font-bold underline decoration-warning/30">Add: Total Permit Fee:</span>
+                                                        <span className="font-bold text-warning-dark">₹{((formData.permitAmountPerTon || 0) * items.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0)).toLocaleString()}</span>
                                                     </div>
                                                     {(formData.ourVehicleCostPerTon || 0) > 0 && (
                                                         <div className="flex justify-between items-center text-sm">
                                                             <div className="flex flex-col">
-                                                                <span className="text-white-dark font-bold underline decoration-primary/30">Less: Total Transport Cost:</span>
+                                                                <span className="text-white-dark font-bold underline decoration-primary/30">Add: Total Transport Cost:</span>
                                                                 <span className="text-[9px] text-white-dark/60 font-medium">(Applicable for {rentableTons} tons of Fleet trips)</span>
                                                             </div>
-                                                            <span className="font-bold text-danger">- ₹{((formData.ourVehicleCostPerTon || 0) * rentableTons).toLocaleString()}</span>
+                                                            <span className="font-bold text-primary">₹{((formData.ourVehicleCostPerTon || 0) * rentableTons).toLocaleString()}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1187,7 +1190,7 @@ const SalesEntryForm = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="table-responsive">
+<div className="table-responsive">
                         <table className="table-hover">
                             <thead>
                                 <tr>
@@ -1198,8 +1201,15 @@ const SalesEntryForm = () => {
                                     <th>Customer</th>
                                     <th>Location</th>
                                     <th>Items</th>
-                                    {canSeeFinancials && <th>Type</th>}
-                                    {canSeeFinancials && <th className="!text-right">Total</th>}
+                                    {canSeeFinancials && (
+                                        <>
+                                            <th>Type</th>
+                                            <th className="!text-right">Material (+GST)</th>
+                                            <th className="!text-right">Permit Fee</th>
+                                            <th className="!text-right">Transport</th>
+                                            <th className="!text-right">Grand Total</th>
+                                        </>
+                                    )}
                                     <th className="!text-center">Payment</th>
                                     <th className="!text-center">Receipt</th>
                                     <th className="!text-center">Actions</th>
@@ -1207,7 +1217,7 @@ const SalesEntryForm = () => {
                             </thead>
                             <tbody>
                                 {isLoadingSales ? (
-                                    <tr><td colSpan={12} className="text-center py-10">
+                                    <tr><td colSpan={14} className="text-center py-10">
                                         <div className="flex flex-col items-center gap-3 text-white-dark">
                                             <span className="animate-spin border-4 border-primary border-l-transparent rounded-full w-8 h-8 inline-block"></span>
                                             <span className="text-sm font-semibold">Loading sales records...</span>
@@ -1238,7 +1248,7 @@ const SalesEntryForm = () => {
                                     });
 
                                     if (filtered.length === 0) {
-                                        return <tr><td colSpan={12} className="text-center py-6 text-white-dark">No sales records found</td></tr>;
+                                        return <tr><td colSpan={14} className="text-center py-6 text-white-dark">No sales records found</td></tr>;
                                     }
 
                                     return filtered.map((sale, idx) => (
@@ -1297,13 +1307,28 @@ const SalesEntryForm = () => {
                                                 </td>
                                             )}
                                             {canSeeFinancials && (
-                                                <td className="!text-right font-bold">
-                                                    {(sale.grandTotal || 0) === 0 ? (
-                                                        <span className="badge bg-danger/10 text-danger text-[10px]">₹0 – No Invoice</span>
-                                                    ) : (
-                                                        <>₹{sale.grandTotal?.toLocaleString()}</>
-                                                    )}
-                                                </td>
+                                                <>
+                                                 <td className="!text-right font-medium text-white-dark whitespace-nowrap">
+                                                     ₹{( (sale.subtotal || 0) + (sale.gstAmount || 0) ).toLocaleString()}
+                                                 </td>
+                                                 <td className="!text-right">
+                                                     {sale.totalPermitAmount > 0 ? (
+                                                         <span className="text-warning-dark font-semibold">₹{sale.totalPermitAmount.toLocaleString()}</span>
+                                                     ) : (
+                                                         <span className="text-white-dark/30 text-[10px]">NA</span>
+                                                     )}
+                                                 </td>
+                                                 <td className="!text-right">
+                                                     {sale.totalTransportAmount > 0 ? (
+                                                         <span className="text-primary font-semibold">₹{sale.totalTransportAmount.toLocaleString()}</span>
+                                                     ) : (
+                                                         <span className="text-white-dark/30 text-[10px]">NA</span>
+                                                     )}
+                                                 </td>
+                                                 <td className="!text-right font-black text-primary">
+                                                     ₹{(sale.grandTotal || 0).toLocaleString()}
+                                                 </td>
+                                                </>
                                             )}
                                             <td className="!text-center">
                                                 <span className={`badge ${sale.paymentStatus === 'Paid' ? 'bg-success/10 text-success'
