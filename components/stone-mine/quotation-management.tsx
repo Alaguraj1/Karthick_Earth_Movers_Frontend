@@ -206,7 +206,13 @@ const QuotationManagement = () => {
             '        body { font-family: "Segoe UI", Arial, sans-serif; padding: 30px; color: #333; font-size: 14px; }',
             '        table { width: 100%; border-collapse: collapse; }',
             '        th { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }',
-            '        @media print { body { padding: 15px; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }',
+            '        img { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }',
+            '        .sig-img-trans { ',
+            '            mix-blend-mode: multiply !important;',
+            '            filter: grayscale(1) contrast(8) brightness(3);',
+            '            -webkit-print-color-adjust: exact !important;',
+            '        }',
+            '        @media print { body { padding: 15px; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .sig-img-trans { mix-blend-mode: multiply !important; } }',
             '    </style>',
             '</head>',
             '<body>',
@@ -560,7 +566,7 @@ const QuotationManagement = () => {
                                 <div style={{ borderTop: '1px solid #ccc', width: '200px', paddingTop: '8px', fontSize: '12px', color: '#888' }}>Customer Acceptance</div>
                             </div>
                             <div style={{ textAlign: 'center', position: 'relative' }}>
-                                <img src="/assets/images/Karthick-Earthmovers-owner-sign.jpeg" alt="Authorized Signature" style={{ width: '180px', position: 'absolute', top: '-45px', left: '50%', transform: 'translateX(-50%)', opacity: 0.9 }} />
+                                <img src="/assets/images/Karthick-Earthmovers-owner-sign.jpeg" alt="Authorized Signature" className="sig-img-trans" style={{ width: '180px', position: 'absolute', top: '-45px', left: '50%', transform: 'translateX(-50%)' }} />
                                 <div style={{ borderTop: '1px solid #ccc', width: '200px', paddingTop: '8px', marginTop: '20px', fontSize: '12px', color: '#888' }}>Authorized Signature</div>
                             </div>
                         </div>

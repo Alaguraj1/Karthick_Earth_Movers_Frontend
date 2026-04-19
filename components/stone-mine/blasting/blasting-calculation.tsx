@@ -155,99 +155,113 @@ const BlastingCalculation = () => {
                         .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 110px; position: relative; z-index: 1; }
                         .signature-box { text-align: center; width: 200px; }
                         .signature-line { border-top: 1px solid #ccc; padding-top: 8px; font-size: 12px; color: #888; }
-                        .stamp-img { width: 180px; position: absolute; top: -50px; left: 50%; transform: translateX(-50%); opacity: 0.8; }
-                        @media print { body { padding: 0; } .print-container { border: none; } }
-                    </style>
-                </head>
-                <body>
-                    <div class="print-container">
-                        <img src="/assets/images/logo.png" class="watermark" alt="watermark" />
-                        <div class="header">
-                            <div>
-                                <h1 class="report-title">Blasting Summary Report</h1>
-                                <p style="color: #888; font-size: 12px; margin-top: 4px;">Period: ${new Date(summary.record.fromDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — ${new Date(summary.record.toDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-                            </div>
-                            <div style="text-align: right">
-                                <img src="/assets/images/logo.png" alt="Logo" style="width: 80px; height: 80px; object-fit: contain;" />
-                                <h2 class="company-name">Karthick Earth Movers</h2>
-                                <p style="font-size: 11px; color: #888;">Stone Quarry & Transport Unit</p>
-                                <p style="font-size: 11px; color: #e79b21; font-weight: bold;">GST: 33AVFPK9827P2ZV</p>
-                            </div>
+                    img { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    .stamp-img { 
+                        width: 180px; 
+                        position: absolute; 
+                        top: -50px; 
+                        left: 50%; 
+                        transform: translateX(-50%); 
+                        mix-blend-mode: multiply !important;
+                        filter: grayscale(1) contrast(8) brightness(3);
+                        -webkit-print-color-adjust: exact !important;
+                    }
+                    @media print { 
+                        body { padding: 0; } 
+                        .print-container { border: none; } 
+                        .stamp-img { mix-blend-mode: multiply !important; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="print-container">
+                    <img src="/assets/images/logo.png" class="watermark" alt="watermark" />
+                    <div class="header">
+                        <div>
+                            <h1 class="report-title">Blasting Summary Report</h1>
+                            <p style="color: #888; font-size: 12px; margin-top: 4px;">Period: ${new Date(summary.record.fromDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — ${new Date(summary.record.toDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                         </div>
-
-                        <div class="info-grid">
-                            <div class="info-section">
-                                <h4>Record Details</h4>
-                                <table class="info-table" style="width: 100%;">
-                                    <tr>
-                                        <td class="label" style="width: 15%;">Materials:</td>
-                                        <td class="value" style="text-align: left; width: 35%;">${materialNames}</td>
-                                        <td class="label" style="text-align: right; width: 30%;">Generated Date:</td>
-                                        <td class="value" style="width: 20%;">${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="label" style="width: 15%;">Total Tons:</td>
-                                        <td class="value" style="text-align: left; width: 35%;">${summary.record.totalTons?.toFixed(2)} T</td>
-                                        <td class="label" style="text-align: right; width: 30%;">Total Items:</td>
-                                        <td class="value" style="width: 20%;">${summary.record.items?.length || 1}</td>
-                                    </tr>
-                                </table>
-                            </div>
+                        <div style="text-align: right">
+                            <img src="/assets/images/logo.png" alt="Logo" style="width: 80px; height: 80px; object-fit: contain;" />
+                            <h2 class="company-name">Karthick Earth Movers</h2>
+                            <p style="font-size: 11px; color: #888;">Stone Quarry & Transport Unit</p>
+                            <p style="font-size: 11px; color: #e79b21; font-weight: bold;">GST: 33AVFPK9827P2ZV</p>
                         </div>
+                    </div>
 
-                        <h4 style="font-size: 11px; text-transform: uppercase; color: #e79b21; letter-spacing: 1px; margin-bottom: 10px;">Material & Revenue Breakdown</h4>
-                        <table class="items-table">
-                            <thead>
+                    <div class="info-grid">
+                        <div class="info-section">
+                            <h4>Record Details</h4>
+                            <table class="info-table" style="width: 100%;">
                                 <tr>
-                                    <th>S.No</th>
-                                    <th>Material Name</th>
-                                    <th style="text-align: right">Tons</th>
-                                    <th style="text-align: right">Rate (₹)</th>
-                                    <th style="text-align: right">Amount (₹)</th>
+                                    <td class="label" style="width: 15%;">Materials:</td>
+                                    <td class="value" style="text-align: left; width: 35%;">${materialNames}</td>
+                                    <td class="label" style="text-align: right; width: 30%;">Generated Date:</td>
+                                    <td class="value" style="width: 20%;">${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                ${(summary.record.items || [{ material: summary.record.material, totalTons: summary.record.totalTons, ratePerTon: summary.record.ratePerTon, amount: summary.record.totalAmount }]).map((item: any, idx: number) => `
-                                    <tr>
-                                        <td>${idx + 1}</td>
-                                        <td>${item.material?.name || 'Unknown'}</td>
-                                        <td style="text-align: right">${item.totalTons?.toFixed(2)} T</td>
-                                        <td style="text-align: right">₹${item.ratePerTon}</td>
-                                        <td style="text-align: right; font-weight: bold;">₹${item.amount?.toLocaleString()}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-
-                        <h4 style="font-size: 11px; text-transform: uppercase; color: #e7515a; letter-spacing: 1px; margin-bottom: 10px;">Expenses & Deductions</h4>
-                        <table class="items-table">
-                            <thead>
-                                <tr><th>Category</th><th style="text-align: right">Amount (₹)</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr><td>Total Advance Paid</td><td style="text-align: right">₹${summary.totalAdvance.toLocaleString()}</td></tr>
-                                <tr><td>Diesel (Blasting)</td><td style="text-align: right">₹${summary.dieselTotal.toLocaleString()}</td></tr>
-                                <tr><td>Explosive Shop Payments</td><td style="text-align: right">₹${summary.explosiveTotal.toLocaleString()}</td></tr>
-                            </tbody>
-                        </table>
-
-                        <div class="totals-container">
-                            <div class="totals-box">
-                                <div class="total-row"><span style="color: #888">Gross Revenue</span><span style="font-weight: bold">₹${summary.record.totalAmount.toLocaleString()}</span></div>
-                                <div class="total-row"><span style="color: #e7515a">Total Deductions</span><span style="font-weight: bold; color: #e7515a">- ₹${totalDeductions.toLocaleString()}</span></div>
-                                <div class="total-row grand-total"><span>Net Payable Balance</span><span>₹${summary.finalAmount.toLocaleString()}</span></div>
-                            </div>
+                                <tr>
+                                    <td class="label" style="width: 15%;">Total Tons:</td>
+                                    <td class="value" style="text-align: left; width: 35%;">${summary.record.totalTons?.toFixed(2)} T</td>
+                                    <td class="label" style="text-align: right; width: 30%;">Total Items:</td>
+                                    <td class="value" style="width: 20%;">${summary.record.items?.length || 1}</td>
+                                </tr>
+                            </table>
                         </div>
+                    </div>
 
-                        <div class="footer">
-                            <div class="signature-box">
-                                <div class="signature-line">Recipient Signature</div>
-                            </div>
-                            <div class="signature-box" style="position: relative;">
-                                <img src="/assets/images/Karthick-Earthmovers-owner-sign.jpeg" class="stamp-img" alt="Sign" />
-                                <div class="signature-line">Authorized Signature</div>
-                            </div>
+                    <h4 style="font-size: 11px; text-transform: uppercase; color: #e79b21; letter-spacing: 1px; margin-bottom: 10px;">Material & Revenue Breakdown</h4>
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Material Name</th>
+                                <th style="text-align: right">Tons</th>
+                                <th style="text-align: right">Rate (₹)</th>
+                                <th style="text-align: right">Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(summary.record.items || [{ material: summary.record.material, totalTons: summary.record.totalTons, ratePerTon: summary.record.ratePerTon, amount: summary.record.totalAmount }]).map((item: any, idx: number) => `
+                                <tr>
+                                    <td>${idx + 1}</td>
+                                    <td>${item.material?.name || 'Unknown'}</td>
+                                    <td style="text-align: right">${item.totalTons?.toFixed(2)} T</td>
+                                    <td style="text-align: right">₹${item.ratePerTon}</td>
+                                    <td style="text-align: right; font-weight: bold;">₹${item.amount?.toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <h4 style="font-size: 11px; text-transform: uppercase; color: #e7515a; letter-spacing: 1px; margin-bottom: 10px;">Expenses & Deductions</h4>
+                    <table class="items-table">
+                        <thead>
+                            <tr><th>Category</th><th style="text-align: right">Amount (₹)</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Total Advance Paid</td><td style="text-align: right">₹${summary.totalAdvance.toLocaleString()}</td></tr>
+                            <tr><td>Diesel (Blasting)</td><td style="text-align: right">₹${summary.dieselTotal.toLocaleString()}</td></tr>
+                            <tr><td>Explosive Shop Payments</td><td style="text-align: right">₹${summary.explosiveTotal.toLocaleString()}</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="totals-container">
+                        <div class="totals-box">
+                            <div class="total-row"><span style="color: #888">Gross Revenue</span><span style="font-weight: bold">₹${summary.record.totalAmount.toLocaleString()}</span></div>
+                            <div class="total-row"><span style="color: #e7515a">Total Deductions</span><span style="font-weight: bold; color: #e7515a">- ₹${totalDeductions.toLocaleString()}</span></div>
+                            <div class="total-row grand-total"><span>Net Payable Balance</span><span>₹${summary.finalAmount.toLocaleString()}</span></div>
                         </div>
+                    </div>
+
+                    <div class="footer">
+                        <div class="signature-box">
+                            <div class="signature-line">Recipient Signature</div>
+                        </div>
+                        <div class="signature-box" style="position: relative;">
+                            <img src="/assets/images/Karthick-Earthmovers-owner-sign.jpeg" class="stamp-img" alt="Sign" />
+                            <div class="signature-line" style="margin-top: 30px;">Authorized Signature</div>
+                        </div>
+                    </div>
                     </div>
                 </body>
             </html>

@@ -195,11 +195,21 @@ const QuarryLeaseManagement = () => {
                             .totals-box { min-width: 300px; }
                             .total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
                             .grand-total { font-size: 18px; font-weight: bold; color: #e79b21; border-top: 2px solid #e79b21; margin-top: 10px; padding-top: 10px; }
-                            .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 110px; position: relative; z-index: 1; page-break-inside: avoid; }
-                            .signature-box { text-align: center; width: 200px; }
-                            .signature-line { border-top: 1px solid #ccc; padding-top: 8px; font-size: 12px; color: #888; }
-                            .stamp-img { width: 180px; position: absolute; top: -50px; left: 50%; transform: translateX(-50%); opacity: 0.8; }
-                            @media print { body { padding: 0; } .print-container { border: none; } }
+                            img { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                            .stamp-img { 
+                                width: 180px; 
+                                position: absolute; 
+                                top: -60px; 
+                                left: 50%; 
+                                transform: translateX(-50%); 
+                                mix-blend-mode: multiply !important;
+                                filter: grayscale(1) contrast(8) brightness(3);
+                            }
+                            @media print { 
+                                body { padding: 0; } 
+                                .print-container { border: none; } 
+                                .stamp-img { mix-blend-mode: multiply !important; }
+                            }
                             .page-break { page-break-before: always; }
                         </style>
                     </head>
@@ -323,7 +333,7 @@ const QuarryLeaseManagement = () => {
                                     <div class="signature-line">Recipient Signature</div>
                                 </div>
                                 <div class="signature-box" style="position: relative;">
-                                    <img src="/assets/images/Karthick-Earthmovers-owner-sign.jpeg" class="stamp-img" style="top: -60px;" alt="Sign" />
+                                    <img src="/assets/images/Karthick-Earthmovers-owner-sign.jpeg" class="stamp-img" alt="Sign" />
                                     <div class="signature-line">Authorized Signature</div>
                                 </div>
                             </div>

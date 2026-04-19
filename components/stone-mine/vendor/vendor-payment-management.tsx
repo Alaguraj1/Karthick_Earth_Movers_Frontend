@@ -657,8 +657,19 @@ const VendorPaymentManagement = () => {
                         /* SIGNATURE */
                         .footer-sig { margin-top: 80px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 40px; }
                         .sig-block { text-align: center; }
-                        .sig-img { width: 180px; height: auto; display: block; filter: grayscale(1); }
+                        img { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                        .sig-img { 
+                            width: 180px; 
+                            height: auto; 
+                            display: block; 
+                            mix-blend-mode: multiply !important;
+                            filter: grayscale(1) contrast(8) brightness(3);
+                            -webkit-print-color-adjust: exact !important;
+                        }
                         .sig-line { width: 180px; height: 60px; border-bottom: 1.5px dashed #94a3b8; margin-bottom: 8px; }
+                        @media print {
+                            .sig-img { mix-blend-mode: multiply !important; }
+                        }
                     </style>
                 </head>
                 <body>
