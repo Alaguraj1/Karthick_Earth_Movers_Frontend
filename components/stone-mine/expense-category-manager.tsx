@@ -626,9 +626,12 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             salaryMonth: category === 'Labour Wages' ? lookupMonth : '',
             salaryYear: category === 'Labour Wages' ? lookupYear : ''
         };
-        if (!payload.labourId || payload.labourId === '') {
-            delete (payload as any).labourId;
-        }
+        const oidToClean = ['labourId', 'internalSpareId', 'transportVendorId', 'sourceId'];
+        oidToClean.forEach(key => {
+            if (!(payload as any)[key] || (payload as any)[key] === '') {
+                delete (payload as any)[key];
+            }
+        });
 
         try {
             const { data } = await api.post('/expenses', payload);
@@ -654,9 +657,12 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             salaryMonth: category === 'Labour Wages' ? lookupMonth : '',
             salaryYear: category === 'Labour Wages' ? lookupYear : ''
         };
-        if (!payload.labourId || payload.labourId === '') {
-            delete (payload as any).labourId;
-        }
+        const oidToClean = ['labourId', 'internalSpareId', 'transportVendorId', 'sourceId'];
+        oidToClean.forEach(key => {
+            if (!(payload as any)[key] || (payload as any)[key] === '') {
+                delete (payload as any)[key];
+            }
+        });
 
         try {
             const { data } = await api.put(`/expenses/${selectedExpense._id}`, payload);
@@ -737,6 +743,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             nextServiceDate: '',
             sparePartSource: 'Bought',
             sparePartName: '',
+            workshopName: '',
             internalSpareId: '',
         });
         setLookupMonth(listMonth);
@@ -828,6 +835,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
             nextServiceDate: expense.nextServiceDate ? expense.nextServiceDate.split('T')[0] : '',
             sparePartSource: expense.sparePartSource || 'Bought',
             sparePartName: expense.sparePartName || '',
+            workshopName: expense.workshopName || '',
             internalSpareId: expense.internalSpareId || '',
         });
         setSelectedFile(null);
@@ -1274,7 +1282,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                     ) : category === 'Machine Maintenance' ? (
                                         <>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Machine</th>
-                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Vendor / Bill</th>
+                                            <th className="font-black uppercase tracking-widest text-[10px] py-4">Workshop / Bill</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Type</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Parts</th>
                                             <th className="font-black uppercase tracking-widest text-[10px] py-4">Labour</th>
@@ -1430,8 +1438,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                         <td className="py-2">
                                                             <div className="font-bold">{expense.vehicleOrMachine || '-'}</div>
                                                         </td>
-                                                        <td className="py-2 text-xs">
-                                                            <div className="font-medium text-primary">{expense.vendorName || '-'}</div>
+                                                         <td className="py-2 text-xs">
+                                                            <div className="font-medium text-primary">{expense.workshopName || expense.vendorName || '-'}</div>
                                                             {expense.billNumber && <div className="text-[10px] text-white-dark">Bill: {expense.billNumber}</div>}
                                                         </td>
                                                         <td className="py-2"><span className="badge badge-outline-info">{expense.maintenanceType || '-'}</span></td>
@@ -1631,7 +1639,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">
-                                                {category === 'Transport Charges' ? 'Transport Owner / Vendor' : (category === 'Machine Maintenance' ? 'Vendor / Workshop Name' : 'Asset Owner / Vendor')}
+                                                {category === 'Transport Charges' ? 'Transport Owner / Vendor' : (category === 'Machine Maintenance' ? 'Vendor / Owner Name' : 'Asset Owner / Vendor')}
                                             </label>
                                             <input
                                                 type="text"
@@ -1856,8 +1864,8 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                 {category === 'Machine Maintenance' && (
                                     <>
                                         <div>
-                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">Vendor / Workshop Name (பட்டறை பெயர்)</label>
-                                            <input type="text" name="vendorName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20" value={formData.vendorName} onChange={handleChange} />
+                                            <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block text-primary font-bold">Workshop Name (பட்டறை பெயர்)</label>
+                                            <input type="text" name="workshopName" className="form-input border-2 focus:border-primary transition-all font-bold rounded-xl h-12 border-primary/20" value={formData.workshopName} onChange={handleChange} placeholder="Enter workshop name..." />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Bill / Invoice Number</label>

@@ -600,29 +600,37 @@ const SalesEntryForm = () => {
                 const wb = XLSX.read(bstr, { type: 'binary' });
                 const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws);
+                const rawData = XLSX.utils.sheet_to_json(ws);
 
-                if (data.length === 0) {
+                if (rawData.length === 0) {
                     showToast('The file is empty', 'error');
                     return;
                 }
 
-                // Map Excel headers to API keys
-                const salesData = data.map((row: any) => ({
-                    invoiceDate: row['Invoice Date'],
-                    customerName: row['Customer Name'],
-                    item: row['Item'],
-                    quantity: row['Quantity'],
-                    unit: row['Unit'],
-                    rate: row['Rate'],
-                    paymentType: row['Payment Type'],
-                    gstPercentage: row['GST Percentage'],
-                    fromLocation: row['From Location'],
-                    toLocation: row['To Location'],
-                    notes: row['Notes'],
-                    receiptNumber: row['Receipt Number'],
-                    receiptFile: row['Receipt File']
-                }));
+                // Map Excel headers to API keys with better date handling
+                const salesData = rawData.map((row: any) => {
+                    let invDate = row['Invoice Date'];
+                    // Handle Excel serial dates if they occur
+                    if (typeof invDate === 'number') {
+                        invDate = new Date((invDate - (25567 + 1)) * 86400 * 1000).toISOString().split('T')[0];
+                    }
+
+                    return {
+                        invoiceDate: invDate,
+                        customerName: row['Customer Name'],
+                        item: row['Item'],
+                        quantity: row['Quantity'],
+                        unit: row['Unit'],
+                        rate: row['Rate'],
+                        paymentType: row['Payment Type'],
+                        gstPercentage: row['GST Percentage'],
+                        fromLocation: row['From Location'],
+                        toLocation: row['To Location'],
+                        notes: row['Notes'],
+                        receiptNumber: row['Receipt Number'],
+                        receiptFile: row['Receipt File']
+                    };
+                });
 
                 const res = await api.post('/sales/bulk', { salesData });
                 if (res.data.success) {
@@ -631,7 +639,7 @@ const SalesEntryForm = () => {
                 }
             } catch (error: any) {
                 console.error(error);
-                const msg = error.response?.data?.errors ? error.response.data.errors.join('\n') : (error.response?.data?.message || 'Error uploading file');
+                const msg = error.response?.data?.errors ? error.response.data.errors.join(', ') : (error.response?.data?.message || 'Error uploading file');
                 showToast(msg, 'error');
             } finally {
                 setIsUploading(false);
@@ -639,6 +647,63 @@ const SalesEntryForm = () => {
             }
         };
         reader.readAsBinaryString(file);
+    };
+
+    const handleDownloadExcel = () => {
+        try {
+            const filtered = recentSales.filter((s: any) => {
+                const searchStr = search.toLowerCase();
+                const cName = (s.customer?.name || s.contractor?.name || '').toLowerCase();
+                const invNum = (s.invoiceNumber || '').toLowerCase();
+                const rNum = (s.receiptNumber || '').toLowerCase();
+
+                const matchesSearch = !search ||
+                    cName.includes(searchStr) ||
+                    invNum.includes(searchStr) ||
+                    rNum.includes(searchStr);
+
+                const matchesCustomer = !filterCustomer || cName.includes(filterCustomer.toLowerCase());
+
+                const saleDate = s.invoiceDate ? new Date(s.invoiceDate).toISOString().split('T')[0] : '';
+                const matchesStart = !filterStartDate || saleDate >= filterStartDate;
+                const matchesEnd = !filterEndDate || saleDate <= filterEndDate;
+
+                const matchesReceipt = !filterReceipt || rNum.includes(filterReceipt.toLowerCase());
+
+                const matchesGst = !filterGst || (
+                    filterGst === 'gst' ? (s.gstPercentage > 0) : (s.gstPercentage === 0 || !s.gstPercentage)
+                );
+
+                return matchesSearch && matchesCustomer && matchesStart && matchesEnd && matchesReceipt && matchesGst;
+            });
+
+            if (filtered.length === 0) return showToast('No data to export', 'error');
+
+            const exportData = filtered.map((s: any) => ({
+                'Invoice #': s.invoiceNumber,
+                'Date': new Date(s.invoiceDate).toLocaleDateString('en-GB'),
+                'Customer/Contractor': s.customer?.name || s.contractor?.name || 'N/A',
+                'Type': s.saleType || 'Direct',
+                'Payment Mode': s.paymentType,
+                'Items': s.items?.map((i: any) => `${i.item || (i.stoneType?.name)} (${i.quantity} ${i.unit})`).join(', '),
+                'Subtotal': s.subtotal || 0,
+                'GST Amount': s.gstAmount || 0,
+                'Permit Fee': s.totalPermitAmount || 0,
+                'Transport Fee': s.totalTransportAmount || 0,
+                'Grand Total': s.grandTotal || 0,
+                'Status': s.paymentStatus,
+                'Receipt #': s.receiptNumber || ''
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Sales');
+            XLSX.writeFile(workbook, `Sales_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showToast('Excel report downloaded!', 'success');
+        } catch (error) {
+            console.error('Download Error:', error);
+            showToast('Failed to generate Excel report', 'error');
+        }
     };
 
     const handleReceiptUpload = async (e: any) => {
@@ -1136,10 +1201,10 @@ const SalesEntryForm = () => {
                                 <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
                                 {isOwner && (
                                     <>
-                                        {/* <button className="btn btn-outline-primary whitespace-nowrap" onClick={downloadTemplate}>
+                                        <button className="btn btn-outline-success whitespace-nowrap" onClick={handleDownloadExcel}>
                                             <IconDownload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
-                                            Download Template
-                                        </button> */}
+                                            Download XL
+                                        </button>
                                         <button className="btn btn-info whitespace-nowrap" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
                                             <IconFileUpload className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
                                             {isUploading ? 'Uploading...' : 'Bulk Upload'}
@@ -1150,6 +1215,7 @@ const SalesEntryForm = () => {
                                     <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" />
                                     Create New Sale
                                 </button>
+
                             </div>
                         </div>
 

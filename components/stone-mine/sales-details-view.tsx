@@ -93,9 +93,6 @@ const SalesDetailsView = () => {
                     <div className="panel">
                         <div className="flex items-center justify-between mb-5">
                             <h5 className="font-bold text-lg">General Information</h5>
-                            <span className={`badge ${sale.deliveryStatus === 'completed' ? 'badge-outline-success' : 'badge-outline-warning'}`}>
-                                {sale.deliveryStatus === 'completed' ? '✅ Fully Delivered' : '🔄 Open for Delivery'}
-                            </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex items-start gap-3">
@@ -222,7 +219,7 @@ const SalesDetailsView = () => {
                                     </div>
                                     {sale.gstAmount > 0 && (
                                         <div className="flex justify-between items-center opacity-80">
-                                            <span>GST ({sale.gstPercentage}%):</span>
+                                            <span>GST ({sale.gstPercentage || ((sale.gstAmount / (sale.subtotal || 1)) * 100).toFixed(0)}%):</span>
                                             <span>₹{sale.gstAmount?.toLocaleString()}</span>
                                         </div>
                                     )}
