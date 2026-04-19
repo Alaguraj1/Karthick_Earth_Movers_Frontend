@@ -79,7 +79,7 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
         printWindow.document.write(`
             <html>
             <head>
-                <title>${mode === 'invoice' ? 'Invoice' : 'Bill'} ${selectedSale?.invoiceNumber?.replace('INV-', mode === 'invoice' ? 'INV-' : 'BILL-')}</title>
+                <title>${(selectedSale?.gstAmount || 0) > 0 ? 'Invoice' : 'Bill'} ${selectedSale?.invoiceNumber?.replace('INV-', (selectedSale?.gstAmount || 0) > 0 ? 'INV-' : 'BILL-')}</title>
                 <style>
                     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
                     body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #333; font-size: 14px; }
@@ -114,10 +114,10 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
             <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div>
                     <h2 className="text-2xl font-bold dark:text-white-light">
-                        {mode === 'invoice' ? 'பில் உருவாக்குதல்' : mode === 'checklist' ? 'டிரிப் சரிபார்ப்புப் பட்டியல்' : 'பில் பட்டியல் (Cash Bill)'}
+                        {mode === 'invoice' ? 'விலைப்பட்டியல் உருவாக்குதல் (Invoice Generation)' : mode === 'checklist' ? 'டிரிப் இன்வாய்ஸ் சரிபார்ப்பு (Trip Invoice Checklist)' : 'பில் பட்டியல் (Cash Bill)'}
                     </h2>
                     <p className="text-white-dark text-sm mt-1">
-                        {mode === 'invoice' ? 'Invoice Generation — View and print tax invoices' : mode === 'checklist' ? 'Trip Checklist — View and print connected trips for invoices' : 'Bill Generation — View and print non-tax bills'}
+                        {mode === 'invoice' ? 'Invoice Generation — View and print tax invoices' : mode === 'checklist' ? 'Trip Invoice Checklist — View and print connected trips for invoices' : 'Bill Generation — View and print non-tax bills'}
                     </p>
                 </div>
             </div>
@@ -163,10 +163,10 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                             <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                                 <div>
                                     <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#e79b21', margin: 0 }}>
-                                        {mode === 'invoice' ? 'INVOICE' : 'BILL'}
+                                        {(selectedSale?.gstAmount || 0) > 0 ? 'INVOICE' : 'BILL'}
                                     </h1>
                                     <p style={{ fontSize: '13px', color: '#555', marginTop: '4px', fontWeight: 'bold' }}>
-                                        {mode === 'invoice' ? 'invoice no:' : 'bill no:'} {mode === 'invoice' ? selectedSale.invoiceNumber : selectedSale.invoiceNumber.replace('INV-', 'BILL-')}
+                                        {(selectedSale?.gstAmount || 0) > 0 ? 'invoice no:' : 'bill no:'} {(selectedSale?.gstAmount || 0) > 0 ? selectedSale.invoiceNumber : selectedSale.invoiceNumber.replace('INV-', 'BILL-')}
                                     </p>
                                 </div>
                                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
@@ -328,7 +328,7 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                                         </div>
                                     )}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 6px 0', fontSize: '18px', fontWeight: 'bold', color: '#e79b21', borderTop: '2px solid #e79b21', marginTop: '8px' }}>
-                                        <span>{mode === 'invoice' ? 'Grand Total' : 'Bill Total'}</span>
+                                        <span>{mode === 'invoice' || mode === 'checklist' ? 'Grand Total' : 'Bill Total'}</span>
                                         <span>₹{selectedSale.grandTotal?.toLocaleString()}</span>
                                     </div>
                                 </div>
@@ -381,14 +381,14 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                     {/* Sales List */}
                     <div className="panel">
                         <h5 className="text-lg font-bold dark:text-white-light mb-4">
-                            {mode === 'invoice' ? 'Tax Invoice List' : mode === 'checklist' ? 'Checklist - Select Invoice' : 'Normal Bill List'}
+                            {mode === 'invoice' ? 'Tax Invoice List' : mode === 'checklist' ? 'Checklist - Select Invoice / Bill' : 'Normal Bill List'}
                         </h5>
                         <div className="table-responsive">
                             <table className="table-hover">
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>{mode === 'invoice' ? 'Invoice #' : 'Bill #'}</th>
+                                        <th>{mode === 'checklist' ? 'Inv / Bill Number' : mode === 'invoice' ? 'Inv Number' : 'Bill #'}</th>
                                         <th>Date</th>
                                         <th>Customer</th>
                                         <th>Items</th>
@@ -416,7 +416,7 @@ const InvoiceGeneration = ({ mode = 'invoice' }: InvoiceGenerationProps) => {
                                             <tr key={sale._id}>
                                                 <td>{idx + 1}</td>
                                                 <td className="font-bold text-primary">
-                                                    {mode === 'invoice' ? sale.invoiceNumber : sale.invoiceNumber.replace('INV-', 'BILL-')}
+                                                    {mode === 'invoice' || mode === 'checklist' ? sale.invoiceNumber : sale.invoiceNumber.replace('INV-', 'BILL-')}
                                                 </td>
                                                 <td>{new Date(sale.invoiceDate).toLocaleDateString()}</td>
                                                 <td className="font-semibold">{sale.customer?.name || '—'}</td>

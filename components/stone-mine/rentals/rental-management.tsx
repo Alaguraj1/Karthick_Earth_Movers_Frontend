@@ -26,6 +26,7 @@ const defaultForm = {
     startTime: '',
     endTime: '',
     operatorBata: 0,
+    bucketType: '',
 };
 
 const RentalManagement = () => {
@@ -43,18 +44,22 @@ const RentalManagement = () => {
     const [driverNameMode, setDriverNameMode] = useState<'select' | 'manual'>('select');
 
     // Filters
-    const today = new Date();
-    const [filterMonth, setFilterMonth] = useState(today.getMonth() + 1);
-    const [filterYear, setFilterYear] = useState(today.getFullYear());
+    const [filterMonth, setFilterMonth] = useState<number | string>('');
+    const [filterYear, setFilterYear] = useState<number | string>('');
     const [filterAssetType, setFilterAssetType] = useState('');
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const startDate = new Date(filterYear, filterMonth - 1, 1).toISOString().split('T')[0];
-            const endDate = new Date(filterYear, filterMonth, 0).toISOString().split('T')[0];
+            const params: any = {};
+            if (filterMonth && filterYear) {
+                params.startDate = new Date(Number(filterYear), Number(filterMonth) - 1, 1).toISOString().split('T')[0];
+                params.endDate = new Date(Number(filterYear), Number(filterMonth), 0).toISOString().split('T')[0];
+            } else if (filterYear) {
+                params.startDate = `${filterYear}-01-01`;
+                params.endDate = `${filterYear}-12-31`;
+            }
 
-            const params: any = { startDate, endDate };
             if (filterAssetType) params.assetType = filterAssetType;
 
             const [rentalsRes, assetsRes] = await Promise.all([
@@ -97,6 +102,7 @@ const RentalManagement = () => {
                 updated.startTime = '';
                 updated.endTime = '';
                 updated.operatorBata = 0;
+                updated.bucketType = '';
                 setDriverNameMode('select');
             }
 
@@ -163,6 +169,7 @@ const RentalManagement = () => {
             startTime: record.startTime || '',
             endTime: record.endTime || '',
             operatorBata: record.operatorBata || 0,
+            bucketType: record.bucketType || '',
         });
         setEditId(record._id);
         setShowForm(true);
@@ -240,7 +247,8 @@ const RentalManagement = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                         <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Month</label>
-                        <select className="form-select border-2 rounded-xl h-10 font-bold" value={filterMonth} onChange={e => setFilterMonth(Number(e.target.value))}>
+                        <select className="form-select border-2 rounded-xl h-10 font-bold" value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
+                            <option value="">All Months</option>
                             {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
                                 <option key={i} value={i + 1}>{m}</option>
                             ))}
@@ -248,7 +256,8 @@ const RentalManagement = () => {
                     </div>
                     <div>
                         <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Year</label>
-                        <select className="form-select border-2 rounded-xl h-10 font-bold" value={filterYear} onChange={e => setFilterYear(Number(e.target.value))}>
+                        <select className="form-select border-2 rounded-xl h-10 font-bold" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+                            <option value="">All Years</option>
                             {Array.from({ length: 5 }, (_, i) => 2024 + i).map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
@@ -261,7 +270,16 @@ const RentalManagement = () => {
                         </select>
                     </div>
                     <div className="flex items-end">
-                        <button onClick={fetchData} className="btn btn-outline-primary w-full h-10 rounded-xl font-bold text-sm">Refresh</button>
+                        <button
+                            onClick={() => {
+                                setFilterMonth('');
+                                setFilterYear('');
+                                setFilterAssetType('');
+                            }}
+                            className="btn btn-outline-primary w-full h-10 rounded-xl font-bold text-sm"
+                        >
+                            Clear Filter
+                        </button>
                     </div>
                 </div>
             </div>
@@ -384,6 +402,24 @@ const RentalManagement = () => {
                                     <p className="text-[10px] text-warning mt-1">No driver/operator recorded for this asset. Use 'Type' to enter manually.</p>
                                 )}
                             </div>
+
+                            {/* Bucket Type — only for Machines */}
+                            {!isVehicle && (
+                                <div>
+                                    <label className="text-[10px] font-black text-white-dark uppercase tracking-widest mb-2 block">Machine Bucket Type</label>
+                                    <select 
+                                        name="bucketType" 
+                                        className="form-select border-2 focus:border-primary transition-all font-bold rounded-xl h-12" 
+                                        value={formData.bucketType} 
+                                        onChange={handleChange}
+                                    >
+                                        <option value="">Select Bucket...</option>
+                                        <option value="Breaker">🔨 Breaker</option>
+                                        <option value="Normal Bucket">🥣 Normal Bucket</option>
+                                        <option value="Rock Bucket">🪨 Rock Bucket</option>
+                                    </select>
+                                </div>
+                            )}
 
                             {/* Rental Type — only for Vehicles */}
                             {isVehicle && (
@@ -522,7 +558,14 @@ const RentalManagement = () => {
                                             <div className="font-bold">{r.vehicleId?.name || '-'}</div>
                                             <div className="text-[10px] text-white-dark">{r.vehicleId?.vehicleNumber || r.vehicleId?.registrationNumber || ''}</div>
                                         </td>
-                                        <td className="py-3 px-3 font-medium">{r.driverName || '-'}</td>
+                                        <td className="py-3 px-3 font-medium">
+                                            {r.driverName || '-'}
+                                            {r.assetType === 'Machine' && r.bucketType && (
+                                                <div className="text-[9px] text-primary font-bold uppercase mt-1 px-2 py-0.5 bg-primary/10 rounded-md w-fit whitespace-nowrap">
+                                                    {r.bucketType}
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="py-3 px-3">
                                             {r.assetType === 'Vehicle' ? (
                                                 <span className="badge badge-outline-primary text-[10px]">{r.rentalType || 'Day'}</span>

@@ -232,7 +232,7 @@ const TripChecklist = () => {
                                             {trip.billNumber || '—'}
                                         </td>
                                         <td style={{ padding: '10px', borderBottom: '1px solid #eee', fontSize: '13px', textAlign: 'right', fontWeight: 'bold' }}>
-                                            {trip.loadQuantity} <span style={{fontSize: '10px', fontWeight: 'normal', color: '#888'}}>{trip.loadUnit}</span>
+                                            {trip.loadQuantity} <span style={{ fontSize: '10px', fontWeight: 'normal', color: '#888' }}>{trip.loadUnit}</span>
                                         </td>
                                     </tr>
                                 ))
@@ -258,7 +258,7 @@ const TripChecklist = () => {
                             </div>
                         </div>
                     )}
-                    
+
                     <div style={{ marginTop: '30px', textAlign: 'center', fontSize: '11px', color: '#aaa', borderTop: '1px solid #eee', paddingTop: '15px', position: 'relative', zIndex: 1 }}>
                         <p>This is a system-generated checklist linked to Invoice {selectedSale.invoiceNumber}.</p>
                     </div>
