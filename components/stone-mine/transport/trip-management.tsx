@@ -52,7 +52,9 @@ const TripManagement = () => {
         billUrl: '',
         billNumber: '',
         manualVehicleNumber: '',
-        saleType: 'Direct'
+        saleType: 'Direct',
+        entityType: 'Customer',
+        contractorId: ''
     };
 
     const [formData, setFormData] = useState(initialForm);
@@ -60,6 +62,7 @@ const TripManagement = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [labours, setLabours] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
+    const [contractors, setContractors] = useState<any[]>([]);
     const [stoneTypes, setStoneTypes] = useState<any[]>([]);
     const [vehicleCategories, setVehicleCategories] = useState<any[]>([]);
     const [permits, setPermits] = useState<any[]>([]);
@@ -67,7 +70,7 @@ const TripManagement = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [tripRes, vehicleRes, labourRes, customerRes, stoneRes, categoryRes, salesRes, permitRes] = await Promise.all([
+            const [tripRes, vehicleRes, labourRes, customerRes, stoneRes, categoryRes, salesRes, permitRes, contractorRes] = await Promise.all([
                 api.get('/trips'),
                 api.get('/master/vehicles'),
                 api.get('/labour'),
@@ -76,6 +79,7 @@ const TripManagement = () => {
                 api.get('/master/vehicle-categories'),
                 api.get('/sales'),
                 api.get('/permits'),
+                api.get('/vendors/transport'),
             ]);
 
             if (tripRes.data.success) {
@@ -114,6 +118,7 @@ const TripManagement = () => {
                 setSales(sortedSales);
             }
             if (permitRes.data.success) setPermits(permitRes.data.data);
+            if (contractorRes.data.success) setContractors(contractorRes.data.data);
         } catch (error) {
             console.error(error);
             showToast('Error fetching data', 'error');
@@ -350,10 +355,12 @@ const TripManagement = () => {
             permitId: trip.permitId?._id || trip.permitId || '',
             loadQuantity: trip.loadQuantity || '',
             loadUnit: trip.loadUnit || 'Tons',
-            billUrl: trip.billUrl || '',
             billNumber: trip.billNumber || '',
+            billUrl: trip.billUrl || '',
             notes: trip.notes || '',
-            manualVehicleNumber: trip.manualVehicleNumber || ''
+            manualVehicleNumber: trip.manualVehicleNumber || '',
+            entityType: trip.contractorId ? 'Contractor' : 'Customer',
+            contractorId: trip.contractorId?._id || trip.contractorId || '',
         });
         setEditId(trip._id);
         setShowForm(true);
@@ -436,6 +443,33 @@ const TripManagement = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {formData.saleType === '3rd Party' && (
+                            <div className="bg-warning/5 p-4 rounded-xl border border-warning/10 mb-6 group transition-all hover:bg-warning/10 animate__animated animate__fadeIn">
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                                    <div className="space-y-1">
+                                        <h6 className="text-warning font-black uppercase text-[10px] tracking-widest">Select Entity Type (அமைப்பு வகை)</h6>
+                                        <p className="text-[10px] text-white-dark font-bold italic">Selling to a Customer or via a Transport Contractor?</p>
+                                    </div>
+                                    <div className="flex items-center bg-white dark:bg-black/20 p-1.5 rounded-xl border border-warning/10 shadow-inner">
+                                        <button 
+                                            type="button"
+                                            className={`px-6 py-1.5 rounded-lg text-xs font-black transition-all duration-300 ${formData.entityType === 'Customer' ? 'bg-primary text-white shadow-sm' : 'text-white-dark hover:text-primary'}`}
+                                            onClick={() => setFormData(p => ({...p, entityType: 'Customer', contractorId: ''}))}
+                                        >
+                                            CUSTOMER
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            className={`px-6 py-1.5 rounded-lg text-xs font-black transition-all duration-300 ${formData.entityType === 'Contractor' ? 'bg-warning text-white shadow-sm' : 'text-white-dark hover:text-warning'}`}
+                                            onClick={() => setFormData(p => ({...p, entityType: 'Contractor', customerId: ''}))}
+                                        >
+                                            CONTRACTOR
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                             <div>
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block">Trip Date</label>
@@ -496,13 +530,24 @@ const TripManagement = () => {
                         {/* Customer & Permit Link */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary">Customer (வாடிக்கையாளர்) *</label>
-                                <select name="customerId" className="form-select border-primary" value={formData.customerId} onChange={handleChange}>
-                                    <option value="">-- Select Customer --</option>
-                                    {customers.map((c: any) => (
-                                        <option key={c._id} value={c._id}>{c.name}</option>
-                                    ))}
-                                </select>
+                                <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-primary">
+                                    {formData.entityType === 'Contractor' ? 'Transport Contractor (போக்குவரத்து ஒப்பந்ததாரர்)' : 'Customer (வாடிக்கையாளர்)'} *
+                                </label>
+                                {formData.entityType === 'Contractor' ? (
+                                    <select name="contractorId" className="form-select border-primary" value={formData.contractorId} onChange={handleChange}>
+                                        <option value="">-- Select Contractor --</option>
+                                        {contractors.map((v: any) => (
+                                            <option key={v._id} value={v._id}>{v.name}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <select name="customerId" className="form-select border-primary" value={formData.customerId} onChange={handleChange}>
+                                        <option value="">-- Select Customer --</option>
+                                        {customers.map((c: any) => (
+                                            <option key={c._id} value={c._id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
                             <div>
                                 <label className="text-sm font-bold text-white-dark uppercase mb-2 block text-warning">Link Transport Permit</label>
@@ -788,7 +833,9 @@ const TripManagement = () => {
                                             </td>
                                             <td>
                                                 <div className="flex flex-col">
-                                                    <span className="text-xs font-black text-white-dark uppercase tracking-tighter">CUSTOMER: {trip.customerId?.name || 'INTERNAL'}</span>
+                                                    <span className="text-xs font-black text-white-dark uppercase tracking-tighter">
+                                                        {trip.contractorId ? `CONTRACTOR: ${trip.contractorId.name}` : `CUSTOMER: ${trip.customerId?.name || 'INTERNAL'}`}
+                                                    </span>
                                                     <div className="mt-1">
                                                         <span className="text-[10px] font-bold uppercase">{trip.fromLocation}</span>
                                                         <span className="mx-1 text-white-dark">→</span>

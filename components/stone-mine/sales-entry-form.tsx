@@ -29,6 +29,7 @@ const SalesEntryForm = () => {
 
     const { showToast } = useToast();
     const [customers, setCustomers] = useState<any[]>([]);
+    const [contractors, setContractors] = useState<any[]>([]);
     const [stoneTypes, setStoneTypes] = useState<any[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
@@ -54,7 +55,9 @@ const SalesEntryForm = () => {
         isThirdPartyVehicle: false,
         thirdPartyVehicleNumber: '',
         ourVehicleCostPerTon: 0,
-        thirdPartyAmount: 0
+        thirdPartyAmount: 0,
+        entityType: 'Customer',
+        contractor: ''
     });
 
     const [tripIds, setTripIds] = useState<string[]>([]);
@@ -113,6 +116,11 @@ const SalesEntryForm = () => {
                 const res = await api.get('/master/stone-types');
                 if (res.data.success) setStoneTypes(res.data.data);
             } catch (error) { console.error('Error fetching stone types:', error); }
+
+            try {
+                const res = await api.get('/vendors/transport');
+                if (res.data.success) setContractors(res.data.data);
+            } catch (error) { console.error('Error fetching contractors:', error); }
         };
         fetchMasterData();
         fetchSales();
@@ -123,7 +131,7 @@ const SalesEntryForm = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
 
         // Reset items if core trip linking fields change
-        if (name === 'customer' || name === 'tripStartDate' || name === 'tripEndDate') {
+        if (name === 'customer' || name === 'contractor' || name === 'tripStartDate' || name === 'tripEndDate') {
             setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
             setTripIds([]);
         }
@@ -134,6 +142,13 @@ const SalesEntryForm = () => {
 
         if (name === 'customer') {
             const selected = customers.find(c => c._id === value);
+            if (selected) {
+                setFormData(prev => ({ ...prev, gstNumber: selected.gstNumber || '' }));
+            }
+        }
+
+        if (name === 'contractor') {
+            const selected = contractors.find(v => v._id === value);
             if (selected) {
                 setFormData(prev => ({ ...prev, gstNumber: selected.gstNumber || '' }));
             }
@@ -160,17 +175,18 @@ const SalesEntryForm = () => {
     };
 
     const fetchTripSummary = async () => {
-        if (!formData.customer || !formData.tripStartDate || !formData.tripEndDate) {
-            showToast('Please select Customer and Trip Date Range (From/To)', 'error');
+        if (!(formData.customer || formData.contractor) || !formData.tripStartDate || !formData.tripEndDate) {
+            showToast('Please select Customer/Contractor and Trip Date Range (From/To)', 'error');
             return;
         }
 
         try {
-            const res = await api.get(`/trips/customer-summary?customerId=${formData.customer}&startDate=${formData.tripStartDate}&endDate=${formData.tripEndDate}&saleType=${formData.saleType}`);
+            const idParam = formData.entityType === 'Contractor' ? `contractorId=${formData.contractor}` : `customerId=${formData.customer}`;
+            const res = await api.get(`/trips/customer-summary?${idParam}&startDate=${formData.tripStartDate}&endDate=${formData.tripEndDate}&saleType=${formData.saleType}`);
             if (res.data.success) {
                 const summary = res.data.data;
                 if (summary.length === 0) {
-                    showToast('No pending (non-billed) trips found for this customer in chosen date range', 'info');
+                    showToast('No pending (non-billed) trips found for this entity in chosen date range', 'info');
                     return;
                 }
 
@@ -180,6 +196,9 @@ const SalesEntryForm = () => {
                     quantity: s.totalQuantity,
                     internalQuantity: s.internalQuantity || 0,
                     externalQuantity: s.externalQuantity || 0,
+                    ownVehicleQuantity: s.ownVehicleQuantity || 0,
+                    otherContractorQuantity: s.otherContractorQuantity || 0,
+                    thisContractorQuantity: s.thisContractorQuantity || 0,
                     unit: s.unit || 'Tons',
                     rate: '',
                     amount: 0,
@@ -256,19 +275,26 @@ const SalesEntryForm = () => {
     let thirdPartyCalcAmount = 0;
     let totalInternalTons = 0;
     let totalExternalTons = 0;
+    let rentableTons = 0;
 
     if (formData.saleType === '3rd Party') {
         const totalTons = items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
         totalInternalTons = items.reduce((sum, item) => sum + (parseFloat(item.internalQuantity) || 0), 0);
         totalExternalTons = items.reduce((sum, item) => sum + (parseFloat(item.externalQuantity) || 0), 0);
+        
+        rentableTons = items.reduce((sum, item) => {
+            // Rent is only for Own vehicles + Other Contractors
+            const own = parseFloat(item.ownVehicleQuantity) || 0;
+            const otherCont = parseFloat(item.otherContractorQuantity) || 0;
+            return sum + own + otherCont;
+        }, 0);
 
         const permitTotal = (formData.permitAmountPerTon || 0) * totalTons;
-        // Rental is ONLY for internal tons (Own/Contractor)
-        const transportTotal = (formData.ourVehicleCostPerTon || 0) * totalInternalTons;
+        const transportTotal = (formData.ourVehicleCostPerTon || 0) * rentableTons;
         thirdPartyCalcAmount = permitTotal + transportTotal;
     }
 
-    const grandTotal = subtotal + gstTotal + (formData.saleType === '3rd Party' ? thirdPartyCalcAmount : 0);
+    const grandTotal = subtotal + gstTotal - (formData.saleType === '3rd Party' ? thirdPartyCalcAmount : 0);
 
     const resetForm = () => {
         setEditId(null);
@@ -292,7 +318,9 @@ const SalesEntryForm = () => {
             isThirdPartyVehicle: false,
             thirdPartyVehicleNumber: '',
             ourVehicleCostPerTon: 0,
-            thirdPartyAmount: 0
+            thirdPartyAmount: 0,
+            entityType: 'Customer',
+            contractor: ''
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
         setTripIds([]);
@@ -319,7 +347,9 @@ const SalesEntryForm = () => {
             isThirdPartyVehicle: false,
             thirdPartyVehicleNumber: '',
             ourVehicleCostPerTon: 0,
-            thirdPartyAmount: 0
+            thirdPartyAmount: 0,
+            entityType: 'Customer',
+            contractor: ''
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
         setTripIds([]);
@@ -348,7 +378,9 @@ const SalesEntryForm = () => {
             isThirdPartyVehicle: false,
             thirdPartyVehicleNumber: '',
             ourVehicleCostPerTon: 0,
-            thirdPartyAmount: 0
+            thirdPartyAmount: 0,
+            entityType: 'Customer',
+            contractor: ''
         });
         setItems([{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]);
         setTripIds([]);
@@ -381,24 +413,63 @@ const SalesEntryForm = () => {
                     thirdPartyVehicleNumber: sale.thirdPartyVehicleNumber || '',
                     ourVehicleCostPerTon: sale.ourVehicleCostPerTon || 0,
                     thirdPartyAmount: sale.thirdPartyAmount || 0,
+                    entityType: sale.contractor ? 'Contractor' : 'Customer',
+                    contractor: sale.contractor?._id || sale.contractor || '',
                 });
                 if (data.trips) {
                     setTripIds(data.trips.map((t: any) => t._id));
                 } else {
                     setTripIds([]);
                 }
+                const tripsForCalc = data.trips || [];
+                const tripBreakdown: any = {};
+                tripsForCalc.forEach((t: any) => {
+                    const sid = (t.stoneTypeId?._id || t.stoneTypeId || 'misc').toString();
+                    if (!tripBreakdown[sid]) tripBreakdown[sid] = { internal: 0, external: 0, own: 0, other: 0, thisCont: 0 };
+                    
+                    const qty = parseFloat(t.loadQuantity) || 0;
+                    const isManual = !!t.manualVehicleNumber;
+                    const ownership = t.vehicleId?.ownershipType;
+                    const vCont = (t.vehicleId?.contractor?._id || t.vehicleId?.contractor || '').toString();
+                    const sCont = (sale.contractor?._id || sale.contractor || '').toString();
+
+                    if (isManual) {
+                        tripBreakdown[sid].external += qty;
+                    } else {
+                        tripBreakdown[sid].internal += qty;
+                        if (ownership === 'Own') {
+                            tripBreakdown[sid].own += qty;
+                        } else if (ownership === 'Contract') {
+                            if (sCont && vCont === sCont) {
+                                tripBreakdown[sid].thisCont += qty;
+                            } else {
+                                tripBreakdown[sid].other += qty;
+                            }
+                        }
+                    }
+                });
+
                 setItems(
-                    sale.items?.map((item: any) => ({
-                        item: item.item || '',
-                        stoneType: item.stoneType?._id || item.stoneType || '',
-                        quantity: item.quantity || '',
-                        unit: item.unit || 'Tons',
-                        rate: item.rate || '',
-                        amount: item.amount || 0,
-                        hsnCode: item.hsnCode || '',
-                        gstPercentage: item.gstPercentage !== undefined ? item.gstPercentage : (sale.gstPercentage || 0),
-                        gstAmount: item.gstAmount || ((item.amount || 0) * (item.gstPercentage || sale.gstPercentage || 0)) / 100,
-                    })) || [{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]
+                    sale.items?.map((item: any) => {
+                        const sid = (item.stoneType?._id || item.stoneType || 'misc').toString();
+                        const b = tripBreakdown[sid] || { internal: 0, external: 0, own: 0, other: 0, thisCont: 0 };
+                        return {
+                            item: item.item || '',
+                            stoneType: item.stoneType?._id || item.stoneType || '',
+                            quantity: item.quantity || '',
+                            unit: item.unit || 'Tons',
+                            rate: item.rate || '',
+                            amount: item.amount || 0,
+                            hsnCode: item.hsnCode || '',
+                            gstPercentage: item.gstPercentage !== undefined ? item.gstPercentage : (sale.gstPercentage || 0),
+                            gstAmount: item.gstAmount || ((item.amount || 0) * (item.gstPercentage || sale.gstPercentage || 0)) / 100,
+                            internalQuantity: b.internal,
+                            externalQuantity: b.external,
+                            ownVehicleQuantity: b.own,
+                            otherContractorQuantity: b.other,
+                            thisContractorQuantity: b.thisCont
+                        };
+                    }) || [{ item: '', stoneType: '', quantity: '', unit: 'Tons', rate: '', amount: 0, hsnCode: '', gstPercentage: 5, gstAmount: 0 }]
                 );
                 setShowForm(true);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -624,21 +695,46 @@ const SalesEntryForm = () => {
                                 </div>
 
                                  {formData.saleType === '3rd Party' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-primary/10 animate__animated animate__slideInDown text-warning">
+                                    <div className="animate__animated animate__fadeIn">
+                                        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mt-6 pt-6 border-t border-primary/10">
+                                            <div className="space-y-1">
+                                                <h6 className="text-warning font-black uppercase text-[10px] tracking-widest">Select Entity Type</h6>
+                                                <p className="text-[10px] text-white-dark font-bold italic">Selling to a direct customer or a contractor?</p>
+                                            </div>
+                                            <div className="flex items-center bg-white dark:bg-black/20 p-1.5 rounded-xl border border-warning/10 shadow-inner">
+                                                <button 
+                                                    type="button"
+                                                    className={`px-6 py-1.5 rounded-lg text-xs font-black transition-all duration-300 ${formData.entityType === 'Customer' ? 'bg-primary text-white shadow-md' : 'text-white-dark hover:text-primary'}`}
+                                                    onClick={() => setFormData(p => ({...p, entityType: 'Customer', contractor: ''}))}
+                                                >
+                                                    CUSTOMER SALE
+                                                </button>
+                                                <button 
+                                                    type="button"
+                                                    className={`px-6 py-1.5 rounded-lg text-xs font-black transition-all duration-300 ${formData.entityType === 'Contractor' ? 'bg-warning text-white shadow-md' : 'text-white-dark hover:text-warning'}`}
+                                                    onClick={() => setFormData(p => ({...p, entityType: 'Contractor', customer: ''}))}
+                                                >
+                                                    CONTRACTOR SALE
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-primary/10 text-warning">
                                         <div>
-                                            <label className="text-[10px] font-black uppercase mb-2 block tracking-tighter">Permit Fee (Per Ton)</label>
+                                            <label className="text-[10px] font-black uppercase mb-2 block tracking-tighter">Permit Fee (Per Ton) *</label>
                                             <div className="relative">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold">₹</span>
-                                                <input type="number" name="permitAmountPerTon" className="form-input pl-8 border-warning/30 focus:border-warning ring-warning/10" value={formData.permitAmountPerTon} onChange={handleChange} placeholder="0.00" />
+                                                <input type="number" name="permitAmountPerTon" className="form-input pl-8 border-warning/30 focus:border-warning ring-warning/10" value={formData.permitAmountPerTon} onChange={handleChange} placeholder="0.00" required />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black uppercase mb-2 block tracking-tighter">Vehicle Rental / Transport Cost (Per Ton)</label>
+                                            <label className="text-[10px] font-black uppercase mb-2 block tracking-tighter">Vehicle Rental / Transport Cost (Per Ton) *</label>
                                             <div className="relative">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold">₹</span>
-                                                <input type="number" name="ourVehicleCostPerTon" className="form-input pl-8 border-warning/30 focus:border-warning ring-warning/10" value={formData.ourVehicleCostPerTon} onChange={handleChange} placeholder="0.00" />
+                                                <input type="number" name="ourVehicleCostPerTon" className="form-input pl-8 border-warning/30 focus:border-warning ring-warning/10" value={formData.ourVehicleCostPerTon} onChange={handleChange} placeholder="0.00" required />
                                             </div>
                                             <p className="text-[9px] mt-1 font-bold italic opacity-70">* Enter 0 if using a 3rd Party manual vehicle</p>
+                                        </div>
                                         </div>
                                     </div>
                                 )}
@@ -664,23 +760,36 @@ const SalesEntryForm = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block">Customer Name *</label>
-                                    <select name="customer" className="form-select border-primary" value={formData.customer} onChange={handleChange} required>
-                                        <option value="">Select Customer</option>
-                                        {customers.map(c => (
-                                            <option key={c._id} value={c._id}>{c.name}</option>
-                                        ))}
-                                    </select>
-                                    {formData.customer && (
+                                    <label className="text-xs font-bold text-white-dark uppercase mb-2 block text-primary">
+                                        {formData.entityType === 'Contractor' ? 'Transport Contractor Name *' : 'Customer Name *'}
+                                    </label>
+                                    {formData.entityType === 'Contractor' ? (
+                                        <select name="contractor" className="form-select border-primary" value={formData.contractor} onChange={handleChange} required>
+                                            <option value="">Select Contractor</option>
+                                            {contractors.map(v => (
+                                                <option key={v._id} value={v._id}>{v.name}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <select name="customer" className="form-select border-primary" value={formData.customer} onChange={handleChange} required>
+                                            <option value="">Select Customer</option>
+                                            {customers.map(c => (
+                                                <option key={c._id} value={c._id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    {(formData.customer || formData.contractor) && (
                                         <div className="mt-2 p-2 bg-primary/5 rounded border border-primary/10">
                                             {(() => {
-                                                const selected = customers.find(c => c._id === formData.customer);
+                                                const selected = formData.entityType === 'Contractor' 
+                                                    ? contractors.find(v => v._id === formData.contractor)
+                                                    : customers.find(c => c._id === formData.customer);
                                                 if (selected) {
                                                     return (
                                                         <div className="text-[10px] space-y-1">
                                                             <div className="flex justify-between">
-                                                                <span className="text-white-dark">Phone:</span>
-                                                                <span className="font-bold">{selected.phone || 'N/A'}</span>
+                                                                 <span className="text-white-dark">Phone:</span>
+                                                                 <span className="font-bold">{(selected as any).phone || (selected as any).mobileNumber || 'N/A'}</span>
                                                             </div>
                                                             <div className="border-t border-primary/5 pt-1">
                                                                 <span className="text-white-dark block mb-1">Address:</span>
@@ -713,7 +822,7 @@ const SalesEntryForm = () => {
                                         <input type="date" name="tripEndDate" className="form-input border-primary/20 hover:border-primary focus:border-primary transition-all font-bold" value={formData.tripEndDate} onChange={handleChange} />
                                     </div>
                                 </div>
-                                {formData.customer && (
+                                {(formData.customer || formData.contractor) && (
                                     <div className="flex flex-col justify-end">
                                         <button 
                                             type="button" 
@@ -945,16 +1054,16 @@ const SalesEntryForm = () => {
                                                         <span className="font-bold text-success">₹{gstTotal.toLocaleString()}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center text-sm">
-                                                        <span className="text-white-dark font-bold underline decoration-warning/30">Total Permit Fee:</span>
-                                                        <span className="font-bold text-warning-dark">₹{((formData.permitAmountPerTon || 0) * items.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0)).toLocaleString()}</span>
+                                                        <span className="text-white-dark font-bold underline decoration-warning/30">Less: Total Permit Fee:</span>
+                                                        <span className="font-bold text-danger">- ₹{((formData.permitAmountPerTon || 0) * items.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0)).toLocaleString()}</span>
                                                     </div>
                                                     {(formData.ourVehicleCostPerTon || 0) > 0 && (
                                                         <div className="flex justify-between items-center text-sm">
                                                             <div className="flex flex-col">
-                                                                <span className="text-white-dark font-bold underline decoration-primary/30">Total Transport Cost:</span>
-                                                                <span className="text-[9px] text-white-dark/60 font-medium">(Applicable for {totalInternalTons} tons of Fleet trips)</span>
+                                                                <span className="text-white-dark font-bold underline decoration-primary/30">Less: Total Transport Cost:</span>
+                                                                <span className="text-[9px] text-white-dark/60 font-medium">(Applicable for {rentableTons} tons of Fleet trips)</span>
                                                             </div>
-                                                            <span className="font-bold text-primary">₹{((formData.ourVehicleCostPerTon || 0) * totalInternalTons).toLocaleString()}</span>
+                                                            <span className="font-bold text-danger">- ₹{((formData.ourVehicleCostPerTon || 0) * rentableTons).toLocaleString()}</span>
                                                         </div>
                                                     )}
                                                 </div>
