@@ -123,6 +123,7 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
         nextServiceDate: '',
         sparePartSource: 'Bought', // 'Own' or 'Bought'
         sparePartName: '',
+        workshopName: '',
         internalSpareId: '',
     });
 
