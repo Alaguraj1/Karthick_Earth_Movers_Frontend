@@ -386,6 +386,33 @@ const Sidebar = () => {
                                         </li>
                                     )}
 
+                                    {/* 7. Quarry Lease Management */}
+                                    {isManagement && (
+                                        <li className="menu nav-item">
+                                            <button type="button" className={`${currentMenu === 'quarry-lease' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('quarry-lease')}>
+                                                <div className="flex items-center">
+                                                    <IconMenuPages className="shrink-0 group-hover:!text-primary" />
+                                                    <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Quarry Lease Mgmt</span>
+                                                </div>
+
+                                                <div className={currentMenu !== 'quarry-lease' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                    <IconCaretDown />
+                                                </div>
+                                            </button>
+
+                                            <AnimateHeight duration={300} height={currentMenu === 'quarry-lease' ? 'auto' : 0}>
+                                                <ul className="sub-menu text-gray-500">
+                                                    <li>
+                                                        <Link href="/quarry-lease-settlement">Lease Settlement</Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/quarry-lease-expenses">Lease Expenses</Link>
+                                                    </li>
+                                                </ul>
+                                            </AnimateHeight>
+                                        </li>
+                                    )}
+
                                     {/* Rental Management */}
                                     <li className="nav-item">
                                         <Link href="/rentals" className="group">
