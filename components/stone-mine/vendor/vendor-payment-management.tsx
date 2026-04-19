@@ -146,12 +146,38 @@ const VendorPaymentManagement = () => {
             // Dates for queries
             const endOfDay = `${eDate}T23:59:59.999Z`;
 
-            const [tripRes, expenseRes, advanceRes, spareRes] = await Promise.all([
-                api.get(`/trips?startDate=${sDate}&endDate=${endOfDay}`),
-                api.get(`/expenses?startDate=${sDate}&endDate=${endOfDay}`),
-                api.get(`/vendors/payments?startDate=${sDate}&endDate=${endOfDay}`),
-                api.get(`/spare-parts-sales?startDate=${sDate}&endDate=${endOfDay}`)
-            ]);
+            let tripRes: any = { data: { success: true, data: [] } };
+            let expenseRes: any = { data: { success: true, data: [] } };
+            let advanceRes: any = { data: { success: true, data: [] } };
+            let spareRes: any = { data: { success: true, data: [] } };
+
+            try {
+                const results = await Promise.allSettled([
+                    api.get(`/trips?startDate=${sDate}&endDate=${endOfDay}`),
+                    api.get(`/expenses?startDate=${sDate}&endDate=${endOfDay}`),
+                    api.get(`/vendors/payments?startDate=${sDate}&endDate=${endOfDay}`),
+                    api.get(`/spare-parts-sales?startDate=${sDate}&endDate=${endOfDay}`)
+                ]);
+
+                if (results[0].status === 'fulfilled') tripRes = results[0].value;
+                else console.warn('Settlement: Failed to fetch trips');
+
+                if (results[1].status === 'fulfilled') expenseRes = results[1].value;
+                else console.warn('Settlement: Failed to fetch expenses');
+
+                if (results[2].status === 'fulfilled') advanceRes = results[2].value;
+                else console.warn('Settlement: Failed to fetch payment history');
+
+                if (results[3].status === 'fulfilled') spareRes = results[3].value;
+                else console.warn('Settlement: Failed to fetch spare parts');
+
+                // Only show a general toast if we have NO critical data (like trips)
+                if (results[0].status === 'rejected') {
+                    showToast('Could not load trips for settlement', 'error');
+                }
+            } catch (err) {
+                console.error('Diagnostic error:', err);
+            }
 
             const vendor = allVendors.find(v => v._id === vendorId && v.type === vendorType);
             const vendorVehicles = vendor?.vehicles || [];
@@ -169,7 +195,15 @@ const VendorPaymentManagement = () => {
                     // 1. Must NOT be settled with vendor already (unless we are editing)
                     if (t.isVendorSettled && !currentEditingId) return false;
 
-                    // 2. Must match the vendor's vehicles
+                    // 3. Exclude trips ONLY IF they are part of a 3rd Party sale where the SAME contractor is the buyer.
+                    if (t.saleId?.saleType === '3rd Party') {
+                        const saleContractorId = (t.saleId?.contractor?._id || t.saleId?.contractor || '').toString();
+                        const currentVendorId = (vendorId || '').toString();
+                        if (saleContractorId === currentVendorId) {
+                            return false; 
+                        }
+                    }
+
                     const tripVNum = normalize(t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.manualVehicleNumber || '');
                     return vehicleNumbers.includes(tripVNum);
                 });
@@ -230,9 +264,9 @@ const VendorPaymentManagement = () => {
 
                 setDailyAdvances(advances);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('SubData fetch error:', error);
-            showToast('Could not load settlement data', 'error');
+            showToast(error.message || 'ERROR: Settlement Display Logic Failed', 'error');
         } finally {
             setIsFetchingSubData(false);
         }

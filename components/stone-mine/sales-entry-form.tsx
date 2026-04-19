@@ -77,13 +77,29 @@ const SalesEntryForm = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingSales, setIsLoadingSales] = useState(true);
 
-    // Find the latest trip end date to prevent overlapping sales
-    const maxEndDate = recentSales.reduce((max, sale) => {
-        if (!sale.tripEndDate) return max;
-        const d = new Date(sale.tripEndDate).getTime();
-        return d > max ? d : max;
-    }, 0);
-    const minTripStartDate = maxEndDate ? new Date(maxEndDate + 86400000).toISOString().split('T')[0] : '';
+    // Find the latest trip end date PER CUSTOMER and PER SALE TYPE to prevent overlapping billing of the same type
+    const getMinStartDate = () => {
+        const selectedId = formData.entityType === 'Contractor' ? formData.contractor : formData.customer;
+        if (!selectedId) return '';
+
+        const relevantSales = recentSales.filter(s => {
+            const saleId = s.customer?._id || s.customer || s.contractor?._id || s.contractor;
+            return saleId === selectedId && s.saleType === formData.saleType;
+        });
+
+        if (relevantSales.length === 0) return '';
+
+        const maxEndDate = relevantSales.reduce((max, sale) => {
+            if (!sale.tripEndDate) return max;
+            const d = new Date(sale.tripEndDate).getTime();
+            return d > max ? d : max;
+        }, 0);
+
+        return maxEndDate ? new Date(maxEndDate + 86400000).toISOString().split('T')[0] : '';
+    };
+
+    const minTripStartDate = getMinStartDate();
+
 
     const fetchSales = async () => {
         try {
@@ -1227,10 +1243,10 @@ const SalesEntryForm = () => {
                                     const filtered = recentSales.filter(s => {
                                         const matchesSearch = !search ||
                                             s.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
-                                            s.customer?.name?.toLowerCase().includes(search.toLowerCase());
+                                            (s.customer?.name || s.contractor?.name || '').toLowerCase().includes(search.toLowerCase());
 
                                         const matchesCustomer = !filterCustomer ||
-                                            s.customer?.name === filterCustomer;
+                                            (s.customer?.name === filterCustomer || s.contractor?.name === filterCustomer);
 
                                         const saleDate = s.invoiceDate ? new Date(s.invoiceDate).toISOString().split('T')[0] : '';
                                         const matchesStart = !filterStartDate || saleDate >= filterStartDate;
@@ -1281,7 +1297,7 @@ const SalesEntryForm = () => {
                                                     <span className="text-white-dark/50">—</span>
                                                 )}
                                             </td>
-                                            <td className="font-semibold">{sale.customer?.name || '—'}</td>
+                                            <td className="font-semibold">{sale.customer?.name || sale.contractor?.name || '—'}</td>
                                             <td>
                                                 {sale.toLocation ? (
                                                     <span className="text-[11px] font-bold text-primary">{sale.toLocation}</span>
