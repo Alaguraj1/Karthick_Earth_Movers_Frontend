@@ -127,50 +127,7 @@ const Sidebar = () => {
                                             </Link>
                                         </li>
                                     )}
-                                    {/* 1. Expenses */}
-                                    <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'expense-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('expense-mgmt')}>
-                                            <div className="flex items-center">
-                                                <IconMenuInvoice className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Expenses</span>
-                                            </div>
-
-                                            <div className={currentMenu !== 'expense-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
-                                                <IconCaretDown />
-                                            </div>
-                                        </button>
-
-                                        <AnimateHeight duration={300} height={currentMenu === 'expense-mgmt' ? 'auto' : 0}>
-                                            <ul className="sub-menu text-gray-500">
-                                                <li>
-                                                    <Link href="/expenses/diesel">Diesel / Fuel</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/expenses/machine-maintenance">Maintenance</Link>
-                                                </li>
-                                                {isManagement && (
-                                                    <li>
-                                                        <Link href="/expenses/labour-wages">Labour Wages</Link>
-                                                    </li>
-                                                )}
-
-                                                {/* <li>
-                                                    <Link href="/expenses/transport-charges">Transport</Link>
-                                                </li> */}
-                                                <li>
-                                                    <Link href="/expenses/office-misc">Office & Misc</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/expenses/police">Police Expense</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/expenses/transport-contractor">Vendor Other Expenses</Link>
-                                                </li>
-                                            </ul>
-                                        </AnimateHeight>
-                                    </li>
-
-                                    {/* 2. Sales & Billing */}
+                                    {/* 1. Sales & Billing */}
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'sales-billing' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('sales-billing')}>
                                             <div className="flex items-center">
@@ -218,6 +175,49 @@ const Sidebar = () => {
                                         </AnimateHeight>
                                     </li>
 
+                                    {/* 2. Expenses */}
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'expense-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('expense-mgmt')}>
+                                            <div className="flex items-center">
+                                                <IconMenuInvoice className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Expenses</span>
+                                            </div>
+
+                                            <div className={currentMenu !== 'expense-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'expense-mgmt' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/expenses/diesel">Diesel / Fuel</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/expenses/machine-maintenance">Maintenance</Link>
+                                                </li>
+                                                {isManagement && (
+                                                    <li>
+                                                        <Link href="/expenses/labour-wages">Labour Wages</Link>
+                                                    </li>
+                                                )}
+
+                                                {/* <li>
+                                                    <Link href="/expenses/transport-charges">Transport</Link>
+                                                </li> */}
+                                                <li>
+                                                    <Link href="/expenses/office-misc">Office & Misc</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/expenses/police">Police Expense</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/expenses/transport-contractor">Vendor Other Expenses</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
+                                    </li>
+
                                     {/* 3. Transport Management */}
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'transport-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('transport-mgmt')}>
@@ -249,6 +249,42 @@ const Sidebar = () => {
                                                         </li>
                                                     </>
                                                 )}
+                                            </ul>
+                                        </AnimateHeight>
+                                    </li>
+
+                                    {/* 4. Transport Vendor Management */}
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'vendor-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('vendor-mgmt')}>
+                                            <div className="flex items-center">
+                                                <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Transport Vendor Manage</span>
+                                            </div>
+
+                                            <div className={currentMenu !== 'vendor-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'vendor-mgmt' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+
+                                                <li>
+                                                    <Link href="/vendors/transport">Transport Vendors</Link>
+                                                </li>
+
+                                                <li>
+                                                    <Link href="/vendors/advance">Vendor Advance</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/payments">Vendor Payment</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/trip-search">Trip Search & Export</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/vendors/outstanding">Vendor Pending Payment</Link>
+                                                </li>
                                             </ul>
                                         </AnimateHeight>
                                     </li>
@@ -321,41 +357,6 @@ const Sidebar = () => {
                                         </AnimateHeight>
                                     </li>
 
-                                    {/* 6. Transport Vendor Management */}
-                                    <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'vendor-mgmt' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('vendor-mgmt')}>
-                                            <div className="flex items-center">
-                                                <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Transport Vendor Manage</span>
-                                            </div>
-
-                                            <div className={currentMenu !== 'vendor-mgmt' ? '-rotate-90 rtl:rotate-90' : ''}>
-                                                <IconCaretDown />
-                                            </div>
-                                        </button>
-
-                                        <AnimateHeight duration={300} height={currentMenu === 'vendor-mgmt' ? 'auto' : 0}>
-                                            <ul className="sub-menu text-gray-500">
-
-                                                <li>
-                                                    <Link href="/vendors/transport">Transport Vendors</Link>
-                                                </li>
-
-                                                <li>
-                                                    <Link href="/vendors/advance">Vendor Advance</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/vendors/payments">Vendor Payment</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/vendors/trip-search">Trip Search & Export</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/vendors/outstanding">Vendor Pending Payment</Link>
-                                                </li>
-                                            </ul>
-                                        </AnimateHeight>
-                                    </li>
 
                                     {/* Blasting Management */}
                                     {isManagement && (
