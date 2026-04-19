@@ -154,9 +154,9 @@ const Sidebar = () => {
                                                     </li>
                                                 )}
 
-                                                <li>
+                                                {/* <li>
                                                     <Link href="/expenses/transport-charges">Transport</Link>
-                                                </li>
+                                                </li> */}
                                                 <li>
                                                     <Link href="/expenses/office-misc">Office & Misc</Link>
                                                 </li>

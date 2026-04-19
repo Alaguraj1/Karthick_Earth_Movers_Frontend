@@ -19,6 +19,8 @@ const TransportContractorExpense = () => {
     const [expenses, setExpenses] = useState<any[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
     const [uploading, setUploading] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         _id: '',
@@ -163,12 +165,19 @@ const TransportContractorExpense = () => {
         setShowForm(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure?')) return;
+    const handleDelete = (id: string) => {
+        setSelectedId(id);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!selectedId) return;
         try {
-            const { data } = await api.delete(`/expenses/${id}`);
+            const { data } = await api.delete(`/expenses/${selectedId}`);
             if (data.success) {
                 showToast('Deleted successfully', 'success');
+                setShowDeleteModal(false);
+                setSelectedId(null);
                 fetchExpenses();
             }
         } catch (error) {
@@ -391,6 +400,35 @@ const TransportContractorExpense = () => {
                                             <button type="button" className="btn btn-outline-danger h-14 rounded-2xl font-black uppercase tracking-[2px] text-xs px-8" onClick={() => resetForm()}>Cancel</button>
                                         </div>
                                     </form>
+                                </DialogPanel>
+                            </TransitionChild>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
+
+            {/* Custom Delete Confirmation Modal */}
+            <Transition appear show={showDeleteModal} as={Fragment}>
+                <Dialog as="div" open={showDeleteModal} onClose={() => setShowDeleteModal(false)} className="relative z-[1001]">
+                    <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0 bg-[black]/60" />
+                    </TransitionChild>
+
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center px-4">
+                            <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+                                <DialogPanel className="panel w-full max-w-sm overflow-hidden rounded-2xl border-0 p-0 text-black dark:text-white-dark shadow-2xl">
+                                    <div className="bg-danger/5 px-6 py-6 text-center">
+                                        <div className="bg-danger/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-danger/20">
+                                            <IconTrashLines className="w-8 h-8 text-danger" />
+                                        </div>
+                                        <h3 className="text-xl font-black uppercase tracking-tight text-danger">Confirm Delete</h3>
+                                        <p className="text-xs font-bold text-white-dark mt-2 px-4">Are you sure you want to permanently delete this expense record?</p>
+                                    </div>
+                                    <div className="p-6 flex gap-3">
+                                        <button type="button" className="btn btn-outline-primary flex-1 h-12 rounded-xl font-black uppercase text-xs" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+                                        <button type="button" className="btn btn-danger flex-1 h-12 rounded-xl font-black uppercase text-xs shadow-lg shadow-danger/20" onClick={confirmDelete}>Yes, Delete</button>
+                                    </div>
                                 </DialogPanel>
                             </TransitionChild>
                         </div>
