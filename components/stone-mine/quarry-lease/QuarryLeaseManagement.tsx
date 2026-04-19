@@ -275,7 +275,7 @@ const QuarryLeaseManagement = () => {
                                             <td>${t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.truckNumber || t.manualVehicleNumber || 'Unknown'}</td>
                                             <td>${t.stoneTypeId?.name || t.materialName || 'General'}</td>
                                             <td style="text-align: center; font-weight:bold;">${t.loadQuantity || t.tons || 0}</td>
-                                            <td>${t.customerId?.name || t.customerId?.customerName || t.customerName || t.notes || '-'}</td>
+                                            <td>${t.customerId?.name || t.saleId?.contractor?.name || t.contractorId?.name || t.notes || '-'}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -528,7 +528,7 @@ const QuarryLeaseManagement = () => {
                                                             {new Date(t.date || t.tripDate || new Date()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                                                         </td>
                                                         <td className="py-3 px-6 font-black text-[10px] text-slate-800">
-                                                            {t.vehicleId?.registrationNumber || t.truckNumber || t.manualVehicleNumber || 'Unknown'}
+                                                            {t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.manualVehicleNumber || 'Unknown'}
                                                         </td>
                                                         <td className="py-3 px-6 font-bold text-[10px] uppercase text-primary border border-primary/10 bg-primary/5 rounded-md inline-block mt-2 ml-6">
                                                             {t.stoneTypeId?.name || t.materialName || 'General'}
@@ -537,7 +537,7 @@ const QuarryLeaseManagement = () => {
                                                             {t.loadQuantity || t.tons || 0}
                                                         </td>
                                                         <td className="py-3 px-6 text-[10px] uppercase font-bold text-slate-400">
-                                                            {t.customerId?.name || t.customerName || t.notes || '-'}
+                                                            {t.customerId?.name || t.saleId?.contractor?.name || t.contractorId?.name || t.notes || '-'}
                                                         </td>
                                                     </tr>
                                                 ))}

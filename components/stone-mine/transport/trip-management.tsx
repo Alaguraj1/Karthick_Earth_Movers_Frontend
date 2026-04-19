@@ -12,6 +12,8 @@ import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconSearch from '@/components/icon/icon-search';
 import IconX from '@/components/icon/icon-x';
 import IconSave from '@/components/icon/icon-save';
+import IconDownload from '@/components/icon/icon-download';
+import * as XLSX from 'xlsx';
 
 const TripManagement = () => {
     const currentUser = useSelector((state: IRootState) => state.auth.user);
@@ -34,6 +36,9 @@ const TripManagement = () => {
     const [filterCustomer, setFilterCustomer] = useState('');
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
+    const [filterMaterial, setFilterMaterial] = useState('');
+    const [filterSaleType, setFilterSaleType] = useState('');
+
 
     const initialForm = {
         date: new Date().toISOString().split('T')[0],
@@ -125,6 +130,16 @@ const TripManagement = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        setFilterVehicle('');
+        setFilterCustomer('');
+        setFilterStartDate('');
+        setFilterEndDate('');
+        setFilterMaterial('');
+        setFilterSaleType('');
     };
 
     const filterVehiclesBy = (allVehicles: any[], type: string) => {
@@ -398,6 +413,65 @@ const TripManagement = () => {
     // Materials available
     const saleMaterials: any[] = stoneTypes;
 
+    const handleDownloadExcel = () => {
+        try {
+            const filtered = trips.filter((t: any) => {
+                const vNum = t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || '';
+                const dName = t.driverName || t.driverId?.name || '';
+                const cName = t.customerId?.name || '';
+                const invoiceNum = t.saleId?.invoiceNumber || '';
+                const material = t.stoneTypeId?.name || '';
+
+                const matchesSearch = !search ||
+                    vNum.toLowerCase().includes(search.toLowerCase()) ||
+                    dName.toLowerCase().includes(search.toLowerCase()) ||
+                    cName.toLowerCase().includes(search.toLowerCase()) ||
+                    invoiceNum.toLowerCase().includes(search.toLowerCase()) ||
+                    material.toLowerCase().includes(search.toLowerCase()) ||
+                    t.fromLocation?.toLowerCase().includes(search.toLowerCase()) ||
+                    t.toLocation?.toLowerCase().includes(search.toLowerCase());
+
+                const matchesVehicle = !filterVehicle || vNum === filterVehicle;
+                const cId = t.customerId?._id || t.customerId || '';
+                const matchesCustomer = !filterCustomer || cId === filterCustomer;
+
+                const tripDate = t.date ? new Date(t.date).toISOString().split('T')[0] : '';
+                const matchesStart = !filterStartDate || tripDate >= filterStartDate;
+                const matchesEnd = !filterEndDate || tripDate <= filterEndDate;
+
+                const matId = t.stoneTypeId?._id || t.stoneTypeId || '';
+                const matchesMaterial = !filterMaterial || matId === filterMaterial;
+                const matchesSaleType = !filterSaleType || t.saleType === filterSaleType;
+
+                return matchesSearch && matchesVehicle && matchesCustomer && matchesStart && matchesEnd && matchesMaterial && matchesSaleType;
+            });
+
+            if (filtered.length === 0) return showToast('No data to export', 'error');
+
+            const exportData = filtered.map((t: any) => ({
+                'Date': new Date(t.date).toLocaleDateString('en-GB'),
+                'Vehicle Number': t.vehicleId?.vehicleNumber || t.vehicleId?.registrationNumber || t.manualVehicleNumber || 'Unknown',
+                'Driver': t.driverName || t.driverId?.name || 'N/A',
+                'From': t.fromLocation || '',
+                'To': t.toLocation || '',
+                'Customer/Contractor': t.contractorId?.name || t.customerId?.name || 'Internal',
+                'Material': t.stoneTypeId?.name || '',
+                'Tons': t.loadQuantity || 0,
+                'Bill Number': t.billNumber || '—',
+                'Sale Type': t.saleType || 'Direct'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Trips');
+            XLSX.writeFile(workbook, `Trip_Records_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showToast('Excel file downloaded successfully!', 'success');
+        } catch (error) {
+            console.error('Excel Download Error:', error);
+            showToast('Failed to download Excel file', 'error');
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
@@ -405,10 +479,16 @@ const TripManagement = () => {
                     <h2 className="text-2xl font-bold dark:text-white-light">வாகன பயண மேலாண்மை (Vehicle Trip Management)</h2>
                     <p className="text-white-dark text-sm mt-1">Record and manage vehicle trips, loads and income</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-                    <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" /> Add New Trip
-                </button>
+                <div className="flex items-center gap-2">
+                    <button className="btn btn-outline-success gap-2" onClick={handleDownloadExcel}>
+                        <IconDownload className="w-5 h-5" /> Download XL
+                    </button>
+                    <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+                        <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" /> Add New Trip
+                    </button>
+                </div>
             </div>
+
 
             {showForm && (
                 <div className="panel animate__animated animate__fadeIn">
@@ -748,18 +828,49 @@ const TripManagement = () => {
                                 </select>
                             </div>
 
-                            {/* From Date */}
+                            {/* Date From */}
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">From Date</label>
                                 <input type="date" className="form-input h-10" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
                             </div>
-                            {/* To Date */}
+                            {/* Date To */}
                             <div>
                                 <label className="text-[10px] font-bold uppercase mb-1 block">To Date</label>
                                 <input type="date" className="form-input h-10" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
                             </div>
+                            {/* Material */}
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Material</label>
+                                <select className="form-select h-10 border-info/20" value={filterMaterial} onChange={(e) => setFilterMaterial(e.target.value)}>
+                                    <option value="">All Materials</option>
+                                    {stoneTypes.map((st: any) => (
+                                        <option key={st._id} value={st._id}>{st.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {/* Sale Type */}
+                            <div>
+                                <label className="text-[10px] font-bold uppercase mb-1 block">Sale Type</label>
+                                <select className="form-select h-10 border-warning/20" value={filterSaleType} onChange={(e) => setFilterSaleType(e.target.value)}>
+                                    <option value="">All Types</option>
+                                    <option value="Direct">Direct Sale</option>
+                                    <option value="3rd Party">3rd Party Sale</option>
+                                </select>
+                            </div>
+                            {/* Clear Filter */}
+                            <div className="flex items-center">
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-danger h-10 w-full group overflow-hidden relative flex items-center justify-center gap-2 rounded-xl transition-all hover:bg-danger hover:text-white"
+                                    onClick={clearFilters}
+                                >
+                                    <IconX className="w-4 h-4 transition-transform group-hover:rotate-90" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Clear All</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
+
 
                     <div className="table-responsive">
                         <table className="table-hover">
@@ -801,8 +912,12 @@ const TripManagement = () => {
                                         const tripDate = t.date ? new Date(t.date).toISOString().split('T')[0] : '';
                                         const matchesStart = !filterStartDate || tripDate >= filterStartDate;
                                         const matchesEnd = !filterEndDate || tripDate <= filterEndDate;
+                                        
+                                        const matId = t.stoneTypeId?._id || t.stoneTypeId || '';
+                                        const matchesMaterial = !filterMaterial || matId === filterMaterial;
+                                        const matchesSaleType = !filterSaleType || t.saleType === filterSaleType;
 
-                                        return matchesSearch && matchesVehicle && matchesCustomer && matchesStart && matchesEnd;
+                                        return matchesSearch && matchesVehicle && matchesCustomer && matchesStart && matchesEnd && matchesMaterial && matchesSaleType;
                                     });
 
                                     if (loading) {
