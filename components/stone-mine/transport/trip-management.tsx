@@ -480,9 +480,11 @@ const TripManagement = () => {
                     <p className="text-white-dark text-sm mt-1">Record and manage vehicle trips, loads and income</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button className="btn btn-outline-success gap-2" onClick={handleDownloadExcel}>
-                        <IconDownload className="w-5 h-5" /> Download XL
-                    </button>
+                    {isOwner && (
+                        <button className="btn btn-outline-success gap-2" onClick={handleDownloadExcel}>
+                            <IconDownload className="w-5 h-5" /> Download XL
+                        </button>
+                    )}
                     <button className="btn btn-primary" onClick={() => setShowForm(true)}>
                         <IconPlus className="w-5 h-5 ltr:mr-2 rtl:ml-2" /> Add New Trip
                     </button>

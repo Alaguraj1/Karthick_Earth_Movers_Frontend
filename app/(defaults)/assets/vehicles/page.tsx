@@ -549,13 +549,15 @@ const VehicleDetails = () => {
                                             </button>
                                         )}
                                     </div>
-                                    <button
-                                        onClick={handleExportExcel}
-                                        className="btn btn-outline-success rounded-xl px-5 font-bold uppercase text-[10px] tracking-widest h-10"
-                                        disabled={expenseHistory.diesel.length === 0 && expenseHistory.maintenance.length === 0}
-                                    >
-                                        <IconDownload className="w-4 h-4 mr-2" /> Export XL
-                                    </button>
+                                    {isOwner && (
+                                        <button
+                                            onClick={handleExportExcel}
+                                            className="btn btn-outline-success rounded-xl px-5 font-bold uppercase text-[10px] tracking-widest h-10"
+                                            disabled={expenseHistory.diesel.length === 0 && expenseHistory.maintenance.length === 0}
+                                        >
+                                            <IconDownload className="w-4 h-4 mr-2" /> Export XL
+                                        </button>
+                                    )}
                                     {canEditRecord(currentUser, detailsView.createdAt) && (
                                         <button onClick={() => handleEdit(detailsView)} className="btn btn-info rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest h-10">
                                             <IconEdit className="w-4 h-4 mr-2" /> Edit Profile

@@ -196,10 +196,12 @@ const workflowData: WorkflowSection[] = [
                     { name: 'Machine Maintenance', tamil: 'இயந்திர பராமரிப்பு செலவுகள்', required: true },
                     { name: 'Office & Misc', tamil: 'அலுவலக மற்றும் இதர செலவுகள்', required: true },
                     { name: 'Police Expense', tamil: 'போலீஸ் மற்றும் ஸ்டேஷன் செலவுகள்', required: true },
+                    { name: 'Vendor Other Expenses', tamil: 'வெளி வாகன ஒப்பந்ததாரர்களின் இதர செலவுகள்', required: false },
                 ],
                 tips: [
                     'டீசல் பதிவின் போது வண்டியை சரியாக தேர்வு செய்யவும், இது வண்டி வாரியான மைலேஜ் பார்க்க உதவும்.',
                     'மெயின்டனன்ஸ் செலவுகளை Masters-ல் உள்ள வகைகளை கொண்டு வகைப்படுத்தலாம்.',
+                    'வெண்டர் இதர செலவுகளில் அவர்களின் வாகனங்களுக்கு செய்யப்பட்ட செலவுகளை பதியலாம்.',
                 ],
             }
         ],
@@ -272,7 +274,7 @@ const workflowData: WorkflowSection[] = [
                     { name: 'Vendor Payment', tamil: 'விற்பனையாளர் பணம் செட்டில் செய்தல்', required: true },
                     { name: 'Vendor Pending Payment', tamil: 'கொடுக்க வேண்டிய நிலுவைத் தொகைகள்', required: false },
                 ],
-                tips: ['Trip Search-ல் தேடி Excel ரிப்போர்ட் எடுத்து வெண்டர்களுக்கு வழங்கலாம்.'],
+                tips: ['Trip Search-ல் தேடி Excel ரிப்போர்ட் எடுத்து வெண்டர்களுக்கு வழங்கலாம் (Owner மட்டும் பதிவிறக்க முடியும்).'],
             }
         ],
         roles: ['owner', 'manager', 'accountant'],
@@ -363,6 +365,40 @@ const workflowData: WorkflowSection[] = [
         roles: ['owner', 'manager'],
     },
     {
+        id: 'assets',
+        icon: '🚜',
+        titleTamil: 'இயந்திரம் & வாகனங்கள்',
+        titleEnglish: 'Machine & Vehicle',
+        color: '#8b5cf6',
+        gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+        overviewTamil: 'குவாரி இயந்திரங்கள், வாகனங்கள் மற்றும் உதிரிப் பாகங்களை நிர்வகிக்கும் பகுதி.',
+        steps: [
+            {
+                stepNo: 1,
+                titleTamil: 'இயந்திரம் மற்றும் வாகன விவரங்கள்',
+                titleEnglish: 'Asset Details',
+                descriptionTamil: 'இயந்திரங்கள் மற்றும் வாகனங்களை பதிவு செய்தல்.',
+                fields: [
+                    { name: 'Machine Details', tamil: 'இயந்திரங்களின் முழு விவரம்', required: true },
+                    { name: 'Vehicle Details', tamil: 'வாகனங்களின் முழு விவரம்', required: true },
+                    { name: 'Spare Parts', tamil: 'உதிரிப் பாகங்கள் இருப்பு மற்றும் செலவு', required: false },
+                ],
+                tips: ['ஒவ்வொரு வாகனத்திற்கும் தனித்தனியாக மைலேஜ் மற்றும் மெயின்டனன்ஸ் தேதிகளை கவனிக்கவும்.'],
+            },
+            {
+                stepNo: 2,
+                titleTamil: 'இயந்திர உற்பத்தி',
+                titleEnglish: 'Machine Production',
+                descriptionTamil: 'இயந்திரங்கள் வேலை செய்த நேரம் (HMR) பதிவு.',
+                fields: [
+                    { name: 'Machine Production', tamil: 'தினம் ஒரு இயந்திரம் வேலை செய்த நேரம்', required: true },
+                ],
+                tips: ['ஒவ்வொரு ஷிப்ட் முடிவிலும் HMR ரீடிங்கை தவறாமல் பதியவும்.'],
+            }
+        ],
+        roles: ['owner', 'manager', 'supervisor'],
+    },
+    {
         id: 'rentals',
         icon: '📅',
         titleTamil: 'வாடகை மேலாண்மை',
@@ -406,7 +442,7 @@ const workflowData: WorkflowSection[] = [
                 ],
                 tips: [
                     'தினமும் மாலையில் "Day Book" சரிபார்ப்பது அவசியம்.',
-                    'அறிக்கைகளை PDF அல்லது Excel ஆக பதிவிறக்கம் செய்து கொள்ளலாம்.',
+                    'அறிக்கைகளை PDF அல்லது Excel ஆக பதிவிறக்கம் செய்ய "Owner" அனுமதி தேவை.',
                 ],
             }
         ],

@@ -13,6 +13,7 @@ const TripChecklist = () => {
     const router = useRouter();
     const currentUser = useSelector((state: IRootState) => state.auth.user);
     const isManagement = ['owner', 'manager', 'admin'].includes(currentUser?.role?.toLowerCase() || '');
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
 
     const querySaleId = searchParams.get('id');
     const [selectedSale, setSelectedSale] = useState<any>(null);
@@ -117,9 +118,11 @@ const TripChecklist = () => {
                         <IconX className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Back
                     </button>
                     {trips.length > 0 ? (
-                        <button className="btn btn-primary" onClick={handlePrint}>
-                            <IconPrinter className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Print PDF / Download
-                        </button>
+                        isOwner && (
+                            <button className="btn btn-primary" onClick={handlePrint}>
+                                <IconPrinter className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> Print PDF / Download
+                            </button>
+                        )
                     ) : (
                         <span className="text-white-dark text-xs italic">No trips connected to this sale.</span>
                     )}

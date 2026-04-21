@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { IRootState } from '@/store';
 import api from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import IconSearch from '@/components/icon/icon-search';
@@ -60,6 +62,8 @@ const StatCard = ({
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 const VendorTripSearch = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
     const { showToast } = useToast();
 
     const [allVendors, setAllVendors] = useState<any[]>([]);
@@ -353,7 +357,7 @@ const VendorTripSearch = () => {
                                 </span>
                             )}
                         </h5>
-                        {trips.length > 0 && (
+                        {trips.length > 0 && isOwner && (
                             <button
                                 onClick={() =>
                                     exportToExcel(

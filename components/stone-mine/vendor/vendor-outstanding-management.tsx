@@ -11,6 +11,8 @@ import Link from 'next/link';
 import IconCashBanknotes from '@/components/icon/icon-cash-banknotes';
 
 const VendorOutstandingManagement = () => {
+    const currentUser = useSelector((state: IRootState) => state.auth.user);
+    const isOwner = currentUser?.role?.toLowerCase() === 'owner';
     const [loading, setLoading] = useState(true);
     const [outstandings, setOutstandings] = useState<any[]>([]);
     const { showToast } = useToast();
@@ -59,10 +61,12 @@ const VendorOutstandingManagement = () => {
                     <button onClick={fetchData} className="btn btn-outline-info p-2 rounded-full border-2 hover:bg-info hover:text-white transition-all">
                         <IconRefresh className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
-                    <button onClick={exportToExcel} className="btn btn-success flex items-center gap-2 font-black uppercase text-[10px] tracking-widest px-6 shadow-lg shadow-success/20">
-                        <IconDownload className="w-4 h-4" />
-                        Download XL
-                    </button>
+                    {isOwner && (
+                        <button onClick={exportToExcel} className="btn btn-success flex items-center gap-2 font-black uppercase text-[10px] tracking-widest px-6 shadow-lg shadow-success/20">
+                            <IconDownload className="w-4 h-4" />
+                            Download XL
+                        </button>
+                    )}
                 </div>
             </div>
 
