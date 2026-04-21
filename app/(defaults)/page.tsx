@@ -1,13 +1,14 @@
+'use client';
 import ComponentsDashboardSales from '@/components/dashboard/components-dashboard-sales';
-import { Metadata } from 'next';
+import RoleGuard from '@/components/stone-mine/role-guard';
 import React from 'react';
 
-export const metadata: Metadata = {
-    title: 'Sales Admin',
-};
-
 const Sales = () => {
-    return <ComponentsDashboardSales />;
+    return (
+        <RoleGuard allowedRoles={['owner']} redirectTo="/expenses/diesel">
+            <ComponentsDashboardSales />
+        </RoleGuard>
+    );
 };
 
 export default Sales;

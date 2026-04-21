@@ -1,10 +1,12 @@
+'use client';
 import UserManagement from '@/components/stone-mine/user-management';
-import { Metadata } from 'next';
-
-export const metadata: Metadata = {
-    title: 'User Management',
-};
+import RoleGuard from '@/components/stone-mine/role-guard';
+import React from 'react';
 
 export default function UserManagementPage() {
-    return <UserManagement />;
+    return (
+        <RoleGuard allowedRoles={['owner']} redirectTo="/expenses/diesel">
+            <UserManagement />
+        </RoleGuard>
+    );
 }

@@ -1,12 +1,14 @@
+'use client';
 import QuarryLeaseExpenses from '@/components/stone-mine/quarry-lease/QuarryLeaseExpenses';
-import { Metadata } from 'next';
-
-export const metadata: Metadata = {
-    title: 'Quarry Lease Expenses | Karthick Earth Movers',
-};
+import RoleGuard from '@/components/stone-mine/role-guard';
+import React from 'react';
 
 const QuarryLeaseExpensesPage = () => {
-    return <QuarryLeaseExpenses />;
+    return (
+        <RoleGuard allowedRoles={['owner', 'manager']} redirectTo="/expenses/diesel">
+            <QuarryLeaseExpenses />
+        </RoleGuard>
+    );
 };
 
 export default QuarryLeaseExpensesPage;
