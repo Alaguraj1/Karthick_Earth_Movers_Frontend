@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import { useSearchParams, useRouter } from 'next/navigation';
-import api, { BACKEND_URL } from '@/utils/api';
+import api, { getFileUrl } from '@/utils/api';
 import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconPrinter from '@/components/icon/icon-printer';
 import IconCalendar from '@/components/icon/icon-calendar';
@@ -268,7 +268,7 @@ const SalesDetailsView = () => {
                                     <IconFile className="w-5 h-5 text-primary" /> Receipt Copy
                                 </h5>
                                 <a
-                                    href={`${BACKEND_URL}${sale.receiptFile}`}
+                                    href={getFileUrl(sale.receiptFile)}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="btn btn-xs btn-outline-primary"
@@ -279,14 +279,14 @@ const SalesDetailsView = () => {
                             <div className="bg-white-light/30 dark:bg-white-dark/5 rounded-lg border border-white-light dark:border-white-dark/10 overflow-hidden">
                                 {sale.receiptFile.toLowerCase().endsWith('.pdf') ? (
                                     <iframe
-                                        src={`${BACKEND_URL}${sale.receiptFile}`}
+                                        src={getFileUrl(sale.receiptFile)}
                                         className="w-full h-[400px]"
                                         title="Receipt PDF"
                                     ></iframe>
                                 ) : (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
-                                        src={`${BACKEND_URL}${sale.receiptFile}`}
+                                        src={getFileUrl(sale.receiptFile)}
                                         alt="Receipt"
                                         className="w-full h-auto object-contain max-h-[500px] mx-auto"
                                     />

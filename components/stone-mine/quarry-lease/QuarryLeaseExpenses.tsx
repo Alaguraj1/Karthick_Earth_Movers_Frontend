@@ -7,7 +7,7 @@ import IconEye from '@/components/icon/icon-eye';
 import IconX from '@/components/icon/icon-x';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
-import api, { BACKEND_URL } from '@/utils/api';
+import api, { getFileUrl } from '@/utils/api';
 
 const AMOUNT_TYPES = ['Cash', 'Bank Transfer', 'UPI'];
 
@@ -233,7 +233,7 @@ const QuarryLeaseExpenses = () => {
                                                     <div className="flex justify-center gap-2">
                                                         {e.billUrl && (
                                                             <a 
-                                                                href={`${BACKEND_URL.endsWith('/') ? BACKEND_URL.slice(0, -1) : BACKEND_URL}/${e.billUrl.replace(/\\/g, '/').startsWith('/') ? e.billUrl.replace(/\\/g, '/').slice(1) : e.billUrl.replace(/\\/g, '/')}`} 
+                                                                href={getFileUrl(e.billUrl)} 
                                                                 target="_blank" 
                                                                 rel="noopener noreferrer"
                                                                 className="p-2 text-info hover:bg-info/10 rounded-full"

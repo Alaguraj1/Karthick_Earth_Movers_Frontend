@@ -7,7 +7,7 @@ import IconSave from '@/components/icon/icon-save';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrashLines from '@/components/icon/icon-trash-lines';
 import IconSearch from '@/components/icon/icon-search';
-import api, { BACKEND_URL } from '@/utils/api';
+import api, { getFileUrl } from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 
 const TransportContractorExpense = () => {
@@ -293,7 +293,7 @@ const TransportContractorExpense = () => {
                                         <td className="py-4">
                                             <div className="flex items-center justify-center gap-4">
                                                 {exp.billUrl && (
-                                                    <a href={`${BACKEND_URL}${exp.billUrl}`} target="_blank" rel="noreferrer" className="text-[10px] font-black text-primary hover:underline uppercase">
+                                                    <a href={getFileUrl(exp.billUrl)} target="_blank" rel="noreferrer" className="text-[10px] font-black text-primary hover:underline uppercase">
                                                         View Bill
                                                     </a>
                                                 )}
@@ -380,7 +380,7 @@ const TransportContractorExpense = () => {
                                                     {formData.billUrl && (
                                                         <div className="flex items-center justify-between bg-primary/10 rounded-xl px-4 py-2 border border-primary/20">
                                                             <span className="text-[10px] font-black text-primary uppercase">Bill Attached ✓</span>
-                                                            <a href={`${BACKEND_URL}${formData.billUrl}`} target="_blank" rel="noreferrer" className="text-[10px] font-black text-primary hover:underline">View</a>
+                                                            <a href={getFileUrl(formData.billUrl)} target="_blank" rel="noreferrer" className="text-[10px] font-black text-primary hover:underline">View</a>
                                                         </div>
                                                     )}
                                                 </div>

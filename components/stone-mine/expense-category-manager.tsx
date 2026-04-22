@@ -11,7 +11,7 @@ import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconSearch from '@/components/icon/icon-search';
 import { Transition, Dialog, DialogPanel, TransitionChild } from '@headlessui/react';
 
-import api, { BASE_URL, BACKEND_URL } from '@/utils/api';
+import api, { BASE_URL, getFileUrl } from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import { canEditRecord } from '@/utils/permissions';
 
@@ -1497,17 +1497,17 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 <td className="font-bold text-primary py-2 text-lg min-w-[120px]">₹{expense.amount.toLocaleString()}</td>
                                                 <td className="text-center py-2 flex flex-col items-center gap-1 justify-center">
                                                     {expense.billUrl && (
-                                                        <a href={`${BACKEND_URL}${expense.billUrl}`} target="_blank" className="text-primary hover:underline text-[10px]">
+                                                        <a href={getFileUrl(expense.billUrl)} target="_blank" className="text-primary hover:underline text-[10px]">
                                                             View Bill
                                                         </a>
                                                     )}
                                                     {expense.inputBillUrl && (
-                                                        <a href={`${BACKEND_URL}${expense.inputBillUrl}`} target="_blank" className="text-info hover:underline text-[10px] font-bold">
+                                                        <a href={getFileUrl(expense.inputBillUrl)} target="_blank" className="text-info hover:underline text-[10px] font-bold">
                                                             Input Bill
                                                         </a>
                                                     )}
                                                     {expense.outputBillUrl && (
-                                                        <a href={`${BACKEND_URL}${expense.outputBillUrl}`} target="_blank" className="text-success hover:underline text-[10px] font-bold">
+                                                        <a href={getFileUrl(expense.outputBillUrl)} target="_blank" className="text-success hover:underline text-[10px] font-bold">
                                                             Output Bill
                                                         </a>
                                                     )}
@@ -2128,11 +2128,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 {formData.inputBillUrl && (
                                                     <div className="relative w-24 h-24 border-2 border-primary/20 rounded-xl overflow-hidden group shadow-md mt-1">
                                                         {formData.inputBillUrl.match(/\.(jpg|jpeg|png|jfif)$/i) || !formData.inputBillUrl.includes('.') ? (
-                                                            <img src={`${BACKEND_URL}${formData.inputBillUrl}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Input Preview" />
+                                                            <img src={getFileUrl(formData.inputBillUrl)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Input Preview" />
                                                         ) : (
                                                             <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase">PDF Bill</div>
                                                         )}
-                                                        <a href={`${BACKEND_URL}${formData.inputBillUrl}`} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-black uppercase transition-opacity">
+                                                        <a href={getFileUrl(formData.inputBillUrl)} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-black uppercase transition-opacity">
                                                             <IconEdit className="w-5 h-5 mb-1" />
                                                             View Full
                                                         </a>
@@ -2165,11 +2165,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                                 {formData.outputBillUrl && (
                                                     <div className="relative w-24 h-24 border-2 border-success/20 rounded-xl overflow-hidden group shadow-md mt-1">
                                                         {formData.outputBillUrl.match(/\.(jpg|jpeg|png|jfif)$/i) || !formData.outputBillUrl.includes('.') ? (
-                                                            <img src={`${BACKEND_URL}${formData.outputBillUrl}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Output Preview" />
+                                                            <img src={getFileUrl(formData.outputBillUrl)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Output Preview" />
                                                         ) : (
                                                             <div className="w-full h-full bg-success/10 flex items-center justify-center text-success font-black text-xs uppercase">PDF Bill</div>
                                                         )}
-                                                        <a href={`${BACKEND_URL}${formData.outputBillUrl}`} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-black uppercase transition-opacity">
+                                                        <a href={getFileUrl(formData.outputBillUrl)} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-black uppercase transition-opacity">
                                                             <IconEdit className="w-5 h-5 mb-1" />
                                                             View Full
                                                         </a>
@@ -2204,11 +2204,11 @@ const ExpenseCategoryManager = ({ category, title }: ExpenseCategoryManagerProps
                                             {formData.billUrl && (
                                                 <div className="relative w-24 h-24 border-2 border-primary/20 rounded-xl overflow-hidden group shadow-md mt-1">
                                                     {formData.billUrl.match(/\.(jpg|jpeg|png|jfif)$/i) || !formData.billUrl.includes('.') ? (
-                                                        <img src={`${BACKEND_URL}${formData.billUrl}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Bill Preview" />
+                                                        <img src={getFileUrl(formData.billUrl)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Bill Preview" />
                                                     ) : (
                                                         <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase">PDF Bill</div>
                                                     )}
-                                                    <a href={`${BACKEND_URL}${formData.billUrl}`} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-black uppercase transition-opacity">
+                                                    <a href={getFileUrl(formData.billUrl)} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-black uppercase transition-opacity">
                                                         <IconEdit className="w-5 h-5 mb-1" />
                                                         View Full
                                                     </a>

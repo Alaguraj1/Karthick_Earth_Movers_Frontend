@@ -2,6 +2,17 @@ export const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 // Backend origin for file/image URLs (strips trailing /api from BASE_URL)
 export const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/api$/, '');
 
+/**
+ * Helper to get the correct URL for a file/image.
+ * If the path starts with http, it is returned as is (e.g. Cloudinary URLs).
+ * Otherwise, it prepends the BACKEND_URL.
+ */
+export const getFileUrl = (path: string | null | undefined) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    return `${BACKEND_URL}${path}`;
+};
+
 const getHeaders = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const headers: any = {

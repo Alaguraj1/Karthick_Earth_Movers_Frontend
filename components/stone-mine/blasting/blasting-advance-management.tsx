@@ -1,13 +1,11 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import api from '@/utils/api';
+import api, { getFileUrl } from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import IconPlus from '@/components/icon/icon-plus';
 import IconTrash from '@/components/icon/icon-trash';
 import IconX from '@/components/icon/icon-x';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const BlastingAdvanceManagement = ({ blastingId, blastingLabel, recordDates }: { blastingId?: string; blastingLabel?: string; recordDates?: { fromDate: string; toDate: string } }) => {
     const { showToast } = useToast();
@@ -140,7 +138,7 @@ const BlastingAdvanceManagement = ({ blastingId, blastingLabel, recordDates }: {
                                 {billPreview && (
                                     <div className="flex items-center gap-2">
                                         {billPreview.match(/\.(jpg|jpeg|png|jfif)$/i) ? (
-                                            <img src={`${BACKEND_URL}${billPreview}`} alt="bill" className="h-10 w-10 object-cover rounded border border-success/30" />
+                                            <img src={getFileUrl(billPreview)} alt="bill" className="h-10 w-10 object-cover rounded border border-success/30" />
                                         ) : (
                                             <div className="text-success text-xs font-bold bg-success/10 px-2 py-1 rounded">PDF</div>
                                         )}
@@ -193,7 +191,7 @@ const BlastingAdvanceManagement = ({ blastingId, blastingLabel, recordDates }: {
                                         <td className="text-white-dark text-sm">{a.notes || '—'}</td>
                                         <td className="text-center">
                                             {a.billUrl ? (
-                                                <a href={`${BACKEND_URL}${a.billUrl}`} target="_blank" rel="noopener noreferrer" className="text-warning hover:scale-110 transition-all inline-block p-1 bg-warning/10 rounded">
+                                                <a href={getFileUrl(a.billUrl)} target="_blank" rel="noopener noreferrer" className="text-warning hover:scale-110 transition-all inline-block p-1 bg-warning/10 rounded">
                                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                                 </a>
                                             ) : (

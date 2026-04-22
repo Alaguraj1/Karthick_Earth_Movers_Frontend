@@ -1,14 +1,12 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import api from '@/utils/api';
+import api, { getFileUrl } from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import IconPlus from '@/components/icon/icon-plus';
 import IconEdit from '@/components/icon/icon-edit';
 import IconTrash from '@/components/icon/icon-trash';
 import IconX from '@/components/icon/icon-x';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const BlastingExplosiveShop = ({ blastingId, blastingLabel, recordDates }: { blastingId?: string; blastingLabel?: string; recordDates?: { fromDate: string; toDate: string } }) => {
     const { showToast } = useToast();
@@ -146,12 +144,12 @@ const BlastingExplosiveShop = ({ blastingId, blastingLabel, recordDates }: { bla
                                     <span className="text-sm text-danger">{uploading ? 'Uploading...' : 'Upload Bill'}</span>
                                     <input ref={fileRef} type="file" className="hidden" accept="image/*,.pdf,.jfif" onChange={handleFileChange} />
                                 </label>
-                                {billPreview && (
+                                 {billPreview && (
                                     <div className="flex items-center gap-2">
                                         {billPreview.match(/\.(jpg|jpeg|png|jfif)$/i) ? (
-                                            <img src={`${BACKEND_URL}${billPreview}`} alt="bill" className="h-12 w-12 object-cover rounded border border-success/30" />
+                                            <img src={getFileUrl(billPreview)} alt="bill" className="h-12 w-12 object-cover rounded border border-success/30" />
                                         ) : (
-                                            <a href={`${BACKEND_URL}${billPreview}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-success text-sm border border-success/30 rounded px-3 py-1 hover:bg-success/10">
+                                            <a href={getFileUrl(billPreview)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-success text-sm border border-success/30 rounded px-3 py-1 hover:bg-success/10">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> View PDF
                                             </a>
                                         )}
@@ -203,12 +201,12 @@ const BlastingExplosiveShop = ({ blastingId, blastingLabel, recordDates }: { bla
                                         <td className="font-bold text-primary">{p.shopName}</td>
                                         <td className="text-right font-bold text-danger text-lg">₹{p.amount.toLocaleString()}</td>
                                         <td className="text-white-dark text-sm">{p.notes || '—'}</td>
-                                        <td className="text-center">
+                                         <td className="text-center">
                                             {p.billUrl ? (
-                                                <a href={`${BACKEND_URL}${p.billUrl}`} target="_blank" rel="noopener noreferrer"
+                                                <a href={getFileUrl(p.billUrl)} target="_blank" rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-1 text-xs text-success border border-success/30 rounded px-2 py-1 hover:bg-success/10">
                                                     {p.billUrl.match(/\.(jpg|jpeg|png|jfif)$/i) ? (
-                                                        <img src={`${BACKEND_URL}${p.billUrl}`} alt="bill" className="h-7 w-7 object-cover rounded" />
+                                                        <img src={getFileUrl(p.billUrl)} alt="bill" className="h-7 w-7 object-cover rounded" />
                                                     ) : (
                                                         <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF</>
                                                     )}

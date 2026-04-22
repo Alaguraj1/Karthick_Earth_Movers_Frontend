@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import api from '@/utils/api';
+import api, { getFileUrl } from '@/utils/api';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
 import { canEditRecord } from '@/utils/permissions';
@@ -241,7 +241,6 @@ const TripManagement = () => {
         }
     };
 
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
     const convertJfifToJpg = async (file: File): Promise<File> => {
         if (!file.name.toLowerCase().endsWith('.jfif')) return file;
@@ -752,12 +751,12 @@ const TripManagement = () => {
                                     </div>
                                     {formData.billUrl && (
                                         <div className="relative w-20 h-20 border-2 border-primary/20 rounded-xl overflow-hidden group shadow-sm">
-                                            {formData.billUrl.match(/\.(jpg|jpeg|png|jfif)$/i) || !formData.billUrl.includes('.') ? (
-                                                <img src={`${BACKEND_URL}${formData.billUrl}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Bill Preview" />
+                                            {formData.billUrl.match(/\.(jpg|jpeg|png|jfif|webp)$/i) || !formData.billUrl.includes('.') ? (
+                                                <img src={getFileUrl(formData.billUrl)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Bill Preview" />
                                             ) : (
                                                 <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-[10px] uppercase">PDF</div>
                                             )}
-                                            <a href={`${BACKEND_URL}${formData.billUrl}`} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[9px] font-black uppercase transition-opacity">
+                                            <a href={getFileUrl(formData.billUrl)} target="_blank" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[9px] font-black uppercase transition-opacity">
                                                 View
                                             </a>
                                         </div>

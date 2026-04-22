@@ -9,7 +9,7 @@ import IconPrinter from '@/components/icon/icon-printer';
 import IconSave from '@/components/icon/icon-save';
 import { useToast } from '@/components/stone-mine/toast-notification';
 import DeleteConfirmModal from '@/components/stone-mine/delete-confirm-modal';
-import api, { BACKEND_URL } from '@/utils/api';
+import api, { getFileUrl } from '@/utils/api';
 
 const QuarryLeaseManagement = () => {
     const { showToast } = useToast();
@@ -585,7 +585,7 @@ const QuarryLeaseManagement = () => {
                                                         <td className="py-3 px-6 text-center">
                                                             {e.billUrl && (
                                                                 <a 
-                                                                    href={`${BACKEND_URL.endsWith('/') ? BACKEND_URL.slice(0, -1) : BACKEND_URL}/${e.billUrl.replace(/\\/g, '/').startsWith('/') ? e.billUrl.replace(/\\/g, '/').slice(1) : e.billUrl.replace(/\\/g, '/')}`} 
+                                                                    href={getFileUrl(e.billUrl)} 
                                                                     target="_blank" 
                                                                     rel="noopener noreferrer"
                                                                     className="inline-flex p-1.5 text-info hover:bg-info/10 rounded-full transition-colors"
