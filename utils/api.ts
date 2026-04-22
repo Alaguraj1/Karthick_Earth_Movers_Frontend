@@ -7,10 +7,21 @@ export const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/ap
  * If the path starts with http, it is returned as is (e.g. Cloudinary URLs).
  * Otherwise, it prepends the BACKEND_URL.
  */
-export const getFileUrl = (path: string | null | undefined) => {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    return `${BACKEND_URL}${path}`;
+export const getFileUrl = (path: any) => {
+    if (!path || typeof path !== 'string') return '';
+    
+    const trimmedPath = path.trim();
+    
+    // If it's already an absolute URL (http://, https://, or //) return it as is
+    if (/^https?:\/\//i.test(trimmedPath) || trimmedPath.startsWith('//')) {
+        return trimmedPath;
+    }
+    
+    // Prevent double slashes or missing slashes
+    const base = BACKEND_URL.replace(/\/+$/, '');
+    const relative = trimmedPath.replace(/^\/+/, '');
+    
+    return `${base}/${relative}`;
 };
 
 const getHeaders = () => {
